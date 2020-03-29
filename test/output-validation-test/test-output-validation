@@ -1,0 +1,36 @@
+#!/bin/bash
+set -euo errexit
+
+SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
+BUILD_DIR="$SCRIPTPATH/../../build"
+OS=$(uname | tr '[:upper:]' '[:lower:]')
+ARCH=amd64
+PLATFORM=$OS-$ARCH
+
+SUPPORTED_PLATFORMS="$OS/$ARCH" make -f $SCRIPTPATH/../../Makefile build-binaries
+
+## CFN Validation
+CFN_LINT_VERSION="v0.30.1"
+curl -Lo $BUILD_DIR/cfn-lint https://github.com/aws-cloudformation/cfn-python-lint/archive/$CFN_LINT_VERSION.tar.gz
+tar -xf $BUILD_DIR/cfn-lint -C $BUILD_DIR
+docker build -t cfn-lint $BUILD_DIR/cfn-python-lint-$(echo $CFN_LINT_VERSION | sed 's/v//g')/
+
+function fail(){
+    echo "❌ Failed Test"
+    exit 1
+}
+trap fail INT TERM ERR
+
+$BUILD_DIR/bin/ec2-instance-selector-$PLATFORM -o cfn-json > $BUILD_DIR/cfn.json
+$BUILD_DIR/bin/ec2-instance-selector-$PLATFORM -o cfn-yaml > $BUILD_DIR/cfn.yaml
+docker run --rm -v $BUILD_DIR:/data cfn-lint /data/cfn.json
+docker run --rm -v $BUILD_DIR:/data cfn-lint /data/cfn.yaml
+
+echo "✅ Passed CFN YAML and JSON Validation"
+
+## Terraform Validation
+$BUILD_DIR/bin/ec2-instance-selector-$PLATFORM -o terraform-hcl > $BUILD_DIR/terraform.hcl
+docker run -it --rm -v $BUILD_DIR:/data hashicorp/terraform:light init -backend=false /data/
+docker run -it --rm -v $BUILD_DIR:/data hashicorp/terraform:light validate -json /data/
+
+echo "✅ Passed Terraform HCL Validation"

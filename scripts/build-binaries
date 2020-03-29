@@ -1,0 +1,56 @@
+#!/bin/bash
+set -euo pipefail
+
+SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
+
+REPO_ROOT_PATH=$SCRIPTPATH/../
+MAKE_FILE_PATH=$REPO_ROOT_PATH/Makefile
+mkdir -p $SCRIPTPATH/../build/bin
+
+VERSION=$(make -s -f $MAKE_FILE_PATH version)
+PLATFORMS=("linux/amd64")
+PASS_THRU_ARGS=""
+
+USAGE=$(cat << 'EOM'
+  Usage: build-binaries  [-p <platform pairs>]
+  Builds static binaries for the platform pairs passed in
+
+  Example: build-binaries -p "linux/amd64,linux/arm"
+          Optional:
+            -p          Platform pair list (os/architecture) [DEFAULT: linux/amd64]
+            -d          DIRECT: Set GOPROXY=direct to bypass go proxies
+            -v          VERSION: The application version of the docker image [DEFAULT: output of `make version`]
+EOM
+)
+
+# Process our input arguments
+while getopts "dp:v:" opt; do
+  case ${opt} in
+    p ) # Platform Pairs
+        IFS=',' read -ra PLATFORMS <<< "$OPTARG"
+      ;;
+    d ) # sets GOPROXY=direct
+        PASS_THRU_ARGS="$PASS_THRU_ARGS -d"
+      ;;
+    v ) # Image Version
+        VERSION="$OPTARG"
+      ;;
+    \? )
+        echo "$USAGE" 1>&2
+        exit
+      ;;
+  esac
+done
+
+for os_arch in "${PLATFORMS[@]}"; do
+    os=$(echo $os_arch | cut -d'/' -f1)
+    arch=$(echo $os_arch | cut -d'/' -f2)
+    container_name="extract-aeis-$os-$arch"
+    repo_name="aeis-bin"
+    bin_name="ec2-instance-selector-$os-$arch"
+
+    docker container rm $container_name || :
+    $SCRIPTPATH/build-docker-images -p $os_arch -v $VERSION -r $repo_name $PASS_THRU_ARGS
+    docker container create --rm --name $container_name "$repo_name:$VERSION-$os-$arch"
+    docker container cp $container_name:/ec2-instance-selector $SCRIPTPATH/../build/bin/$bin_name
+done

@@ -1,0 +1,62 @@
+{
+    "InstanceTypes": [
+        {
+            "FreeTierEligible": false,
+            "InstanceStorageSupported": false,
+            "Hypervisor": "nitro",
+            "PlacementGroupInfo": {
+                "SupportedStrategies": [
+                    "partition",
+                    "spread"
+                ]
+            },
+            "SupportedUsageClasses": [
+                "on-demand",
+                "spot"
+            ],
+            "MemoryInfo": {
+                "SizeInMiB": 1024
+            },
+            "CurrentGeneration": true,
+            "DedicatedHostsSupported": true,
+            "VCpuInfo": {
+                "ValidThreadsPerCore": [
+                    1,
+                    2
+                ],
+                "DefaultCores": 1,
+                "DefaultVCpus": 2,
+                "ValidCores": [
+                    1
+                ],
+                "DefaultThreadsPerCore": 2
+            },
+            "ProcessorInfo": {
+                "SupportedArchitectures": [
+                    "x86_64"
+                ],
+                "SustainedClockSpeedInGhz": 2.5
+            },
+            "BareMetal": false,
+            "AutoRecoverySupported": true,
+            "NetworkInfo": {
+                "NetworkPerformance": "Up to 5 Gigabit",
+                "MaximumNetworkInterfaces": 2,
+                "Ipv6Supported": true,
+                "Ipv6AddressesPerInterface": 2,
+                "EnaSupport": "required",
+                "Ipv4AddressesPerInterface": 2
+            },
+            "SupportedRootDeviceTypes": [
+                "ebs"
+            ],
+            "EbsInfo": {
+                "EbsOptimizedSupport": "default",
+                "EncryptionSupport": "supported"
+            },
+            "HibernationSupported": false,
+            "BurstablePerformanceSupported": true,
+            "InstanceType": "t3.micro"
+        }
+    ]
+}

@@ -1,0 +1,9 @@
+{
+    "InstanceTypeOfferings": [ 
+        {
+            "LocationType": "availability-zone", 
+            "InstanceType": "c5d.12xlarge", 
+            "Location": "us-east-2a"
+        }
+    ]
+}

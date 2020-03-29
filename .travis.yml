@@ -1,0 +1,33 @@
+---
+language: minimal
+
+services:
+- docker
+
+matrix:
+  include:
+    - stage: Test
+      language: go
+      go: "1.14.x"
+      script: make unit-test
+      env: GO_UNIT_TESTS=TRUE
+      after_success: bash <(curl -s https://codecov.io/bash) -v
+    - stage: Test
+      script: make go-report-card-test
+      env: GO_REPORT_CARD=true
+    - stage: Test
+      script: make output-validation-test
+      env: CFN_AND_TERRAFORM_OUTPUT_VALIDATION_TESTS=true
+    - stage: Test
+      if: type = push AND branch = master AND env(GITHUB_TOKEN) IS present
+      script: test/license-test/run-license-test.sh
+      env: LICENSE_TEST=true
+    - stage: Deploy
+      if: type = push AND env(DOCKER_USERNAME) IS present
+      script: make sync-readme-to-dockerhub
+      env: SYNC_README_TO_DOCKERHUB=true
+    - stage: Deploy
+      if: type = push AND tag =~ /^v\d+\.\d+(\.\d+)?(-\S*)?$/ AND env(DOCKER_USERNAME) IS present
+      script: make release
+      env: RELEASE_ASSETS=true
+

@@ -1,0 +1,8 @@
+FROM python:3
+
+
+RUN pip3 install rundoc
+
+RUN touch /bin/go && chmod +x /bin/go
+
+CMD [ "rundoc" "--help" ]
