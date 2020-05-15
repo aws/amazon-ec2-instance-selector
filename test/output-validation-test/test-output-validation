@@ -1,5 +1,5 @@
 #!/bin/bash
-set -euo errexit
+set -euo pipefail
 
 SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
 BUILD_DIR="$SCRIPTPATH/../../build"

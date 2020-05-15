@@ -84,8 +84,8 @@ func main() {
 	longUsage := binName + ` is a CLI tool to filter EC2 instance types based on resource criteria. 
 Filtering allows you to select all the instance types that match your application requirements.
 Full docs can be found at github.com/aws/` + binName
-	examples := fmt.Sprintf(`%s --vcpus=4 --region=us-east-2 --availability-zone=us-east-2b
-%s --memory-min=4096 --memory-max=8192 --vcpus-min=4 --vcpus-max=8 --region=us-east-2`, binName, binName)
+	examples := fmt.Sprintf(`%s --vcpus 4 --region us-east-2 --availability-zone us-east-2b
+%s --memory-min 4096 --memory-max 8192 --vcpus-min 4 --vcpus-max 8 --region us-east-2`, binName, binName)
 
 	cli := commandline.New(binName, shortUsage, longUsage, examples)
 
@@ -98,12 +98,12 @@ Full docs can be found at github.com/aws/` + binName
 	// Registers flags with specific input types from the cli pkg
 	// Filter Flags - These will be grouped at the top of the help flags
 
-	cli.IntMinMaxRangeFlags(vcpus, cli.StringMe("c"), nil, "`Number` of vcpus available to the instance type.")
-	cli.IntMinMaxRangeFlags(memory, cli.StringMe("m"), nil, "`Amount` of Memory available in MiB (Example: 4096)")
+	cli.IntMinMaxRangeFlags(vcpus, cli.StringMe("c"), nil, "Number of vcpus available to the instance type.")
+	cli.IntMinMaxRangeFlags(memory, cli.StringMe("m"), nil, "Amount of Memory available in MiB (Example: 4096)")
 	cli.RatioFlag(vcpusToMemoryRatio, nil, nil, "The ratio of vcpus to memory in MiB. (Example: 1:2)")
 	cli.StringFlag(cpuArchitecture, cli.StringMe("a"), nil, "CPU architecture [x86_64, i386, or arm64]", nil)
-	cli.IntMinMaxRangeFlags(gpus, cli.StringMe("g"), nil, "Total `Number` of GPUs (Example: 4)")
-	cli.IntMinMaxRangeFlags(gpuMemoryTotal, nil, nil, "`Number` of GPUs' total memory in `MiB` (Example: 4096)")
+	cli.IntMinMaxRangeFlags(gpus, cli.StringMe("g"), nil, "Total Number of GPUs (Example: 4)")
+	cli.IntMinMaxRangeFlags(gpuMemoryTotal, nil, nil, "Number of GPUs' total memory in MiB (Example: 4096)")
 	cli.StringFlag(placementGroupStrategy, nil, nil, "Placement group strategy: [cluster, partition, spread]", nil)
 	cli.StringFlag(usageClass, cli.StringMe("u"), nil, "Usage class: [spot or on-demand]", nil)
 	cli.StringFlag(rootDeviceType, nil, nil, "Supported root device types: [ebs or instance-store]", nil)
@@ -115,8 +115,8 @@ Full docs can be found at github.com/aws/` + binName
 	cli.StringFlag(hypervisor, nil, nil, "Hypervisor: [xen or nitro]", nil)
 	cli.StringFlag(availabilityZone, cli.StringMe("z"), nil, "Availability zone or zone id to check only EC2 capacity offered in a specific AZ", nil)
 	cli.BoolFlag(currentGeneration, nil, nil, "Current generation instance types (explicitly set this to false to not return current generation instance types)")
-	cli.IntMinMaxRangeFlags(networkInterfaces, nil, nil, "`Number` of network interfaces (ENIs) that can be attached to the instance")
-	cli.IntMinMaxRangeFlags(networkPerformance, nil, nil, "Bandwidth in `Gib/s` of network performance (Example: 100)")
+	cli.IntMinMaxRangeFlags(networkInterfaces, nil, nil, "Number of network interfaces (ENIs) that can be attached to the instance")
+	cli.IntMinMaxRangeFlags(networkPerformance, nil, nil, "Bandwidth in Gib/s of network performance (Example: 100)")
 
 	// Configuration Flags - These will be grouped at the bottom of the help flags
 

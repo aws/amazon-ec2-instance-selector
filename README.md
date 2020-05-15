@@ -40,7 +40,7 @@ Instance Selector can also be consumed as a go library for direct integration in
 ## Installation and Configuration
 
 ```
-curl -Lo ec2-instance-selector https://github.com/aws/amazon-ec2-instance-selector/releases/download/latest/instance-selector-$(uname | tr '[:upper:]' '[:lower:]')-amd64
+curl -Lo ec2-instance-selector https://github.com/aws/amazon-ec2-instance-selector/releases/download/v0.8.0/ec2-instance-selector-`uname | tr '[:upper:]' '[:lower:]'`-amd64 && chmod +x ec2-instance-selector
 ```
 
 To execute the CLI, you will need AWS credentials configured. Take a look at the [AWS CLI configuration documentation](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html#config-settings-and-precedence) for details on the various ways to configure credentials. An easy way to try out the ec2-instance-selector CLI is to populate the following environment variables with your AWS API credentials.
@@ -53,9 +53,14 @@ export AWS_SECRET_ACCESS_KEY="..."
 If you already have an AWS CLI profile setup, you can pass that directly into ec2-instance-selector:
 
 ```
-$ ec2-instance-selector --profile=my-aws-cli-profile --vcpus=2
+$ ec2-instance-selector --profile my-aws-cli-profile --vcpus 2 --region us-east-1
 ```
 
+You can set a REGION environment variable if you don't want to pass in `--region` on each run.
+
+```
+$ export REGION="us-east-1"
+```
 
 ## Examples
 
@@ -125,8 +130,8 @@ Usage:
   ec2-instance-selector [flags]
 
 Examples:
-ec2-instance-selector --vcpus=4 --region=us-east-2 --availability-zone=us-east-2b
-ec2-instance-selector --memory-min=4096 --memory-max=8192 --vcpus-min=4 --vcpus-max=8 --region=us-east-2
+ec2-instance-selector --vcpus 4 --region us-east-2 --availability-zone us-east-2b
+ec2-instance-selector --memory-min 4096 --memory-max 8192 --vcpus-min 4 --vcpus-max 8 --region us-east-2
 
 Filter Flags:
   -z, --availability-zone string          Availability zone or zone id to check only EC2 capacity offered in a specific AZ
@@ -136,29 +141,29 @@ Filter Flags:
       --current-generation                Current generation instance types (explicitly set this to false to not return current generation instance types)
   -e, --ena-support                       Instance types where ENA is supported or required
   -f, --fpga-support                      FPGA instance types
-      --gpu-memory-total Number           Number of GPUs' total memory in `MiB` (Example: 4096) (sets --gpu-memory-total-min and -max to the same value)
-      --gpu-memory-total-max Number       Maximum Number of GPUs' total memory in `MiB` (Example: 4096) If --gpu-memory-total-min is not specified, the lower bound will be 0
-      --gpu-memory-total-min Number       Minimum Number of GPUs' total memory in `MiB` (Example: 4096) If --gpu-memory-total-max is not specified, the upper bound will be infinity
-  -g, --gpus Number                       Total Number of GPUs (Example: 4) (sets --gpus-min and -max to the same value)
-      --gpus-max Number                   Maximum Total Number of GPUs (Example: 4) If --gpus-min is not specified, the lower bound will be 0
-      --gpus-min Number                   Minimum Total Number of GPUs (Example: 4) If --gpus-max is not specified, the upper bound will be infinity
+      --gpu-memory-total int              Number of GPUs' total memory in MiB (Example: 4096) (sets --gpu-memory-total-min and -max to the same value)
+      --gpu-memory-total-max int          Maximum Number of GPUs' total memory in MiB (Example: 4096) If --gpu-memory-total-min is not specified, the lower bound will be 0
+      --gpu-memory-total-min int          Minimum Number of GPUs' total memory in MiB (Example: 4096) If --gpu-memory-total-max is not specified, the upper bound will be infinity
+  -g, --gpus int                          Total Number of GPUs (Example: 4) (sets --gpus-min and -max to the same value)
+      --gpus-max int                      Maximum Total Number of GPUs (Example: 4) If --gpus-min is not specified, the lower bound will be 0
+      --gpus-min int                      Minimum Total Number of GPUs (Example: 4) If --gpus-max is not specified, the upper bound will be infinity
       --hibernation-support               Hibernation supported
       --hypervisor string                 Hypervisor: [xen or nitro]
-  -m, --memory Amount                     Amount of Memory available in MiB (Example: 4096) (sets --memory-min and -max to the same value)
-      --memory-max Amount                 Maximum Amount of Memory available in MiB (Example: 4096) If --memory-min is not specified, the lower bound will be 0
-      --memory-min Amount                 Minimum Amount of Memory available in MiB (Example: 4096) If --memory-max is not specified, the upper bound will be infinity
-      --network-interfaces Number         Number of network interfaces (ENIs) that can be attached to the instance (sets --network-interfaces-min and -max to the same value)
-      --network-interfaces-max Number     Maximum Number of network interfaces (ENIs) that can be attached to the instance If --network-interfaces-min is not specified, the lower bound will be 0
-      --network-interfaces-min Number     Minimum Number of network interfaces (ENIs) that can be attached to the instance If --network-interfaces-max is not specified, the upper bound will be infinity
-      --network-performance Gib/s         Bandwidth in Gib/s of network performance (Example: 100) (sets --network-performance-min and -max to the same value)
-      --network-performance-max Gib/s     Maximum Bandwidth in Gib/s of network performance (Example: 100) If --network-performance-min is not specified, the lower bound will be 0
-      --network-performance-min Gib/s     Minimum Bandwidth in Gib/s of network performance (Example: 100) If --network-performance-max is not specified, the upper bound will be infinity
+  -m, --memory int                        Amount of Memory available in MiB (Example: 4096) (sets --memory-min and -max to the same value)
+      --memory-max int                    Maximum Amount of Memory available in MiB (Example: 4096) If --memory-min is not specified, the lower bound will be 0
+      --memory-min int                    Minimum Amount of Memory available in MiB (Example: 4096) If --memory-max is not specified, the upper bound will be infinity
+      --network-interfaces int            Number of network interfaces (ENIs) that can be attached to the instance (sets --network-interfaces-min and -max to the same value)
+      --network-interfaces-max int        Maximum Number of network interfaces (ENIs) that can be attached to the instance If --network-interfaces-min is not specified, the lower bound will be 0
+      --network-interfaces-min int        Minimum Number of network interfaces (ENIs) that can be attached to the instance If --network-interfaces-max is not specified, the upper bound will be infinity
+      --network-performance int           Bandwidth in Gib/s of network performance (Example: 100) (sets --network-performance-min and -max to the same value)
+      --network-performance-max int       Maximum Bandwidth in Gib/s of network performance (Example: 100) If --network-performance-min is not specified, the lower bound will be 0
+      --network-performance-min int       Minimum Bandwidth in Gib/s of network performance (Example: 100) If --network-performance-max is not specified, the upper bound will be infinity
       --placement-group-strategy string   Placement group strategy: [cluster, partition, spread]
       --root-device-type string           Supported root device types: [ebs or instance-store]
   -u, --usage-class string                Usage class: [spot or on-demand]
-  -c, --vcpus Number                      Number of vcpus available to the instance type. (sets --vcpus-min and -max to the same value)
-      --vcpus-max Number                  Maximum Number of vcpus available to the instance type. If --vcpus-min is not specified, the lower bound will be 0
-      --vcpus-min Number                  Minimum Number of vcpus available to the instance type. If --vcpus-max is not specified, the upper bound will be infinity
+  -c, --vcpus int                         Number of vcpus available to the instance type. (sets --vcpus-min and -max to the same value)
+      --vcpus-max int                     Maximum Number of vcpus available to the instance type. If --vcpus-min is not specified, the lower bound will be 0
+      --vcpus-min int                     Minimum Number of vcpus available to the instance type. If --vcpus-max is not specified, the upper bound will be infinity
       --vcpus-to-memory-ratio string      The ratio of vcpus to memory in MiB. (Example: 1:2)
 
 Global Flags:
