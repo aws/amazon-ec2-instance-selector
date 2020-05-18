@@ -56,10 +56,10 @@ If you already have an AWS CLI profile setup, you can pass that directly into ec
 $ ec2-instance-selector --profile my-aws-cli-profile --vcpus 2 --region us-east-1
 ```
 
-You can set a REGION environment variable if you don't want to pass in `--region` on each run.
+You can set the AWS_REGION environment variable if you don't want to pass in `--region` on each run.
 
 ```
-$ export REGION="us-east-1"
+$ export AWS_REGION="us-east-1"
 ```
 
 ## Examples
