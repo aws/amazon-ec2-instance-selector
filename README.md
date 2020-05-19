@@ -40,7 +40,7 @@ Instance Selector can also be consumed as a go library for direct integration in
 ## Installation and Configuration
 
 ```
-curl -Lo ec2-instance-selector https://github.com/aws/amazon-ec2-instance-selector/releases/download/v0.8.0/ec2-instance-selector-`uname | tr '[:upper:]' '[:lower:]'`-amd64 && chmod +x ec2-instance-selector
+curl -Lo ec2-instance-selector https://github.com/aws/amazon-ec2-instance-selector/releases/download/v0.8.3/ec2-instance-selector-`uname | tr '[:upper:]' '[:lower:]'`-amd64 && chmod +x ec2-instance-selector
 ```
 
 To execute the CLI, you will need AWS credentials configured. Take a look at the [AWS CLI configuration documentation](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html#config-settings-and-precedence) for details on the various ways to configure credentials. An easy way to try out the ec2-instance-selector CLI is to populate the following environment variables with your AWS API credentials.
@@ -124,7 +124,7 @@ $ ec2-instance-selector --help
 ```bash#help
 ec2-instance-selector is a CLI tool to filter EC2 instance types based on resource criteria.
 Filtering allows you to select all the instance types that match your application requirements.
-Full docs can be found at github.com/aws/ec2-instance-selector
+Full docs can be found at github.com/aws/amazon-ec2-instance-selector
 
 Usage:
   ec2-instance-selector [flags]

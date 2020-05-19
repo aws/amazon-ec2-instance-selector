@@ -83,7 +83,7 @@ func main() {
 	shortUsage := "A tool to filter EC2 Instance Types based on various resource criteria"
 	longUsage := binName + ` is a CLI tool to filter EC2 instance types based on resource criteria. 
 Filtering allows you to select all the instance types that match your application requirements.
-Full docs can be found at github.com/aws/` + binName
+Full docs can be found at github.com/aws/amazon-` + binName
 	examples := fmt.Sprintf(`%s --vcpus 4 --region us-east-2 --availability-zone us-east-2b
 %s --memory-min 4096 --memory-max 8192 --vcpus-min 4 --vcpus-max 8 --region us-east-2`, binName, binName)
 
