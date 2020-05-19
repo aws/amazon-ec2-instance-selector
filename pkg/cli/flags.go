@@ -47,10 +47,7 @@ func (cl *CommandLineInterface) RatioFlag(name string, shorthand *string, defaul
 
 // IntMinMaxRangeFlags creates and registers a min, max, and helper flag each accepting an Integer
 func (cl *CommandLineInterface) IntMinMaxRangeFlags(name string, shorthand *string, defaultValue *int, description string) {
-	cl.IntFlagOnFlagSet(cl.rootCmd.Flags(), name, shorthand, defaultValue, fmt.Sprintf("%s (sets --%s-min and -max to the same value)", description, name))
-	cl.IntFlagOnFlagSet(cl.rootCmd.Flags(), name+"-min", nil, nil, fmt.Sprintf("Minimum %s If --%s-max is not specified, the upper bound will be infinity", description, name))
-	cl.IntFlagOnFlagSet(cl.rootCmd.Flags(), name+"-max", nil, nil, fmt.Sprintf("Maximum %s If --%s-min is not specified, the lower bound will be 0", description, name))
-	cl.intRangeFlags[name] = true
+	cl.IntMinMaxRangeFlagOnFlagSet(cl.rootCmd.Flags(), name, shorthand, defaultValue, description)
 }
 
 // IntFlag creates and registers a flag accepting an Integer
@@ -111,6 +108,19 @@ func (cl *CommandLineInterface) IntMinMaxRangeFlagOnFlagSet(flagSet *pflag.FlagS
 	cl.IntFlagOnFlagSet(flagSet, name, shorthand, defaultValue, fmt.Sprintf("%s (sets --%s-min and -max to the same value)", description, name))
 	cl.IntFlagOnFlagSet(flagSet, name+"-min", nil, nil, fmt.Sprintf("Minimum %s If --%s-max is not specified, the upper bound will be infinity", description, name))
 	cl.IntFlagOnFlagSet(flagSet, name+"-max", nil, nil, fmt.Sprintf("Maximum %s If --%s-min is not specified, the lower bound will be 0", description, name))
+	cl.validators[name] = func(val interface{}) error {
+		if cl.Flags[name+"-min"] == nil || cl.Flags[name+"-max"] == nil {
+			return nil
+		}
+		minArg := name + "-min"
+		maxArg := name + "-max"
+		minVal := cl.Flags[minArg].(*int)
+		maxVal := cl.Flags[maxArg].(*int)
+		if *minVal > *maxVal {
+			return fmt.Errorf("Invalid input for --%s and --%s. %s must be less than or equal to %s", minArg, maxArg, minArg, maxArg)
+		}
+		return nil
+	}
 	cl.intRangeFlags[name] = true
 }
 
@@ -136,6 +146,7 @@ func (cl *CommandLineInterface) StringFlagOnFlagSet(flagSet *pflag.FlagSet, name
 	}
 	if shorthand != nil {
 		cl.Flags[name] = flagSet.StringP(name, string(*shorthand), *defaultValue, description)
+		cl.validators[name] = validationFn
 		return
 	}
 	cl.Flags[name] = flagSet.String(name, *defaultValue, description)
