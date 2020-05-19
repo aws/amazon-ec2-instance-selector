@@ -10,6 +10,7 @@ VERSION=$(make -s -f $MAKE_FILE_PATH version)
 PLATFORMS=("linux/amd64")
 MANIFEST_IMAGES=""
 MANIFEST=""
+DOCKER_CLI_CONFIG="${HOME}/.docker/config.json"
 
 USAGE=$(cat << 'EOM'
   Usage: push-docker-images  [-p <platform pairs>]
