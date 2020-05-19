@@ -13,12 +13,11 @@ BUILD_DIR_PATH = ${MAKEFILE_PATH}/build
 SUPPORTED_PLATFORMS ?= "windows/amd64,darwin/amd64,linux/amd64,linux/arm64,linux/arm"
 SELECTOR_PKG_VERSION_VAR=github.com/aws/amazon-ec2-instance-selector/pkg/selector.versionID
 
+$(shell mkdir -p ${BUILD_DIR_PATH} && touch ${BUILD_DIR_PATH}/_go.mod)
+
 compile:
 	@echo ${MAKEFILE_PATH}
 	go build -a -ldflags "-X main.versionID=${VERSION} -X ${SELECTOR_PKG_VERSION_VAR}=${VERSION}" -tags="aeis${GOOS}" -o ${BUILD_DIR_PATH}/${BIN} ${MAKEFILE_PATH}/cmd/main.go
-
-create-build-dir:
-	mkdir -p ${BUILD_DIR_PATH} && touch ${BUILD_DIR_PATH}/_go.mod
 
 clean:
 	rm -rf ${BUILD_DIR_PATH}/ && go clean -testcache ./...
@@ -59,27 +58,30 @@ spellcheck:
 	${MAKEFILE_PATH}/test/readme-test/run-readme-spellcheck
 
 ## requires aws credentials
-readme-codeblock-test:
+readme-codeblock-test: 
 	${MAKEFILE_PATH}/test/readme-test/run-readme-codeblocks
 
-output-validation-test: create-build-dir
+## requires aws credentials
+output-validation-test: 
 	${MAKEFILE_PATH}/test/output-validation-test/test-output-validation
 
-build-binaries: create-build-dir
+build-binaries:
 	${MAKEFILE_PATH}/scripts/build-binaries -d -p ${SUPPORTED_PLATFORMS} -v ${VERSION}
 
-upload-resources-to-github: 
+## requires a github token
+upload-resources-to-github:
 	${MAKEFILE_PATH}/scripts/upload-resources-to-github
 
+## requires a dockerhub token
 sync-readme-to-dockerhub:
 	${MAKEFILE_PATH}/scripts/sync-readme-to-dockerhub
 
-unit-test: create-build-dir
+unit-test:
 	go test -bench=. ${MAKEFILE_PATH}/...  -v -coverprofile=coverage.out -covermode=atomic -outputdir=${BUILD_DIR_PATH}
 
-build: create-build-dir compile
+build: compile
 
-release: create-build-dir build-binaries build-docker-images push-docker-images upload-resources-to-github
+release: build-binaries build-docker-images push-docker-images upload-resources-to-github
 
 test: spellcheck unit-test license-test go-report-card-test output-validation-test readme-codeblock-test
 
