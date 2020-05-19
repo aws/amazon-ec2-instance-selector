@@ -16,7 +16,14 @@ matrix:
       script: make go-report-card-test
       env: GO_REPORT_CARD=true
     - stage: Test
-      if: type = push AND env(DOCKER_USERNAME) IS present
+      script: make spellcheck
+      env: SPELLCHECK=true
+    - stage: Test
+      if: type = push AND env(DOCKERHUB_USERNAME) IS present
+      script: make readme-codeblock-test
+      env: README_CODEBLOCK_TEST=true
+    - stage: Test
+      if: type = push AND env(DOCKERHUB_USERNAME) IS present
       script: make output-validation-test
       env: CFN_AND_TERRAFORM_OUTPUT_VALIDATION_TESTS=true
     - stage: Test
@@ -24,11 +31,11 @@ matrix:
       script: test/license-test/run-license-test.sh
       env: LICENSE_TEST=true
     - stage: Deploy
-      if: type = push AND env(DOCKER_USERNAME) IS present
+      if: type = push AND env(DOCKERHUB_USERNAME) IS present
       script: make sync-readme-to-dockerhub
       env: SYNC_README_TO_DOCKERHUB=true
     - stage: Deploy
-      if: type = push AND tag =~ /^v\d+\.\d+(\.\d+)?(-\S*)?$/ AND env(DOCKER_USERNAME) IS present
+      if: type = push AND tag =~ /^v\d+\.\d+(\.\d+)?(-\S*)?$/ AND env(DOCKERHUB_USERNAME) IS present
       script: make release
       env: RELEASE_ASSETS=true
 

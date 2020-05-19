@@ -1,10 +1,10 @@
-VERSION = $(shell git describe --tags --always --dirty)
+VERSION ?= $(shell git describe --tags --always --dirty)
 BIN ?= ec2-instance-selector
-IMG ?= amazon/${BIN}
+IMG ?= amazon/amazon-ec2-instance-selector
 IMG_TAG ?= ${VERSION}
 IMG_W_TAG = ${IMG}:${IMG_TAG}
-DOCKER_USERNAME ?= ""
-DOCKER_PASSWORD ?= ""
+DOCKERHUB_USERNAME ?= ""
+DOCKERHUB_TOKEN ?= ""
 GOOS ?= $(uname | tr '[:upper:]' '[:lower:]')
 GOARCH ?= amd64
 GOPROXY ?= "https://proxy.golang.org,direct"
@@ -33,14 +33,14 @@ docker-run:
 	docker run ${IMG_W_TAG}
 
 docker-push:
-	@echo ${DOCKER_PASSWORD} | docker login -u ${DOCKER_USERNAME} --password-stdin
+	@echo ${DOCKERHUB_TOKEN} | docker login -u ${DOCKERHUB_USERNAME} --password-stdin
 	docker push ${IMG_W_TAG}
 
 build-docker-images:
 	${MAKEFILE_PATH}/scripts/build-docker-images -d -p ${SUPPORTED_PLATFORMS} -r ${IMG} -v ${VERSION}
 
 push-docker-images:
-	@echo ${DOCKER_PASSWORD} | docker login -u ${DOCKER_USERNAME} --password-stdin
+	@echo ${DOCKERHUB_TOKEN} | docker login -u ${DOCKERHUB_USERNAME} --password-stdin
 	${MAKEFILE_PATH}/scripts/push-docker-images -p ${SUPPORTED_PLATFORMS} -r ${IMG} -v ${VERSION} -m
 
 version:
