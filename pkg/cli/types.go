@@ -46,6 +46,7 @@ Global Flags:
 {{end}}`
 )
 
+// validator defines the function for providing validation on a flag
 type validator = func(val interface{}) error
 
 // CommandLineInterface is a type to group CLI funcs and state
