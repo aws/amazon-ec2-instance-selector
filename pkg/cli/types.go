@@ -51,7 +51,7 @@ type validator = func(val interface{}) error
 
 // CommandLineInterface is a type to group CLI funcs and state
 type CommandLineInterface struct {
-	rootCmd       *cobra.Command
+	Command       *cobra.Command
 	Flags         map[string]interface{}
 	nilDefaults   map[string]bool
 	intRangeFlags map[string]bool

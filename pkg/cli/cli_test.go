@@ -20,6 +20,7 @@ import (
 
 	"github.com/aws/amazon-ec2-instance-selector/pkg/cli"
 	h "github.com/aws/amazon-ec2-instance-selector/pkg/test"
+	"github.com/spf13/cobra"
 )
 
 const (
@@ -29,7 +30,8 @@ const (
 // Helpers
 
 func getTestCLI() cli.CommandLineInterface {
-	return cli.New("test", "test short usage", "test long usage", "test examples")
+	runFunc := func(cmd *cobra.Command, args []string) {}
+	return cli.New("test", "test short usage", "test long usage", "test examples", runFunc)
 }
 
 // Tests

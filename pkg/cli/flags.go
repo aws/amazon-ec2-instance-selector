@@ -20,10 +20,10 @@ func (cl *CommandLineInterface) RatioFlag(name string, shorthand *string, defaul
 		defaultValue = cl.StringMe("")
 	}
 	if shorthand != nil {
-		cl.Flags[name] = cl.rootCmd.Flags().StringP(name, string(*shorthand), *defaultValue, description)
+		cl.Flags[name] = cl.Command.Flags().StringP(name, string(*shorthand), *defaultValue, description)
 		return nil
 	}
-	cl.Flags[name] = cl.rootCmd.Flags().String(name, *defaultValue, description)
+	cl.Flags[name] = cl.Command.Flags().String(name, *defaultValue, description)
 	cl.validators[name] = func(val interface{}) error {
 		if val == nil {
 			return nil
@@ -47,41 +47,41 @@ func (cl *CommandLineInterface) RatioFlag(name string, shorthand *string, defaul
 
 // IntMinMaxRangeFlags creates and registers a min, max, and helper flag each accepting an Integer
 func (cl *CommandLineInterface) IntMinMaxRangeFlags(name string, shorthand *string, defaultValue *int, description string) {
-	cl.IntMinMaxRangeFlagOnFlagSet(cl.rootCmd.Flags(), name, shorthand, defaultValue, description)
+	cl.IntMinMaxRangeFlagOnFlagSet(cl.Command.Flags(), name, shorthand, defaultValue, description)
 }
 
 // IntFlag creates and registers a flag accepting an Integer
 func (cl *CommandLineInterface) IntFlag(name string, shorthand *string, defaultValue *int, description string) {
-	cl.IntFlagOnFlagSet(cl.rootCmd.Flags(), name, shorthand, defaultValue, description)
+	cl.IntFlagOnFlagSet(cl.Command.Flags(), name, shorthand, defaultValue, description)
 }
 
 // StringFlag creates and registers a flag accepting a String and a validator function.
 // The validator function is provided so that more complex flags can be created from a string input.
 func (cl *CommandLineInterface) StringFlag(name string, shorthand *string, defaultValue *string, description string, validationFn validator) {
-	cl.StringFlagOnFlagSet(cl.rootCmd.Flags(), name, shorthand, defaultValue, description, validationFn)
+	cl.StringFlagOnFlagSet(cl.Command.Flags(), name, shorthand, defaultValue, description, validationFn)
 }
 
 // BoolFlag creates and registers a flag accepting a boolean
 func (cl *CommandLineInterface) BoolFlag(name string, shorthand *string, defaultValue *bool, description string) {
-	cl.BoolFlagOnFlagSet(cl.rootCmd.Flags(), name, shorthand, defaultValue, description)
+	cl.BoolFlagOnFlagSet(cl.Command.Flags(), name, shorthand, defaultValue, description)
 }
 
 // ConfigStringFlag creates and registers a flag accepting a String for configuration purposes.
 // Config flags will be grouped at the bottom in the output of --help
 func (cl *CommandLineInterface) ConfigStringFlag(name string, shorthand *string, defaultValue *string, description string, validationFn validator) {
-	cl.StringFlagOnFlagSet(cl.rootCmd.PersistentFlags(), name, shorthand, defaultValue, description, validationFn)
+	cl.StringFlagOnFlagSet(cl.Command.PersistentFlags(), name, shorthand, defaultValue, description, validationFn)
 }
 
 // ConfigIntFlag creates and registers a flag accepting an Integer for configuration purposes.
 // Config flags will be grouped at the bottom in the output of --help
 func (cl *CommandLineInterface) ConfigIntFlag(name string, shorthand *string, defaultValue *int, description string) {
-	cl.IntFlagOnFlagSet(cl.rootCmd.PersistentFlags(), name, shorthand, defaultValue, description)
+	cl.IntFlagOnFlagSet(cl.Command.PersistentFlags(), name, shorthand, defaultValue, description)
 }
 
 // ConfigBoolFlag creates and registers a flag accepting a boolean for configuration purposes.
 // Config flags will be grouped at the bottom in the output of --help
 func (cl *CommandLineInterface) ConfigBoolFlag(name string, shorthand *string, defaultValue *bool, description string) {
-	cl.BoolFlagOnFlagSet(cl.rootCmd.PersistentFlags(), name, shorthand, defaultValue, description)
+	cl.BoolFlagOnFlagSet(cl.Command.PersistentFlags(), name, shorthand, defaultValue, description)
 }
 
 // SuiteBoolFlag creates and registers a flag accepting a boolean for configuration purposes.

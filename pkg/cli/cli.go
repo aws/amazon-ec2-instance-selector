@@ -25,17 +25,19 @@ import (
 	"github.com/spf13/pflag"
 )
 
+type runFunc = func(cmd *cobra.Command, args []string)
+
 // New creates an instance of CommandLineInterface
-func New(binaryName string, shortUsage string, longUsage, examples string) CommandLineInterface {
-	rootCmd := &cobra.Command{
+func New(binaryName string, shortUsage string, longUsage, examples string, run runFunc) CommandLineInterface {
+	cmd := &cobra.Command{
 		Use:     binaryName,
 		Short:   shortUsage,
 		Long:    longUsage,
 		Example: examples,
-		Run:     func(cmd *cobra.Command, args []string) {},
+		Run:     run,
 	}
 	return CommandLineInterface{
-		rootCmd:       rootCmd,
+		Command:       cmd,
 		Flags:         map[string]interface{}{},
 		nilDefaults:   map[string]bool{},
 		intRangeFlags: map[string]bool{},
@@ -48,25 +50,25 @@ func New(binaryName string, shortUsage string, longUsage, examples string) Comma
 func (cl *CommandLineInterface) ParseFlags() (map[string]interface{}, error) {
 	cl.setUsageTemplate()
 	// Remove Suite Flags so that args only include Config and Filter Flags
-	cl.rootCmd.SetArgs(removeIntersectingArgs(cl.suiteFlags))
+	cl.Command.SetArgs(removeIntersectingArgs(cl.suiteFlags))
 	// This parses Config and Filter flags only
-	err := cl.rootCmd.Execute()
+	err := cl.Command.Execute()
 	if err != nil {
 		return nil, err
 	}
 	// Remove Config and Filter flags so that only suite flags are parsed
-	err = cl.suiteFlags.Parse(removeIntersectingArgs(cl.rootCmd.Flags()))
+	err = cl.suiteFlags.Parse(removeIntersectingArgs(cl.Command.Flags()))
 	if err != nil {
 		return nil, err
 	}
-	// Add suite flags to rootCmd flagset so that other processing can occur
+	// Add suite flags to Command flagset so that other processing can occur
 	// This has to be done after usage is printed so that the flagsets can be grouped properly when printed
-	cl.rootCmd.Flags().AddFlagSet(cl.suiteFlags)
-	err = cl.setUntouchedFlagValuesToNil()
+	cl.Command.Flags().AddFlagSet(cl.suiteFlags)
+	err = cl.SetUntouchedFlagValuesToNil()
 	if err != nil {
 		return nil, err
 	}
-	err = cl.processRangeFilterFlags()
+	err = cl.ProcessRangeFilterFlags()
 	if err != nil {
 		return nil, err
 	}
@@ -140,18 +142,18 @@ func (cl *CommandLineInterface) setUsageTemplate() {
 	} else {
 		transformedUsage = fmt.Sprintf(transformedUsage, "")
 	}
-	cl.rootCmd.SetUsageTemplate(transformedUsage)
+	cl.Command.SetUsageTemplate(transformedUsage)
 	cl.suiteFlags.Usage = func() {}
-	cl.rootCmd.Flags().Usage = func() {}
+	cl.Command.Flags().Usage = func() {}
 }
 
-// setUntouchedFlagValuesToNil iterates through all flags and sets their value to nil if they were not specifically set by the user
+// SetUntouchedFlagValuesToNil iterates through all flags and sets their value to nil if they were not specifically set by the user
 // This allows for a specified value, a negative value (like false or empty string), or an unspecified (nil) entry.
-func (cl *CommandLineInterface) setUntouchedFlagValuesToNil() error {
+func (cl *CommandLineInterface) SetUntouchedFlagValuesToNil() error {
 	defaultHandlerErrMsg := "Unable to find a default value handler for %v, marking as no default value. This could be an error"
 	defaultHandlerFlags := []string{}
 
-	cl.rootCmd.Flags().VisitAll(func(f *pflag.Flag) {
+	cl.Command.Flags().VisitAll(func(f *pflag.Flag) {
 		if !f.Changed {
 			// If nilDefaults entry for flag is set to false, do not change default
 			if val, _ := cl.nilDefaults[f.Name]; !val {
@@ -182,8 +184,8 @@ func (cl *CommandLineInterface) setUntouchedFlagValuesToNil() error {
 	return nil
 }
 
-// processRangeFilterFlags sets min and max to the appropriate 0 or maxInt bounds based on the 3-tuple that a user specifies for base flag, min, and/or max
-func (cl *CommandLineInterface) processRangeFilterFlags() error {
+// ProcessRangeFilterFlags sets min and max to the appropriate 0 or maxInt bounds based on the 3-tuple that a user specifies for base flag, min, and/or max
+func (cl *CommandLineInterface) ProcessRangeFilterFlags() error {
 	for flagName := range cl.intRangeFlags {
 		rangeHelperMin := fmt.Sprintf("%s-%s", flagName, "min")
 		rangeHelperMax := fmt.Sprintf("%s-%s", flagName, "max")
