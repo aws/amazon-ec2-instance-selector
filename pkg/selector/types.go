@@ -126,4 +126,7 @@ type Filters struct {
 
 	// VcpusToMemoryRatio is a ratio of vcpus to memory expressed as a floating point
 	VCpusToMemoryRatio *float64
+
+	// InstanceTypeBase is a base instance type which is used to retrieve similarly spec'd instance types
+	InstanceTypeBase *string
 }

@@ -61,6 +61,11 @@ const (
 	networkPerformance     = "network-performance"
 )
 
+// Aggregate Filter Flags
+const (
+	instanceTypeBase = "base-instance-type"
+)
+
 // Configuration Flag Constants
 const (
 	maxResults = "max-results"
@@ -119,6 +124,10 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	cli.BoolFlag(currentGeneration, nil, nil, "Current generation instance types (explicitly set this to false to not return current generation instance types)")
 	cli.IntMinMaxRangeFlags(networkInterfaces, nil, nil, "Number of network interfaces (ENIs) that can be attached to the instance")
 	cli.IntMinMaxRangeFlags(networkPerformance, nil, nil, "Bandwidth in Gib/s of network performance (Example: 100)")
+
+	// Suite Flags - higher level aggregate filters that return opinionated result
+
+	cli.SuiteStringFlag(instanceTypeBase, nil, nil, "Instance Type used to retrieve similarly spec'd instance types", nil)
 
 	// Configuration Flags - These will be grouped at the bottom of the help flags
 
@@ -181,16 +190,32 @@ Full docs can be found at github.com/aws/amazon-` + binName
 		MaxResults:             cli.IntMe(flags[maxResults]),
 		NetworkInterfaces:      cli.IntRangeMe(flags[networkInterfaces]),
 		NetworkPerformance:     cli.IntRangeMe(flags[networkPerformance]),
+		InstanceTypeBase:       cli.StringMe(flags[instanceTypeBase]),
 	}
 
 	if flags[verbose] != nil {
 		resultsOutputFn = outputs.VerboseInstanceTypeOutput
+		transformedFilters, err := instanceSelector.AggregateFilterTransform(filters, selector.AggregateLowPercentile, selector.AggregateHighPercentile)
+		if err != nil {
+			fmt.Printf("An error occurred while transforming the aggregate filters")
+			os.Exit(1)
+		}
 		filtersJSON, err := json.MarshalIndent(filters, "", "    ")
 		if err != nil {
 			fmt.Printf("An error occurred when printing filters due to --verbose being specified: %v", err)
 			os.Exit(1)
 		}
+		transformedFiltersJSON, err := json.MarshalIndent(transformedFilters, "", "    ")
+		if err != nil {
+			fmt.Printf("An error occurred when printing aggregate filters due to --verbose being specified: %v", err)
+			os.Exit(1)
+		}
 		log.Println("\n\n\"Filters\":", string(filtersJSON))
+		if string(transformedFiltersJSON) != string(filtersJSON) {
+			log.Println("\n\n\"Transformed Filters\":", string(transformedFiltersJSON))
+		} else {
+			log.Println("There were no transformations on the filters to display")
+		}
 	}
 
 	outputFlag := cli.StringMe(flags[output])
