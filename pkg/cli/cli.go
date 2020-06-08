@@ -172,6 +172,10 @@ func (cl *CommandLineInterface) SetUntouchedFlagValuesToNil() error {
 				if reflect.ValueOf(*v).IsZero() {
 					cl.Flags[f.Name] = nil
 				}
+			case *[]string:
+				if reflect.ValueOf(v).IsZero() {
+					cl.Flags[f.Name] = nil
+				}
 			default:
 				defaultHandlerFlags = append(defaultHandlerFlags, f.Name)
 				cl.Flags[f.Name] = nil

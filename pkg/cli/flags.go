@@ -61,6 +61,17 @@ func (cl *CommandLineInterface) StringFlag(name string, shorthand *string, defau
 	cl.StringFlagOnFlagSet(cl.Command.Flags(), name, shorthand, defaultValue, description, validationFn)
 }
 
+// StringSliceFlag creates and registers a flag accepting a string and valid options for use in validation.
+// Suite flags will be grouped in the middle of the output --help
+func (cl *CommandLineInterface) StringSliceFlag(name string, shorthand *string, defaultValue []string, description string) {
+	cl.StringSliceFlagOnFlagSet(cl.Command.Flags(), name, shorthand, defaultValue, description)
+}
+
+// StringOptionsFlag creates and registers a flag accepting a string and valid options for use in validation.
+func (cl *CommandLineInterface) StringOptionsFlag(name string, shorthand *string, defaultValue *string, description string, validOpts []string) {
+	cl.StringOptionsFlagOnFlagSet(cl.Command.Flags(), name, shorthand, defaultValue, description, validOpts)
+}
+
 // BoolFlag creates and registers a flag accepting a boolean
 func (cl *CommandLineInterface) BoolFlag(name string, shorthand *string, defaultValue *bool, description string) {
 	cl.BoolFlagOnFlagSet(cl.Command.Flags(), name, shorthand, defaultValue, description)
@@ -70,6 +81,12 @@ func (cl *CommandLineInterface) BoolFlag(name string, shorthand *string, default
 // Config flags will be grouped at the bottom in the output of --help
 func (cl *CommandLineInterface) ConfigStringFlag(name string, shorthand *string, defaultValue *string, description string, validationFn validator) {
 	cl.StringFlagOnFlagSet(cl.Command.PersistentFlags(), name, shorthand, defaultValue, description, validationFn)
+}
+
+// ConfigStringSliceFlag creates and registers a flag accepting a string and valid options for use in validation.
+// Suite flags will be grouped in the middle of the output --help
+func (cl *CommandLineInterface) ConfigStringSliceFlag(name string, shorthand *string, defaultValue []string, description string) {
+	cl.StringSliceFlagOnFlagSet(cl.Command.PersistentFlags(), name, shorthand, defaultValue, description)
 }
 
 // ConfigIntFlag creates and registers a flag accepting an Integer for configuration purposes.
@@ -84,10 +101,34 @@ func (cl *CommandLineInterface) ConfigBoolFlag(name string, shorthand *string, d
 	cl.BoolFlagOnFlagSet(cl.Command.PersistentFlags(), name, shorthand, defaultValue, description)
 }
 
-// SuiteBoolFlag creates and registers a flag accepting a boolean for configuration purposes.
+// ConfigStringOptionsFlag creates and registers a flag accepting a string and valid options for use in validation.
+// Config flags will be grouped at the bottom in the output of --help
+func (cl *CommandLineInterface) ConfigStringOptionsFlag(name string, shorthand *string, defaultValue *string, description string, validOpts []string) {
+	cl.StringOptionsFlagOnFlagSet(cl.Command.PersistentFlags(), name, shorthand, defaultValue, description, validOpts)
+}
+
+// SuiteBoolFlag creates and registers a flag accepting a boolean for aggregate filters.
 // Suite flags will be grouped in the middle of the output --help
 func (cl *CommandLineInterface) SuiteBoolFlag(name string, shorthand *string, defaultValue *bool, description string) {
 	cl.BoolFlagOnFlagSet(cl.suiteFlags, name, shorthand, defaultValue, description)
+}
+
+// SuiteStringFlag creates and registers a flag accepting a string for aggreagate filters.
+// Suite flags will be grouped in the middle of the output --help
+func (cl *CommandLineInterface) SuiteStringFlag(name string, shorthand *string, defaultValue *string, description string, validationFn validator) {
+	cl.StringFlagOnFlagSet(cl.suiteFlags, name, shorthand, defaultValue, description, validationFn)
+}
+
+// SuiteStringOptionsFlag creates and registers a flag accepting a string and valid options for use in validation.
+// Suite flags will be grouped in the middle of the output --help
+func (cl *CommandLineInterface) SuiteStringOptionsFlag(name string, shorthand *string, defaultValue *string, description string, validOpts []string) {
+	cl.StringOptionsFlagOnFlagSet(cl.suiteFlags, name, shorthand, defaultValue, description, validOpts)
+}
+
+// SuiteStringSliceFlag creates and registers a flag accepting a string and valid options for use in validation.
+// Suite flags will be grouped in the middle of the output --help
+func (cl *CommandLineInterface) SuiteStringSliceFlag(name string, shorthand *string, defaultValue []string, description string) {
+	cl.StringSliceFlagOnFlagSet(cl.suiteFlags, name, shorthand, defaultValue, description)
 }
 
 // BoolFlagOnFlagSet creates and registers a flag accepting a boolean for configuration purposes.
@@ -151,4 +192,34 @@ func (cl *CommandLineInterface) StringFlagOnFlagSet(flagSet *pflag.FlagSet, name
 	}
 	cl.Flags[name] = flagSet.String(name, *defaultValue, description)
 	cl.validators[name] = validationFn
+}
+
+// StringOptionsFlagOnFlagSet creates and registers a flag accepting a String with valid options.
+// The validOpts slice of strings will be used to perform validation
+func (cl *CommandLineInterface) StringOptionsFlagOnFlagSet(flagSet *pflag.FlagSet, name string, shorthand *string, defaultValue *string, description string, validOpts []string) {
+	validationFn := func(val interface{}) error {
+		if val == nil {
+			return nil
+		}
+		for _, v := range validOpts {
+			if v == *val.(*string) {
+				return nil
+			}
+		}
+		return fmt.Errorf("error %s must be one of: %s", name, strings.Join(validOpts, ", "))
+	}
+	cl.StringFlagOnFlagSet(flagSet, name, shorthand, defaultValue, description, validationFn)
+}
+
+// StringSliceFlagOnFlagSet creates and registers a flag accepting a String Slice.
+func (cl *CommandLineInterface) StringSliceFlagOnFlagSet(flagSet *pflag.FlagSet, name string, shorthand *string, defaultValue []string, description string) {
+	if defaultValue == nil {
+		cl.nilDefaults[name] = true
+		defaultValue = []string{}
+	}
+	if shorthand != nil {
+		cl.Flags[name] = flagSet.StringSliceP(name, string(*shorthand), defaultValue, description)
+		return
+	}
+	cl.Flags[name] = flagSet.StringSlice(name, defaultValue, description)
 }
