@@ -61,7 +61,7 @@ func (cl *CommandLineInterface) StringFlag(name string, shorthand *string, defau
 	cl.StringFlagOnFlagSet(cl.Command.Flags(), name, shorthand, defaultValue, description, validationFn)
 }
 
-// StringSliceFlag creates and registers a flag accepting a string and valid options for use in validation.
+// StringSliceFlag creates and registers a flag accepting a list of strings.
 // Suite flags will be grouped in the middle of the output --help
 func (cl *CommandLineInterface) StringSliceFlag(name string, shorthand *string, defaultValue []string, description string) {
 	cl.StringSliceFlagOnFlagSet(cl.Command.Flags(), name, shorthand, defaultValue, description)
@@ -83,7 +83,7 @@ func (cl *CommandLineInterface) ConfigStringFlag(name string, shorthand *string,
 	cl.StringFlagOnFlagSet(cl.Command.PersistentFlags(), name, shorthand, defaultValue, description, validationFn)
 }
 
-// ConfigStringSliceFlag creates and registers a flag accepting a string and valid options for use in validation.
+// ConfigStringSliceFlag creates and registers a flag accepting a list of strings.
 // Suite flags will be grouped in the middle of the output --help
 func (cl *CommandLineInterface) ConfigStringSliceFlag(name string, shorthand *string, defaultValue []string, description string) {
 	cl.StringSliceFlagOnFlagSet(cl.Command.PersistentFlags(), name, shorthand, defaultValue, description)
@@ -125,7 +125,7 @@ func (cl *CommandLineInterface) SuiteStringOptionsFlag(name string, shorthand *s
 	cl.StringOptionsFlagOnFlagSet(cl.suiteFlags, name, shorthand, defaultValue, description, validOpts)
 }
 
-// SuiteStringSliceFlag creates and registers a flag accepting a string and valid options for use in validation.
+// SuiteStringSliceFlag creates and registers a flag accepting a list of strings.
 // Suite flags will be grouped in the middle of the output --help
 func (cl *CommandLineInterface) SuiteStringSliceFlag(name string, shorthand *string, defaultValue []string, description string) {
 	cl.StringSliceFlagOnFlagSet(cl.suiteFlags, name, shorthand, defaultValue, description)

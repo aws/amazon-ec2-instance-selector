@@ -56,7 +56,7 @@ func TestIntFlag(t *testing.T) {
 
 func TestStringFlag(t *testing.T) {
 	cli := getTestCLI()
-	for _, flagFn := range []func(string, *string, *string, string, func(interface{}) error){cli.StringFlag, cli.ConfigStringFlag} {
+	for _, flagFn := range []func(string, *string, *string, string, func(interface{}) error){cli.StringFlag, cli.ConfigStringFlag, cli.SuiteStringFlag} {
 		flagName := "test-string"
 		flagFn(flagName, cli.StringMe("t"), nil, "Test String", nil)
 		_, ok := cli.Flags[flagName]
@@ -72,6 +72,48 @@ func TestStringFlag(t *testing.T) {
 
 		cli = getTestCLI()
 		flagFn(flagName, nil, nil, "Test String", nil)
+		h.Assert(t, len(cli.Flags) == 1, "Should contain 1 flag w/ no shorthand")
+		h.Assert(t, ok, "Should contain %s flag w/ no shorthand", flagName)
+	}
+}
+
+func TestStringOptionsFlag(t *testing.T) {
+	cli := getTestCLI()
+	for _, flagFn := range []func(string, *string, *string, string, []string){cli.StringOptionsFlag, cli.ConfigStringOptionsFlag, cli.SuiteStringOptionsFlag} {
+		flagName := "test-string"
+		flagFn(flagName, cli.StringMe("t"), nil, "Test String", nil)
+		_, ok := cli.Flags[flagName]
+		h.Assert(t, len(cli.Flags) == 1, "Should contain 1 flag")
+		h.Assert(t, ok, "Should contain %s flag", flagName)
+
+		cli = getTestCLI()
+		flagFn(flagName, cli.StringMe("t"), nil, "Test String w/ options", []string{"opt1", "opt2"})
+		h.Assert(t, len(cli.Flags) == 1, "Should contain 1 flag")
+		h.Assert(t, ok, "Should contain %s flag with options", flagName)
+
+		cli = getTestCLI()
+		flagFn(flagName, nil, nil, "Test String", []string{"opt1", "opt2"})
+		h.Assert(t, len(cli.Flags) == 1, "Should contain 1 flag w/ no shorthand")
+		h.Assert(t, ok, "Should contain %s flag w/ no shorthand", flagName)
+	}
+}
+
+func TestStringSliceFlag(t *testing.T) {
+	cli := getTestCLI()
+	for _, flagFn := range []func(string, *string, []string, string){cli.StringSliceFlag, cli.ConfigStringSliceFlag, cli.SuiteStringSliceFlag} {
+		flagName := "test-string-slice"
+		flagFn(flagName, cli.StringMe("t"), nil, "Test String Slice")
+		_, ok := cli.Flags[flagName]
+		h.Assert(t, len(cli.Flags) == 1, "Should contain 1 flag")
+		h.Assert(t, ok, "Should contain %s flag", flagName)
+
+		cli = getTestCLI()
+		flagFn(flagName, cli.StringMe("t"), []string{"def1", "def2"}, "Test String w/ slice default")
+		h.Assert(t, len(cli.Flags) == 1, "Should contain 1 flag")
+		h.Assert(t, ok, "Should contain %s flag with default slice", flagName)
+
+		cli = getTestCLI()
+		flagFn(flagName, nil, []string{"def1", "def2"}, "Test String Slice")
 		h.Assert(t, len(cli.Flags) == 1, "Should contain 1 flag w/ no shorthand")
 		h.Assert(t, ok, "Should contain %s flag w/ no shorthand", flagName)
 	}

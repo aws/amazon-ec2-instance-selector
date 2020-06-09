@@ -62,6 +62,43 @@ func TestValidateFlags(t *testing.T) {
 	h.Nok(t, err)
 }
 
+func TestParseAndValidateFlags_Ratio(t *testing.T) {
+	// Nil validator should succeed validation
+	cli := getTestCLI()
+	flagName := "test-ratio-flag"
+	cli.RatioFlag(flagName, nil, nil, "Test Ratio")
+	os.Args = []string{"", "--" + flagName, "1:2"}
+	flags, err := cli.ParseAndValidateFlags()
+	h.Ok(t, err)
+	h.Assert(t, len(flags) == 1, "1 Flag should have been parsed and validated")
+
+	// Validator which returns error should fail validation
+	cli = getTestCLI()
+	cli.RatioFlag(flagName, nil, nil, "Test Ratio w/ validation failure")
+	os.Args = []string{"", "--" + flagName, "1"}
+	_, err = cli.ParseAndValidateFlags()
+	h.Nok(t, err)
+}
+
+func TestParseAndValidateFlags_StringOptions(t *testing.T) {
+	// Nil validator should succeed validation
+	cli := getTestCLI()
+	flagName := "test-string-opts-flag"
+	opts := []string{"opt1", "opt2"}
+	cli.StringOptionsFlag(flagName, nil, nil, "Test String Options", opts)
+	os.Args = []string{"", "--" + flagName, "opt1"}
+	flags, err := cli.ParseAndValidateFlags()
+	h.Ok(t, err)
+	h.Assert(t, len(flags) == 1, "1 Flag should have been parsed and validated")
+
+	// Validator which returns error should fail validation
+	cli = getTestCLI()
+	cli.StringOptionsFlag(flagName, nil, nil, "Test String Options w/ validation failure", opts)
+	os.Args = []string{"", "--" + flagName, "opt55"}
+	_, err = cli.ParseAndValidateFlags()
+	h.Nok(t, err)
+}
+
 func TestParseFlags(t *testing.T) {
 	cli := getTestCLI()
 	flagName := "test-flag"
@@ -234,6 +271,18 @@ func TestParseFlags_UntouchedFlagsAllTypes(t *testing.T) {
 }
 
 func TestParseAndValidateFlags_Err(t *testing.T) {
+	cli := getTestCLI()
+	flagName := "test-flag"
+	flagArg := fmt.Sprintf("--%s", flagName)
+	flagMin := flagArg + "-min"
+	flagMax := flagArg + "-max"
+	cli.IntMinMaxRangeFlags(flagName, nil, nil, "Test with validation")
+	os.Args = []string{"ec2-instance-selector", flagMin, "5", flagMax, "1"}
+	_, err := cli.ParseAndValidateFlags()
+	h.Nok(t, err)
+}
+
+func TestParseAndValidateFlags(t *testing.T) {
 	cli := getTestCLI()
 	flagName := "test-flag"
 	flagArg := fmt.Sprintf("--%s", flagName)
