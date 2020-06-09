@@ -31,6 +31,7 @@ import (
 )
 
 const (
+	describeInstanceTypesPages    = "DescribeInstanceTypesPages"
 	describeInstanceTypes         = "DescribeInstanceTypes"
 	describeInstanceTypeOfferings = "DescribeInstanceTypeOfferings"
 	mockFilesPath                 = "../../test/static"
@@ -43,15 +44,21 @@ type ioFn = func(page *ec2.DescribeInstanceTypeOfferingsOutput, lastPage bool) b
 
 type mockedEC2 struct {
 	ec2iface.EC2API
+	DescribeInstanceTypesPagesResp    ec2.DescribeInstanceTypesOutput
+	DescribeInstanceTypesPagesErr     error
 	DescribeInstanceTypesResp         ec2.DescribeInstanceTypesOutput
 	DescribeInstanceTypesErr          error
 	DescribeInstanceTypeOfferingsResp ec2.DescribeInstanceTypeOfferingsOutput
 	DescribeInstanceTypeOfferingsErr  error
 }
 
+func (m mockedEC2) DescribeInstanceTypes(input *ec2.DescribeInstanceTypesInput) (*ec2.DescribeInstanceTypesOutput, error) {
+	return &m.DescribeInstanceTypesResp, m.DescribeInstanceTypesErr
+}
+
 func (m mockedEC2) DescribeInstanceTypesPages(input *ec2.DescribeInstanceTypesInput, fn itFn) error {
-	fn(&m.DescribeInstanceTypesResp, true)
-	return m.DescribeInstanceTypesErr
+	fn(&m.DescribeInstanceTypesPagesResp, true)
+	return m.DescribeInstanceTypesPagesErr
 }
 
 func (m mockedEC2) DescribeInstanceTypeOfferingsPages(input *ec2.DescribeInstanceTypeOfferingsInput, fn ioFn) error {
@@ -78,6 +85,13 @@ func setupMock(t *testing.T, api string, file string) mockedEC2 {
 		return mockedEC2{
 			DescribeInstanceTypesResp: dito,
 		}
+	case describeInstanceTypesPages:
+		dito := ec2.DescribeInstanceTypesOutput{}
+		err = json.Unmarshal(mockFile, &dito)
+		h.Assert(t, err == nil, "Error parsing mock json file contents"+mockFilename)
+		return mockedEC2{
+			DescribeInstanceTypesPagesResp: dito,
+		}
 	case describeInstanceTypeOfferings:
 		ditoo := ec2.DescribeInstanceTypeOfferingsOutput{}
 		err = json.Unmarshal(mockFile, &ditoo)
@@ -92,7 +106,7 @@ func setupMock(t *testing.T, api string, file string) mockedEC2 {
 }
 
 func TestFilterVerbose(t *testing.T) {
-	ec2Mock := setupMock(t, describeInstanceTypes, "t3_micro.json")
+	ec2Mock := setupMock(t, describeInstanceTypesPages, "t3_micro.json")
 	itf := selector.Selector{
 		EC2: ec2Mock,
 	}
@@ -106,7 +120,7 @@ func TestFilterVerbose(t *testing.T) {
 }
 
 func TestFilterVerbose_NoResults(t *testing.T) {
-	ec2Mock := setupMock(t, describeInstanceTypes, "t3_micro.json")
+	ec2Mock := setupMock(t, describeInstanceTypesPages, "t3_micro.json")
 	itf := selector.Selector{
 		EC2: ec2Mock,
 	}
@@ -120,7 +134,7 @@ func TestFilterVerbose_NoResults(t *testing.T) {
 
 func TestFilterVerbose_Failure(t *testing.T) {
 	ec2Mock := mockedEC2{
-		DescribeInstanceTypesErr: errors.New("error"),
+		DescribeInstanceTypesPagesErr: errors.New("error"),
 	}
 	itf := selector.Selector{
 		EC2: ec2Mock,
@@ -135,7 +149,7 @@ func TestFilterVerbose_Failure(t *testing.T) {
 
 func TestFilterVerbose_AZFilteredIn(t *testing.T) {
 	ec2Mock := mockedEC2{
-		DescribeInstanceTypesResp:         setupMock(t, describeInstanceTypes, "t3_micro.json").DescribeInstanceTypesResp,
+		DescribeInstanceTypesPagesResp:    setupMock(t, describeInstanceTypesPages, "t3_micro.json").DescribeInstanceTypesPagesResp,
 		DescribeInstanceTypeOfferingsResp: setupMock(t, describeInstanceTypeOfferings, "us-east-2a.json").DescribeInstanceTypeOfferingsResp,
 	}
 	itf := selector.Selector{
@@ -153,7 +167,7 @@ func TestFilterVerbose_AZFilteredIn(t *testing.T) {
 
 func TestFilterVerbose_AZFilteredOut(t *testing.T) {
 	ec2Mock := mockedEC2{
-		DescribeInstanceTypesResp:         setupMock(t, describeInstanceTypes, "t3_micro.json").DescribeInstanceTypesResp,
+		DescribeInstanceTypesPagesResp:    setupMock(t, describeInstanceTypesPages, "t3_micro.json").DescribeInstanceTypesPagesResp,
 		DescribeInstanceTypeOfferingsResp: setupMock(t, describeInstanceTypeOfferings, "us-east-2a_only_c5d12x.json").DescribeInstanceTypeOfferingsResp,
 	}
 	itf := selector.Selector{
@@ -181,7 +195,7 @@ func TestFilterVerboseAZ_FilteredErr(t *testing.T) {
 }
 
 func TestFilterVerbose_Gpus(t *testing.T) {
-	ec2Mock := setupMock(t, describeInstanceTypes, "t3_micro_and_p3_16xl.json")
+	ec2Mock := setupMock(t, describeInstanceTypesPages, "t3_micro_and_p3_16xl.json")
 	itf := selector.Selector{
 		EC2: ec2Mock,
 	}
@@ -196,7 +210,7 @@ func TestFilterVerbose_Gpus(t *testing.T) {
 }
 
 func TestFilter(t *testing.T) {
-	ec2Mock := setupMock(t, describeInstanceTypes, "t3_micro.json")
+	ec2Mock := setupMock(t, describeInstanceTypesPages, "t3_micro.json")
 	itf := selector.Selector{
 		EC2: ec2Mock,
 	}
@@ -210,7 +224,7 @@ func TestFilter(t *testing.T) {
 }
 
 func TestFilter_MoreFilters(t *testing.T) {
-	ec2Mock := setupMock(t, describeInstanceTypes, "t3_micro.json")
+	ec2Mock := setupMock(t, describeInstanceTypesPages, "t3_micro.json")
 	itf := selector.Selector{
 		EC2: ec2Mock,
 	}
@@ -229,7 +243,7 @@ func TestFilter_MoreFilters(t *testing.T) {
 }
 
 func TestFilter_TruncateToMaxResults(t *testing.T) {
-	ec2Mock := setupMock(t, describeInstanceTypes, "25_instances.json")
+	ec2Mock := setupMock(t, describeInstanceTypesPages, "25_instances.json")
 	itf := selector.Selector{
 		EC2: ec2Mock,
 	}
@@ -259,7 +273,7 @@ func TestFilter_TruncateToMaxResults(t *testing.T) {
 
 func TestFilter_Failure(t *testing.T) {
 	ec2Mock := mockedEC2{
-		DescribeInstanceTypesErr: errors.New("error"),
+		DescribeInstanceTypesPagesErr: errors.New("error"),
 	}
 
 	itf := selector.Selector{
@@ -324,4 +338,52 @@ func TestRetrieveInstanceTypesSupportedInAZ_Error(t *testing.T) {
 	results, err := itf.RetrieveInstanceTypesSupportedInLocation("us-east-2a")
 	h.Assert(t, err != nil, "Should return an error since ec2 api mock is configured to return an error")
 	h.Assert(t, results == nil, "Should return nil results due to error")
+}
+
+func TestAggregateFilterTransform(t *testing.T) {
+	ec2Mock := setupMock(t, describeInstanceTypes, "g2_2xlarge.json")
+	itf := selector.Selector{
+		EC2: ec2Mock,
+	}
+	g22Xlarge := "g2.2xlarge"
+	filters := selector.Filters{
+		InstanceTypeBase: &g22Xlarge,
+	}
+	filters, err := itf.AggregateFilterTransform(filters, 0.8, 1.2)
+	h.Ok(t, err)
+	h.Assert(t, filters.GpusRange != nil, "g2.2Xlarge as a base instance type should filter out non-GPU instances")
+	h.Assert(t, *filters.BareMetal == false, "g2.2Xlarge as a base instance type should filter out bare metal instances")
+	h.Assert(t, *filters.Fpga == false, "g2.2Xlarge as a base instance type should filter out FPGA instances")
+	h.Assert(t, *filters.CPUArchitecture == "x86_64", "g2.2Xlarge as a base instance type should only return x86_64 instance types")
+}
+
+func TestAggregateFilterTransform_InvalidInstanceType(t *testing.T) {
+	ec2Mock := setupMock(t, describeInstanceTypes, "empty.json")
+	itf := selector.Selector{
+		EC2: ec2Mock,
+	}
+	t3Micro := "t3.microoon"
+	filters := selector.Filters{
+		InstanceTypeBase: &t3Micro,
+	}
+	_, err := itf.AggregateFilterTransform(filters, 0.8, 1.2)
+	h.Nok(t, err)
+}
+
+func TestFilter_InstanceTypeBase(t *testing.T) {
+	ec2Mock := mockedEC2{
+		DescribeInstanceTypesResp:         setupMock(t, describeInstanceTypes, "c4_large.json").DescribeInstanceTypesResp,
+		DescribeInstanceTypesPagesResp:    setupMock(t, describeInstanceTypesPages, "25_instances.json").DescribeInstanceTypesPagesResp,
+		DescribeInstanceTypeOfferingsResp: setupMock(t, describeInstanceTypeOfferings, "us-east-2a.json").DescribeInstanceTypeOfferingsResp,
+	}
+	itf := selector.Selector{
+		EC2: ec2Mock,
+	}
+	c4Large := "c4.large"
+	filters := selector.Filters{
+		InstanceTypeBase: &c4Large,
+	}
+	results, err := itf.Filter(filters)
+	h.Ok(t, err)
+	h.Assert(t, len(results) == 3, "c4.large should return 3 similar instance types")
 }

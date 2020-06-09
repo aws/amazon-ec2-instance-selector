@@ -1,0 +1,67 @@
+{
+    "InstanceTypes": [
+        {
+            "AutoRecoverySupported": true,
+            "BareMetal": false,
+            "BurstablePerformanceSupported": false,
+            "CurrentGeneration": true,
+            "DedicatedHostsSupported": true,
+            "EbsInfo": {
+                "EbsOptimizedSupport": "default",
+                "EncryptionSupport": "supported"
+            },
+            "FpgaInfo": null,
+            "FreeTierEligible": false,
+            "GpuInfo": null,
+            "HibernationSupported": true,
+            "Hypervisor": "xen",
+            "InferenceAcceleratorInfo": null,
+            "InstanceStorageInfo": null,
+            "InstanceStorageSupported": false,
+            "InstanceType": "c4.large",
+            "MemoryInfo": {
+                "SizeInMiB": 3840
+            },
+            "NetworkInfo": {
+                "EnaSupport": "unsupported",
+                "Ipv4AddressesPerInterface": 10,
+                "Ipv6AddressesPerInterface": 10,
+                "Ipv6Supported": true,
+                "MaximumNetworkInterfaces": 3,
+                "NetworkPerformance": "Moderate"
+            },
+            "PlacementGroupInfo": {
+                "SupportedStrategies": [
+                    "cluster",
+                    "partition",
+                    "spread"
+                ]
+            },
+            "ProcessorInfo": {
+                "SupportedArchitectures": [
+                    "x86_64"
+                ],
+                "SustainedClockSpeedInGhz": 2.9
+            },
+            "SupportedRootDeviceTypes": [
+                "ebs"
+            ],
+            "SupportedUsageClasses": [
+                "on-demand",
+                "spot"
+            ],
+            "VCpuInfo": {
+                "DefaultCores": 1,
+                "DefaultThreadsPerCore": 2,
+                "DefaultVCpus": 2,
+                "ValidCores": [
+                    1
+                ],
+                "ValidThreadsPerCore": [
+                    1,
+                    2
+                ]
+            }
+        }
+    ]
+}
