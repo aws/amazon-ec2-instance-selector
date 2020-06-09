@@ -168,7 +168,7 @@ Filter Flags:
 
 Global Flags:
   -h, --help              Help
-      --max-results int   The maximum number of instance types that match your criteria to return (default 25)
+      --max-results int   The maximum number of instance types that match your criteria to return (default 20)
   -o, --output string     Specify the output format (table, table-wide)
       --profile string    AWS CLI profile to use for credentials and config
   -r, --region string     AWS Region to use for API requests (NOTE: if not passed in, uses AWS SDK default precedence)

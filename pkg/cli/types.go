@@ -51,7 +51,7 @@ type validator = func(val interface{}) error
 
 // CommandLineInterface is a type to group CLI funcs and state
 type CommandLineInterface struct {
-	rootCmd       *cobra.Command
+	Command       *cobra.Command
 	Flags         map[string]interface{}
 	nilDefaults   map[string]bool
 	intRangeFlags map[string]bool
@@ -87,6 +87,12 @@ func (*CommandLineInterface) IntMe(i interface{}) *int {
 		return v
 	case int:
 		return &v
+	case *int32:
+		val := int(*v)
+		return &val
+	case int32:
+		val := int(v)
+		return &val
 	default:
 		log.Printf("%s cannot be converted to an int", i)
 		return nil
@@ -140,6 +146,23 @@ func (*CommandLineInterface) BoolMe(i interface{}) *bool {
 		return &v
 	default:
 		log.Printf("%s cannot be converted to a bool", i)
+		return nil
+	}
+}
+
+// StringSliceMe takes an interface and returns a pointer to a string slice
+// If the underlying interface kind is not []string or *[]string then nil is returned
+func (*CommandLineInterface) StringSliceMe(i interface{}) *[]string {
+	if i == nil {
+		return nil
+	}
+	switch v := i.(type) {
+	case *[]string:
+		return v
+	case []string:
+		return &v
+	default:
+		log.Printf("%s cannot be converted to a string list", i)
 		return nil
 	}
 }

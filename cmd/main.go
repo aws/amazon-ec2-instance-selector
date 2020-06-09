@@ -24,6 +24,7 @@ import (
 	"github.com/aws/amazon-ec2-instance-selector/pkg/selector"
 	"github.com/aws/amazon-ec2-instance-selector/pkg/selector/outputs"
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/spf13/cobra"
 )
 
 const (
@@ -87,7 +88,8 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	examples := fmt.Sprintf(`%s --vcpus 4 --region us-east-2 --availability-zone us-east-2b
 %s --memory-min 4096 --memory-max 8192 --vcpus-min 4 --vcpus-max 8 --region us-east-2`, binName, binName)
 
-	cli := commandline.New(binName, shortUsage, longUsage, examples)
+	runFunc := func(cmd *cobra.Command, args []string) {}
+	cli := commandline.New(binName, shortUsage, longUsage, examples, runFunc)
 
 	cliOutputTypes := []string{
 		tableOutput,
@@ -120,7 +122,7 @@ Full docs can be found at github.com/aws/amazon-` + binName
 
 	// Configuration Flags - These will be grouped at the bottom of the help flags
 
-	cli.ConfigIntFlag(maxResults, nil, cli.IntMe(25), "The maximum number of instance types that match your criteria to return")
+	cli.ConfigIntFlag(maxResults, nil, cli.IntMe(20), "The maximum number of instance types that match your criteria to return")
 	cli.ConfigStringFlag(profile, nil, nil, "AWS CLI profile to use for credentials and config", nil)
 	cli.ConfigStringFlag(region, cli.StringMe("r"), nil, "AWS Region to use for API requests (NOTE: if not passed in, uses AWS SDK default precedence)", nil)
 	cli.ConfigStringFlag(output, cli.StringMe("o"), nil, fmt.Sprintf("Specify the output format (%s)", strings.Join(cliOutputTypes, ", ")), nil)

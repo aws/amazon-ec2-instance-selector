@@ -14,6 +14,7 @@
 package cli_test
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/aws/amazon-ec2-instance-selector/pkg/selector"
@@ -48,13 +49,31 @@ func TestStringMe(t *testing.T) {
 	h.Assert(t, val == nil, "Should return nil if nil is passed in")
 }
 
+func TestStringSliceMe(t *testing.T) {
+	cli := getTestCLI()
+	stringSliceVal := []string{"test"}
+	val := cli.StringSliceMe(stringSliceVal)
+	h.Assert(t, reflect.DeepEqual(*val, stringSliceVal), "Should return %s from passed in string slice value", stringSliceVal)
+	val = cli.StringSliceMe(&stringSliceVal)
+	h.Assert(t, reflect.DeepEqual(*val, stringSliceVal), "Should return %s from passed in string slicepointer", stringSliceVal)
+	val = cli.StringSliceMe(7)
+	h.Assert(t, val == nil, "Should return nil from other data type passed in")
+	val = cli.StringSliceMe(nil)
+	h.Assert(t, val == nil, "Should return nil if nil is passed in")
+}
+
 func TestIntMe(t *testing.T) {
 	cli := getTestCLI()
 	intVal := 10
+	int32Val := int32(intVal)
 	val := cli.IntMe(intVal)
 	h.Assert(t, *val == intVal, "Should return %s from passed in int value", intVal)
 	val = cli.IntMe(&intVal)
 	h.Assert(t, *val == intVal, "Should return %s from passed in int pointer", intVal)
+	val = cli.IntMe(int32Val)
+	h.Assert(t, *val == intVal, "Should return %s from passed in int32 value", intVal)
+	val = cli.IntMe(&int32Val)
+	h.Assert(t, *val == intVal, "Should return %s from passed in int32 pointer", intVal)
 	val = cli.IntMe(true)
 	h.Assert(t, val == nil, "Should return nil from other data type passed in")
 	val = cli.IntMe(nil)
