@@ -130,11 +130,12 @@ Usage:
   ec2-instance-selector [flags]
 
 Examples:
-ec2-instance-selector --vcpus 4 --region us-east-2 --availability-zone us-east-2b
+ec2-instance-selector --vcpus 4 --region us-east-2 --availability-zones us-east-2b
 ec2-instance-selector --memory-min 4096 --memory-max 8192 --vcpus-min 4 --vcpus-max 8 --region us-east-2
 
 Filter Flags:
-  -z, --availability-zone string          Availability zone or zone id to check only EC2 capacity offered in a specific AZ
+      --availability-zone string          [DEPRECATED] use --availability-zones instead
+  -z, --availability-zones strings        Availability zones or zone ids to check EC2 capacity offered in specific AZs
       --baremetal                         Bare Metal instance types (.metal instances)
   -b, --burst-support                     Burstable instance types
   -a, --cpu-architecture string           CPU architecture [x86_64, i386, or arm64]

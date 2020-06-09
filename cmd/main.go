@@ -56,6 +56,7 @@ const (
 	burstSupport           = "burst-support"
 	hypervisor             = "hypervisor"
 	availabilityZone       = "availability-zone"
+	availabilityZones      = "availability-zones"
 	currentGeneration      = "current-generation"
 	networkInterfaces      = "network-interfaces"
 	networkPerformance     = "network-performance"
@@ -90,7 +91,7 @@ func main() {
 	longUsage := binName + ` is a CLI tool to filter EC2 instance types based on resource criteria. 
 Filtering allows you to select all the instance types that match your application requirements.
 Full docs can be found at github.com/aws/amazon-` + binName
-	examples := fmt.Sprintf(`%s --vcpus 4 --region us-east-2 --availability-zone us-east-2b
+	examples := fmt.Sprintf(`%s --vcpus 4 --region us-east-2 --availability-zones us-east-2b
 %s --memory-min 4096 --memory-max 8192 --vcpus-min 4 --vcpus-max 8 --region us-east-2`, binName, binName)
 
 	runFunc := func(cmd *cobra.Command, args []string) {}
@@ -120,7 +121,8 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	cli.BoolFlag(fpgaSupport, cli.StringMe("f"), nil, "FPGA instance types")
 	cli.BoolFlag(burstSupport, cli.StringMe("b"), nil, "Burstable instance types")
 	cli.StringFlag(hypervisor, nil, nil, "Hypervisor: [xen or nitro]", nil)
-	cli.StringFlag(availabilityZone, cli.StringMe("z"), nil, "Availability zone or zone id to check only EC2 capacity offered in a specific AZ", nil)
+	cli.StringFlag(availabilityZone, nil, nil, "[DEPRECATED] use --availability-zones instead", nil)
+	cli.StringSliceFlag(availabilityZones, cli.StringMe("z"), nil, "Availability zones or zone ids to check EC2 capacity offered in specific AZs")
 	cli.BoolFlag(currentGeneration, nil, nil, "Current generation instance types (explicitly set this to false to not return current generation instance types)")
 	cli.IntMinMaxRangeFlags(networkInterfaces, nil, nil, "Number of network interfaces (ENIs) that can be attached to the instance")
 	cli.IntMinMaxRangeFlags(networkPerformance, nil, nil, "Bandwidth in Gib/s of network performance (Example: 100)")
@@ -164,6 +166,15 @@ Full docs can be found at github.com/aws/amazon-` + binName
 		sessOpts.Profile = *cli.StringMe(flags[profile])
 	}
 
+	if flags[availabilityZone] != nil {
+		log.Printf("You are using a deprecated flag --%s which will be removed in future versions, switch to --%s to avoid issues.\n", availabilityZone, availabilityZones)
+		if flags[availabilityZones] != nil {
+			flags[availabilityZones] = append(*cli.StringSliceMe(flags[availabilityZones]), *cli.StringMe(flags[availabilityZone]))
+		} else {
+			flags[availabilityZones] = []string{*cli.StringMe(flags[availabilityZone])}
+		}
+	}
+
 	sess := session.Must(session.NewSessionWithOptions(sessOpts))
 
 	instanceSelector := selector.New(sess)
@@ -185,7 +196,7 @@ Full docs can be found at github.com/aws/amazon-` + binName
 		Fpga:                   cli.BoolMe(flags[fpgaSupport]),
 		Burstable:              cli.BoolMe(flags[burstSupport]),
 		Region:                 cli.StringMe(flags[region]),
-		AvailabilityZone:       cli.StringMe(flags[availabilityZone]),
+		AvailabilityZones:      cli.StringSliceMe(flags[availabilityZones]),
 		CurrentGeneration:      cli.BoolMe(flags[currentGeneration]),
 		MaxResults:             cli.IntMe(flags[maxResults]),
 		NetworkInterfaces:      cli.IntRangeMe(flags[networkInterfaces]),

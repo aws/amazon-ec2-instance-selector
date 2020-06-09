@@ -175,13 +175,23 @@ func (itf Selector) rawFilter(filters Filters) ([]*ec2.InstanceTypeInfo, error) 
 	if err != nil {
 		return nil, err
 	}
-	var location string
+	var locations []string
+
+	// Support the deprecated singular availabilityZone filter in favor of the plural
 	if filters.AvailabilityZone != nil {
-		location = *filters.AvailabilityZone
-	} else if filters.Region != nil {
-		location = *filters.Region
+		if filters.AvailabilityZones != nil {
+			*filters.AvailabilityZones = append(*filters.AvailabilityZones, *filters.AvailabilityZone)
+		} else {
+			filters.AvailabilityZones = &[]string{*filters.AvailabilityZone}
+		}
 	}
-	locationInstanceOfferings, err := itf.RetrieveInstanceTypesSupportedInLocation(location)
+
+	if filters.AvailabilityZones != nil {
+		locations = *filters.AvailabilityZones
+	} else if filters.Region != nil {
+		locations = []string{*filters.Region}
+	}
+	locationInstanceOfferings, err := itf.RetrieveInstanceTypesSupportedInLocations(locations)
 	if err != nil {
 		return nil, err
 	}
@@ -329,41 +339,55 @@ func (itf Selector) executeFilters(filterToInstanceSpecMapping map[string]filter
 	return true, nil
 }
 
-// RetrieveInstanceTypesSupportedInLocation returns a map of instance type -> AZ or Region for all instance types supported in the location passed in
+// RetrieveInstanceTypesSupportedInLocations returns a map of instance type -> AZ or Region for all instance types supported in the intersected locations passed in
 // The location can be a zone-id (ie. use1-az1), a zone-name (us-east-1a), or a region name (us-east-1).
 // Note that zone names are not necessarily the same across accounts
-func (itf Selector) RetrieveInstanceTypesSupportedInLocation(zone string) (map[string]string, error) {
-	if zone == "" {
+func (itf Selector) RetrieveInstanceTypesSupportedInLocations(zones []string) (map[string]string, error) {
+	if len(zones) == 0 {
 		return nil, nil
 	}
-	availableInstanceTypes := map[string]string{}
-	instanceTypeOfferingsInput := &ec2.DescribeInstanceTypeOfferingsInput{
-		Filters: []*ec2.Filter{
-			{
-				Name:   aws.String(locationFilterKey),
-				Values: []*string{aws.String(zone)},
+	availableInstanceTypes := map[string]int{}
+	for _, zone := range zones {
+		instanceTypeOfferingsInput := &ec2.DescribeInstanceTypeOfferingsInput{
+			Filters: []*ec2.Filter{
+				{
+					Name:   aws.String(locationFilterKey),
+					Values: []*string{aws.String(zone)},
+				},
 			},
-		},
-	}
-	if isZoneID, _ := regexp.MatchString(zoneIDRegex, zone); isZoneID {
-		instanceTypeOfferingsInput.SetLocationType(zoneIDLocationType)
-	} else if isZoneName, _ := regexp.MatchString(zoneNameRegex, zone); isZoneName {
-		instanceTypeOfferingsInput.SetLocationType(zoneNameLocationType)
-	} else if isRegion, _ := regexp.MatchString(regionNameRegex, zone); isRegion {
-		instanceTypeOfferingsInput.SetLocationType(regionNameLocationType)
-	} else {
-		return nil, fmt.Errorf("The location passed in (%s) is not a valid zone-id, zone-name, or region name", zone)
-	}
-	err := itf.EC2.DescribeInstanceTypeOfferingsPages(instanceTypeOfferingsInput, func(page *ec2.DescribeInstanceTypeOfferingsOutput, lastPage bool) bool {
-		for _, instanceType := range page.InstanceTypeOfferings {
-			availableInstanceTypes[*instanceType.InstanceType] = *instanceType.Location
 		}
-		return true
-	})
-	if err != nil {
-		return nil, fmt.Errorf("Encountered an error when describing instance type offerings: %w", err)
+		if isZoneID, _ := regexp.MatchString(zoneIDRegex, zone); isZoneID {
+			instanceTypeOfferingsInput.SetLocationType(zoneIDLocationType)
+		} else if isZoneName, _ := regexp.MatchString(zoneNameRegex, zone); isZoneName {
+			instanceTypeOfferingsInput.SetLocationType(zoneNameLocationType)
+		} else if isRegion, _ := regexp.MatchString(regionNameRegex, zone); isRegion {
+			instanceTypeOfferingsInput.SetLocationType(regionNameLocationType)
+		} else {
+			return nil, fmt.Errorf("The location passed in (%s) is not a valid zone-id, zone-name, or region name", zone)
+		}
+		err := itf.EC2.DescribeInstanceTypeOfferingsPages(instanceTypeOfferingsInput, func(page *ec2.DescribeInstanceTypeOfferingsOutput, lastPage bool) bool {
+			for _, instanceType := range page.InstanceTypeOfferings {
+				if _, ok := availableInstanceTypes[*instanceType.InstanceType]; !ok {
+					availableInstanceTypes[*instanceType.InstanceType] = 1
+				} else {
+					i, _ := availableInstanceTypes[*instanceType.InstanceType]
+					availableInstanceTypes[*instanceType.InstanceType] = i + 1
+				}
+			}
+			return true
+		})
+		if err != nil {
+			return nil, fmt.Errorf("Encountered an error when describing instance type offerings: %w", err)
+		}
 	}
-	return availableInstanceTypes, nil
+	availableInstanceTypesAllLocations := map[string]string{}
+	for instanceType, locationsSupported := range availableInstanceTypes {
+		if locationsSupported == len(zones) {
+			availableInstanceTypesAllLocations[instanceType] = ""
+		}
+	}
+
+	return availableInstanceTypesAllLocations, nil
 }
 
 func isSupportedInLocation(instanceOfferings map[string]string, instanceType string) bool {
