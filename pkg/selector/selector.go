@@ -357,10 +357,9 @@ func (itf Selector) RetrieveInstanceTypesSupportedInLocations(locations []string
 
 		err = itf.EC2.DescribeInstanceTypeOfferingsPages(instanceTypeOfferingsInput, func(page *ec2.DescribeInstanceTypeOfferingsOutput, lastPage bool) bool {
 			for _, instanceType := range page.InstanceTypeOfferings {
-				if _, ok := availableInstanceTypes[*instanceType.InstanceType]; !ok {
+				if i, ok := availableInstanceTypes[*instanceType.InstanceType]; !ok {
 					availableInstanceTypes[*instanceType.InstanceType] = 1
 				} else {
-					i, _ := availableInstanceTypes[*instanceType.InstanceType]
 					availableInstanceTypes[*instanceType.InstanceType] = i + 1
 				}
 			}
