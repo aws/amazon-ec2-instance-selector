@@ -166,6 +166,11 @@ Filter Flags:
       --vcpus-min int                     Minimum Number of vcpus available to the instance type. If --vcpus-max is not specified, the upper bound will be infinity
       --vcpus-to-memory-ratio string      The ratio of vcpus to memory in MiB. (Example: 1:2)
 
+
+Suite Flags:
+      --base-instance-type string   Instance Type used to retrieve similarly spec'd instance types
+
+
 Global Flags:
   -h, --help              Help
       --max-results int   The maximum number of instance types that match your criteria to return (default 20)
