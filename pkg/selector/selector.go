@@ -17,7 +17,6 @@ package selector
 import (
 	"fmt"
 	"reflect"
-	"regexp"
 	"sort"
 	"strings"
 
@@ -34,12 +33,6 @@ var (
 )
 
 const (
-	// regionNameRegex Matches strings like: us-east-1 or us-east-2
-	regionNameRegex = `^[a-z]{2,3}\-([a-z]{1,10}\-)?[a-z]{1,10}\-[1-9]`
-	// zoneIDRegex Matches strings like: use1-az1 or use2-az3
-	zoneIDRegex = `^[a-z]{3}[1-9]{1}\-az[1-9]$`
-	// zoneNameRegex Matches strings like: us-east-1a or us-east-2c
-	zoneNameRegex          = `^[a-z]{2,3}\-([a-z]{1,10}\-)?[a-z]{1,10}\-[1-9][a-z]$`
 	locationFilterKey      = "location"
 	zoneIDLocationType     = "availability-zone-id"
 	zoneNameLocationType   = "availability-zone"
@@ -342,30 +335,27 @@ func (itf Selector) executeFilters(filterToInstanceSpecMapping map[string]filter
 // RetrieveInstanceTypesSupportedInLocations returns a map of instance type -> AZ or Region for all instance types supported in the intersected locations passed in
 // The location can be a zone-id (ie. use1-az1), a zone-name (us-east-1a), or a region name (us-east-1).
 // Note that zone names are not necessarily the same across accounts
-func (itf Selector) RetrieveInstanceTypesSupportedInLocations(zones []string) (map[string]string, error) {
-	if len(zones) == 0 {
+func (itf Selector) RetrieveInstanceTypesSupportedInLocations(locations []string) (map[string]string, error) {
+	if len(locations) == 0 {
 		return nil, nil
 	}
 	availableInstanceTypes := map[string]int{}
-	for _, zone := range zones {
+	for _, location := range locations {
 		instanceTypeOfferingsInput := &ec2.DescribeInstanceTypeOfferingsInput{
 			Filters: []*ec2.Filter{
 				{
 					Name:   aws.String(locationFilterKey),
-					Values: []*string{aws.String(zone)},
+					Values: []*string{aws.String(location)},
 				},
 			},
 		}
-		if isZoneID, _ := regexp.MatchString(zoneIDRegex, zone); isZoneID {
-			instanceTypeOfferingsInput.SetLocationType(zoneIDLocationType)
-		} else if isZoneName, _ := regexp.MatchString(zoneNameRegex, zone); isZoneName {
-			instanceTypeOfferingsInput.SetLocationType(zoneNameLocationType)
-		} else if isRegion, _ := regexp.MatchString(regionNameRegex, zone); isRegion {
-			instanceTypeOfferingsInput.SetLocationType(regionNameLocationType)
-		} else {
-			return nil, fmt.Errorf("The location passed in (%s) is not a valid zone-id, zone-name, or region name", zone)
+		locationType, err := itf.getLocationType(location)
+		if err != nil {
+			return nil, err
 		}
-		err := itf.EC2.DescribeInstanceTypeOfferingsPages(instanceTypeOfferingsInput, func(page *ec2.DescribeInstanceTypeOfferingsOutput, lastPage bool) bool {
+		instanceTypeOfferingsInput.SetLocationType(locationType)
+
+		err = itf.EC2.DescribeInstanceTypeOfferingsPages(instanceTypeOfferingsInput, func(page *ec2.DescribeInstanceTypeOfferingsOutput, lastPage bool) bool {
 			for _, instanceType := range page.InstanceTypeOfferings {
 				if _, ok := availableInstanceTypes[*instanceType.InstanceType]; !ok {
 					availableInstanceTypes[*instanceType.InstanceType] = 1
@@ -382,12 +372,29 @@ func (itf Selector) RetrieveInstanceTypesSupportedInLocations(zones []string) (m
 	}
 	availableInstanceTypesAllLocations := map[string]string{}
 	for instanceType, locationsSupported := range availableInstanceTypes {
-		if locationsSupported == len(zones) {
+		if locationsSupported == len(locations) {
 			availableInstanceTypesAllLocations[instanceType] = ""
 		}
 	}
 
 	return availableInstanceTypesAllLocations, nil
+}
+
+func (itf Selector) getLocationType(location string) (string, error) {
+	azs, err := itf.EC2.DescribeAvailabilityZones(&ec2.DescribeAvailabilityZonesInput{})
+	if err != nil {
+		return "", err
+	}
+	for _, zone := range azs.AvailabilityZones {
+		if location == *zone.RegionName {
+			return regionNameLocationType, nil
+		} else if location == *zone.ZoneName {
+			return zoneNameLocationType, nil
+		} else if location == *zone.ZoneId {
+			return zoneIDLocationType, nil
+		}
+	}
+	return "", fmt.Errorf("The location passed in (%s) is not a valid zone-id, zone-name, or region name", location)
 }
 
 func isSupportedInLocation(instanceOfferings map[string]string, instanceType string) bool {

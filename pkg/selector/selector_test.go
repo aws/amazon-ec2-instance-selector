@@ -34,6 +34,7 @@ const (
 	describeInstanceTypesPages    = "DescribeInstanceTypesPages"
 	describeInstanceTypes         = "DescribeInstanceTypes"
 	describeInstanceTypeOfferings = "DescribeInstanceTypeOfferings"
+	describeAvailabilityZones     = "DescribeAvailabilityZones"
 	mockFilesPath                 = "../../test/static"
 )
 
@@ -44,24 +45,19 @@ type ioFn = func(page *ec2.DescribeInstanceTypeOfferingsOutput, lastPage bool) b
 
 type mockedEC2 struct {
 	ec2iface.EC2API
-	DescribeInstanceTypesPagesResp    ec2.DescribeInstanceTypesOutput
-	DescribeInstanceTypesPagesErr     error
-	DescribeInstanceTypesResp         ec2.DescribeInstanceTypesOutput
-	DescribeInstanceTypesErr          error
-	DescribeInstanceTypeOfferingsResp ec2.DescribeInstanceTypeOfferingsOutput
-	DescribeInstanceTypeOfferingsErr  error
-}
-
-type multiRespMock struct {
-	ec2iface.EC2API
+	DescribeInstanceTypesPagesResp      ec2.DescribeInstanceTypesOutput
+	DescribeInstanceTypesPagesErr       error
+	DescribeInstanceTypesResp           ec2.DescribeInstanceTypesOutput
+	DescribeInstanceTypesErr            error
 	DescribeInstanceTypeOfferingsRespFn func(zone string) *ec2.DescribeInstanceTypeOfferingsOutput
+	DescribeInstanceTypeOfferingsResp   ec2.DescribeInstanceTypeOfferingsOutput
+	DescribeInstanceTypeOfferingsErr    error
+	DescribeAvailabilityZonesResp       ec2.DescribeAvailabilityZonesOutput
+	DescribeAvailabilityZonesErr        error
 }
 
-func (m multiRespMock) DescribeInstanceTypeOfferingsPages(input *ec2.DescribeInstanceTypeOfferingsInput, fn ioFn) error {
-	if len(input.Filters) == 1 {
-		fn(m.DescribeInstanceTypeOfferingsRespFn(*input.Filters[0].Values[0]), true)
-	}
-	return nil
+func (m mockedEC2) DescribeAvailabilityZones(input *ec2.DescribeAvailabilityZonesInput) (*ec2.DescribeAvailabilityZonesOutput, error) {
+	return &m.DescribeAvailabilityZonesResp, m.DescribeAvailabilityZonesErr
 }
 
 func (m mockedEC2) DescribeInstanceTypes(input *ec2.DescribeInstanceTypesInput) (*ec2.DescribeInstanceTypesOutput, error) {
@@ -74,11 +70,15 @@ func (m mockedEC2) DescribeInstanceTypesPages(input *ec2.DescribeInstanceTypesIn
 }
 
 func (m mockedEC2) DescribeInstanceTypeOfferingsPages(input *ec2.DescribeInstanceTypeOfferingsInput, fn ioFn) error {
-	fn(&m.DescribeInstanceTypeOfferingsResp, true)
+	if m.DescribeInstanceTypeOfferingsRespFn != nil {
+		fn(m.DescribeInstanceTypeOfferingsRespFn(*input.Filters[0].Values[0]), true)
+	} else {
+		fn(&m.DescribeInstanceTypeOfferingsResp, true)
+	}
 	return m.DescribeInstanceTypeOfferingsErr
 }
 
-func mockMultiRespDescribeInstanceTypesOfferings(t *testing.T, locationToFile map[string]string) multiRespMock {
+func mockMultiRespDescribeInstanceTypesOfferings(t *testing.T, locationToFile map[string]string) mockedEC2 {
 	api := describeInstanceTypeOfferings
 	locationToResp := map[string]ec2.DescribeInstanceTypeOfferingsOutput{}
 	for zone, file := range locationToFile {
@@ -90,7 +90,7 @@ func mockMultiRespDescribeInstanceTypesOfferings(t *testing.T, locationToFile ma
 		h.Assert(t, err == nil, "Error parsing mock json file contents"+mockFilename)
 		locationToResp[zone] = ditoo
 	}
-	return multiRespMock{
+	return mockedEC2{
 		DescribeInstanceTypeOfferingsRespFn: func(input string) *ec2.DescribeInstanceTypeOfferingsOutput {
 			resp, _ := locationToResp[input]
 			return &resp
@@ -123,6 +123,13 @@ func setupMock(t *testing.T, api string, file string) mockedEC2 {
 		h.Assert(t, err == nil, "Error parsing mock json file contents"+mockFilename)
 		return mockedEC2{
 			DescribeInstanceTypeOfferingsResp: ditoo,
+		}
+	case describeAvailabilityZones:
+		dazo := ec2.DescribeAvailabilityZonesOutput{}
+		err = json.Unmarshal(mockFile, &dazo)
+		h.Assert(t, err == nil, "Error parsing mock json file contents"+mockFilename)
+		return mockedEC2{
+			DescribeAvailabilityZonesResp: dazo,
 		}
 	default:
 		h.Assert(t, false, "Unable to mock the provided API type "+api)
@@ -183,6 +190,7 @@ func TestFilterVerbose_AZFilteredIn(t *testing.T) {
 	ec2Mock := mockedEC2{
 		DescribeInstanceTypesPagesResp:    setupMock(t, describeInstanceTypesPages, "t3_micro.json").DescribeInstanceTypesPagesResp,
 		DescribeInstanceTypeOfferingsResp: setupMock(t, describeInstanceTypeOfferings, "us-east-2a.json").DescribeInstanceTypeOfferingsResp,
+		DescribeAvailabilityZonesResp:     setupMock(t, describeAvailabilityZones, "us-east-2.json").DescribeAvailabilityZonesResp,
 	}
 	itf := selector.Selector{
 		EC2: ec2Mock,
@@ -201,6 +209,7 @@ func TestFilterVerbose_AZFilteredOut(t *testing.T) {
 	ec2Mock := mockedEC2{
 		DescribeInstanceTypesPagesResp:    setupMock(t, describeInstanceTypesPages, "t3_micro.json").DescribeInstanceTypesPagesResp,
 		DescribeInstanceTypeOfferingsResp: setupMock(t, describeInstanceTypeOfferings, "us-east-2a_only_c5d12x.json").DescribeInstanceTypeOfferingsResp,
+		DescribeAvailabilityZonesResp:     setupMock(t, describeAvailabilityZones, "us-east-2.json").DescribeAvailabilityZonesResp,
 	}
 	itf := selector.Selector{
 		EC2: ec2Mock,
@@ -321,6 +330,8 @@ func TestFilter_Failure(t *testing.T) {
 
 func TestRetrieveInstanceTypesSupportedInAZ_WithZoneName(t *testing.T) {
 	ec2Mock := setupMock(t, describeInstanceTypeOfferings, "us-east-2a.json")
+	ec2Mock.DescribeAvailabilityZonesResp = setupMock(t, describeAvailabilityZones, "us-east-2.json").DescribeAvailabilityZonesResp
+
 	itf := selector.Selector{
 		EC2: ec2Mock,
 	}
@@ -331,6 +342,8 @@ func TestRetrieveInstanceTypesSupportedInAZ_WithZoneName(t *testing.T) {
 
 func TestRetrieveInstanceTypesSupportedInAZ_WithZoneID(t *testing.T) {
 	ec2Mock := setupMock(t, describeInstanceTypeOfferings, "us-east-2a.json")
+	ec2Mock.DescribeAvailabilityZonesResp = setupMock(t, describeAvailabilityZones, "us-east-2.json").DescribeAvailabilityZonesResp
+
 	itf := selector.Selector{
 		EC2: ec2Mock,
 	}
@@ -341,6 +354,8 @@ func TestRetrieveInstanceTypesSupportedInAZ_WithZoneID(t *testing.T) {
 
 func TestRetrieveInstanceTypesSupportedInAZ_WithRegion(t *testing.T) {
 	ec2Mock := setupMock(t, describeInstanceTypeOfferings, "us-east-2a.json")
+	ec2Mock.DescribeAvailabilityZonesResp = setupMock(t, describeAvailabilityZones, "us-east-2.json").DescribeAvailabilityZonesResp
+
 	itf := selector.Selector{
 		EC2: ec2Mock,
 	}
@@ -351,6 +366,8 @@ func TestRetrieveInstanceTypesSupportedInAZ_WithRegion(t *testing.T) {
 
 func TestRetrieveInstanceTypesSupportedInAZ_WithBadZone(t *testing.T) {
 	ec2Mock := setupMock(t, describeInstanceTypeOfferings, "us-east-2a.json")
+	ec2Mock.DescribeAvailabilityZonesResp = setupMock(t, describeAvailabilityZones, "us-east-2.json").DescribeAvailabilityZonesResp
+
 	itf := selector.Selector{
 		EC2: ec2Mock,
 	}
@@ -362,6 +379,7 @@ func TestRetrieveInstanceTypesSupportedInAZ_WithBadZone(t *testing.T) {
 func TestRetrieveInstanceTypesSupportedInAZ_Error(t *testing.T) {
 	ec2Mock := mockedEC2{
 		DescribeInstanceTypeOfferingsErr: errors.New("error"),
+		DescribeAvailabilityZonesResp:    setupMock(t, describeAvailabilityZones, "us-east-2.json").DescribeAvailabilityZonesResp,
 	}
 
 	itf := selector.Selector{
@@ -423,20 +441,58 @@ func TestFilter_InstanceTypeBase(t *testing.T) {
 func TestRetrieveInstanceTypesSupportedInAZs_Intersection(t *testing.T) {
 	ec2Mock := mockMultiRespDescribeInstanceTypesOfferings(t, map[string]string{
 		"us-east-2a": "us-east-2a.json",
-		"us-east-2z": "us-east-2z.json",
+		"us-east-2b": "us-east-2b.json",
 	})
+	ec2Mock.DescribeAvailabilityZonesResp = setupMock(t, describeAvailabilityZones, "us-east-2.json").DescribeAvailabilityZonesResp
 
 	itf := selector.Selector{
 		EC2: ec2Mock,
 	}
-	results, err := itf.RetrieveInstanceTypesSupportedInLocations([]string{"us-east-2a", "us-east-2z"})
+	results, err := itf.RetrieveInstanceTypesSupportedInLocations([]string{"us-east-2a", "us-east-2b"})
 	h.Ok(t, err)
 	fmt.Println(results)
 	h.Assert(t, len(results) == 3, "Should return instance types that are included in both files")
 
 	// Check reversed zones to ensure order does not matter
-	results, err = itf.RetrieveInstanceTypesSupportedInLocations([]string{"us-east-2z", "us-east-2a"})
+	results, err = itf.RetrieveInstanceTypesSupportedInLocations([]string{"us-east-2b", "us-east-2a"})
 	h.Ok(t, err)
-	fmt.Println(results)
 	h.Assert(t, len(results) == 3, "Should return instance types that are included in both files when passed in reverse order")
+}
+
+func TestRetrieveInstanceTypesSupportedInAZs_Duplicates(t *testing.T) {
+	ec2Mock := mockedEC2{
+		DescribeInstanceTypeOfferingsResp: setupMock(t, describeInstanceTypeOfferings, "us-east-2b.json").DescribeInstanceTypeOfferingsResp,
+		DescribeAvailabilityZonesResp:     setupMock(t, describeAvailabilityZones, "us-east-2.json").DescribeAvailabilityZonesResp,
+	}
+	itf := selector.Selector{
+		EC2: ec2Mock,
+	}
+	results, err := itf.RetrieveInstanceTypesSupportedInLocations([]string{"us-east-2b", "us-east-2b"})
+	h.Ok(t, err)
+	h.Assert(t, len(results) == 3, "Should return instance types that are included in both files")
+}
+
+func TestRetrieveInstanceTypesSupportedInAZs_GoodAndBadZone(t *testing.T) {
+	ec2Mock := mockedEC2{
+		DescribeInstanceTypeOfferingsResp: setupMock(t, describeInstanceTypeOfferings, "us-east-2a.json").DescribeInstanceTypeOfferingsResp,
+		DescribeAvailabilityZonesResp:     setupMock(t, describeAvailabilityZones, "us-east-2.json").DescribeAvailabilityZonesResp,
+	}
+
+	itf := selector.Selector{
+		EC2: ec2Mock,
+	}
+	_, err := itf.RetrieveInstanceTypesSupportedInLocations([]string{"us-weast-2k", "us-east-2a"})
+	h.Nok(t, err)
+}
+
+func TestRetrieveInstanceTypesSupportedInAZs_DescribeAZErr(t *testing.T) {
+	ec2Mock := mockedEC2{
+		DescribeAvailabilityZonesErr: fmt.Errorf("error"),
+	}
+
+	itf := selector.Selector{
+		EC2: ec2Mock,
+	}
+	_, err := itf.RetrieveInstanceTypesSupportedInLocations([]string{"us-east-2a"})
+	h.Nok(t, err)
 }
