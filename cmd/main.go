@@ -31,8 +31,11 @@ import (
 
 const (
 	binName             = "ec2-instance-selector"
-	defaultRegionEnvVar = "DEFAULT_REGION"
+	awsRegionEnvVar     = "AWS_REGION"
+	defaultRegionEnvVar = "AWS_DEFAULT_REGION"
 	defaultProfile      = "default"
+	awsConfigFile       = "~/.aws/config"
+
 	// cfnJSON is an output type
 	cfnJSON = "cfn-json"
 	// cfnYAML is an output type
@@ -161,7 +164,12 @@ Full docs can be found at github.com/aws/amazon-` + binName
 		os.Exit(0)
 	}
 
-	sess := getRegionAndProfileAWSSession(cli.StringMe(flags[region]), cli.StringMe(flags[profile]))
+	sess, err := getRegionAndProfileAWSSession(cli.StringMe(flags[region]), cli.StringMe(flags[profile]))
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	flags[region] = sess.Config.Region
 
 	if flags[availabilityZone] != nil {
 		log.Printf("You are using a deprecated flag --%s which will be removed in future versions, switch to --%s to avoid issues.\n", availabilityZone, availabilityZones)
@@ -261,13 +269,14 @@ func getOutputFn(outputFlag *string, currentFn selector.InstanceTypesOutputFn) s
 	return outputFn
 }
 
-func getRegionAndProfileAWSSession(regionName *string, profileName *string) *session.Session {
+func getRegionAndProfileAWSSession(regionName *string, profileName *string) (*session.Session, error) {
 	sessOpts := session.Options{}
 	if regionName != nil {
 		sessOpts.Config.Region = regionName
 	}
 
 	if profileName != nil {
+		sessOpts.Profile = *profileName
 		if sessOpts.Config.Region == nil {
 			if profileRegion, err := getProfileRegion(*profileName); err != nil {
 				log.Println(err)
@@ -275,29 +284,38 @@ func getRegionAndProfileAWSSession(regionName *string, profileName *string) *ses
 				sessOpts.Config.Region = &profileRegion
 			}
 		}
-		sessOpts.Profile = *profileName
 	}
 
 	sess := session.Must(session.NewSessionWithOptions(sessOpts))
 	if sess.Config.Region != nil && *sess.Config.Region != "" {
-		return sess
+		return sess, nil
 	}
 	if defaultProfileRegion, err := getProfileRegion(defaultProfile); err == nil {
 		sess.Config.Region = &defaultProfileRegion
+		return sess, nil
 	}
-	if sess.Config.Region == nil || *sess.Config.Region == "" {
-		if defaultRegion, ok := os.LookupEnv(defaultRegionEnvVar); ok && defaultRegion != "" {
-			sess.Config.Region = &defaultRegion
-		}
+
+	if defaultRegion, ok := os.LookupEnv(defaultRegionEnvVar); ok && defaultRegion != "" {
+		sess.Config.Region = &defaultRegion
+		return sess, nil
 	}
-	return sess
+
+	errorMsg := "Unable to find a region in the usual places: \n"
+	errorMsg = errorMsg + "\t - --region flag\n"
+	errorMsg = errorMsg + fmt.Sprintf("\t - %s environment variable\n", awsRegionEnvVar)
+	if profileName != nil {
+		errorMsg = errorMsg + fmt.Sprintf("\t - profile region in %s\n", awsConfigFile)
+	}
+	errorMsg = errorMsg + fmt.Sprintf("\t - default profile region in %s\n", awsConfigFile)
+	errorMsg = errorMsg + fmt.Sprintf("\t - %s environment variable\n", defaultRegionEnvVar)
+	return sess, fmt.Errorf(errorMsg)
 }
 
 func getProfileRegion(profileName string) (string, error) {
 	if profileName != defaultProfile {
-		profileName = fmt.Sprintf("%s %s", "profile", profileName)
+		profileName = fmt.Sprintf("profile %s", profileName)
 	}
-	awsConfigPath, err := homedir.Expand("~/.aws/config")
+	awsConfigPath, err := homedir.Expand(awsConfigFile)
 	if err != nil {
 		return "", fmt.Errorf("Warning: unable to find home directory to parse aws config file")
 	}
@@ -310,7 +328,7 @@ func getProfileRegion(profileName string) (string, error) {
 		return "", fmt.Errorf("Warning: there is no configuration for the specified aws profile %s at %s", profileName, awsConfigPath)
 	}
 	regionConfig, err := section.GetKey("region")
-	if err != nil {
+	if err != nil || regionConfig.String() == "" {
 		return "", fmt.Errorf("Warning: there is no region configured for the specified aws profile %s at %s", profileName, awsConfigPath)
 	}
 	return regionConfig.String(), nil
