@@ -14,6 +14,8 @@
 package selector
 
 import (
+	"regexp"
+
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/ec2/ec2iface"
 )
@@ -132,6 +134,12 @@ type Filters struct {
 
 	// VcpusToMemoryRatio is a ratio of vcpus to memory expressed as a floating point
 	VCpusToMemoryRatio *float64
+
+	// AllowList is a regex of allowed instance types
+	AllowList *regexp.Regexp
+
+	// DenyList is a regex of excluded instance types
+	DenyList *regexp.Regexp
 
 	// InstanceTypeBase is a base instance type which is used to retrieve similarly spec'd instance types
 	InstanceTypeBase *string

@@ -293,3 +293,23 @@ func TestParseAndValidateFlags(t *testing.T) {
 	_, err := cli.ParseAndValidateFlags()
 	h.Nok(t, err)
 }
+
+func TestParseAndValidateRegexFlag(t *testing.T) {
+	flagName := "test-regex-flag"
+	flagArg := fmt.Sprintf("--%s", flagName)
+
+	cli := getTestCLI()
+	cli.RegexFlag(flagName, nil, nil, "Test with validation")
+	os.Args = []string{"ec2-instance-selector", flagArg, "c4.*"}
+	flags, err := cli.ParseAndValidateFlags()
+	h.Ok(t, err)
+	h.Assert(t, len(flags) == 1, "1 flag should have been processed")
+	_, err = cli.ParseAndValidateFlags()
+	h.Ok(t, err)
+
+	cli = getTestCLI()
+	cli.RegexFlag(flagName, nil, nil, "Test with validation")
+	os.Args = []string{"ec2-instance-selector", flagArg, "(("}
+	_, err = cli.ParseAndValidateFlags()
+	h.Nok(t, err)
+}

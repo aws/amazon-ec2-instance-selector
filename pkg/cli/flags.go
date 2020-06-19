@@ -21,9 +21,10 @@ func (cl *CommandLineInterface) RatioFlag(name string, shorthand *string, defaul
 	}
 	if shorthand != nil {
 		cl.Flags[name] = cl.Command.Flags().StringP(name, string(*shorthand), *defaultValue, description)
-		return nil
+	} else {
+		cl.Flags[name] = cl.Command.Flags().String(name, *defaultValue, description)
 	}
-	cl.Flags[name] = cl.Command.Flags().String(name, *defaultValue, description)
+
 	cl.validators[name] = func(val interface{}) error {
 		if val == nil {
 			return nil
@@ -62,9 +63,13 @@ func (cl *CommandLineInterface) StringFlag(name string, shorthand *string, defau
 }
 
 // StringSliceFlag creates and registers a flag accepting a list of strings.
-// Suite flags will be grouped in the middle of the output --help
 func (cl *CommandLineInterface) StringSliceFlag(name string, shorthand *string, defaultValue []string, description string) {
 	cl.StringSliceFlagOnFlagSet(cl.Command.Flags(), name, shorthand, defaultValue, description)
+}
+
+// RegexFlag creates and registers a flag accepting a string and validates that it is a valid regex.
+func (cl *CommandLineInterface) RegexFlag(name string, shorthand *string, defaultValue *string, description string) {
+	cl.RegexFlagOnFlagSet(cl.Command.Flags(), name, shorthand, defaultValue, description)
 }
 
 // StringOptionsFlag creates and registers a flag accepting a string and valid options for use in validation.
@@ -188,9 +193,9 @@ func (cl *CommandLineInterface) StringFlagOnFlagSet(flagSet *pflag.FlagSet, name
 	if shorthand != nil {
 		cl.Flags[name] = flagSet.StringP(name, string(*shorthand), *defaultValue, description)
 		cl.validators[name] = validationFn
-		return
+	} else {
+		cl.Flags[name] = flagSet.String(name, *defaultValue, description)
 	}
-	cl.Flags[name] = flagSet.String(name, *defaultValue, description)
 	cl.validators[name] = validationFn
 }
 
@@ -222,4 +227,37 @@ func (cl *CommandLineInterface) StringSliceFlagOnFlagSet(flagSet *pflag.FlagSet,
 		return
 	}
 	cl.Flags[name] = flagSet.StringSlice(name, defaultValue, description)
+}
+
+// RegexFlagOnFlagSet creates and registers a flag accepting a string slice of regular expressions.
+func (cl *CommandLineInterface) RegexFlagOnFlagSet(flagSet *pflag.FlagSet, name string, shorthand *string, defaultValue *string, description string) {
+	if defaultValue == nil {
+		cl.nilDefaults[name] = true
+		defaultValue = cl.StringMe("")
+	}
+	if shorthand != nil {
+		cl.Flags[name] = flagSet.StringP(name, string(*shorthand), *defaultValue, description)
+	} else {
+		cl.Flags[name] = flagSet.String(name, *defaultValue, description)
+	}
+	cl.validators[name] = func(val interface{}) error {
+		if val == nil {
+			return nil
+		}
+		regexStringVal := ""
+		switch v := val.(type) {
+		case *string:
+			regexStringVal = *v
+		case *regexp.Regexp:
+			return nil
+		default:
+			return fmt.Errorf("Invalid regex input for --%s", name)
+		}
+		regexVal, err := regexp.Compile(regexStringVal)
+		if err != nil {
+			return fmt.Errorf("Invalid regex input for --%s", name)
+		}
+		cl.Flags[name] = regexVal
+		return nil
+	}
 }

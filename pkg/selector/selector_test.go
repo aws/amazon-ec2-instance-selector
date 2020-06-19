@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"regexp"
 	"strconv"
 	"testing"
 
@@ -495,4 +496,61 @@ func TestRetrieveInstanceTypesSupportedInAZs_DescribeAZErr(t *testing.T) {
 	}
 	_, err := itf.RetrieveInstanceTypesSupportedInLocations([]string{"us-east-2a"})
 	h.Nok(t, err)
+}
+
+func TestFilter_AllowList(t *testing.T) {
+	ec2Mock := mockedEC2{
+		DescribeInstanceTypesPagesResp:    setupMock(t, describeInstanceTypesPages, "25_instances.json").DescribeInstanceTypesPagesResp,
+		DescribeInstanceTypeOfferingsResp: setupMock(t, describeInstanceTypeOfferings, "us-east-2a.json").DescribeInstanceTypeOfferingsResp,
+	}
+	itf := selector.Selector{
+		EC2: ec2Mock,
+	}
+	allowRegex, err := regexp.Compile("c4.large")
+	h.Ok(t, err)
+	filters := selector.Filters{
+		AllowList: allowRegex,
+	}
+	results, err := itf.Filter(filters)
+	h.Ok(t, err)
+	h.Assert(t, len(results) == 1, "c4.large should return 1 instance type matching regex")
+}
+
+func TestFilter_DenyList(t *testing.T) {
+	ec2Mock := mockedEC2{
+		DescribeInstanceTypesPagesResp:    setupMock(t, describeInstanceTypesPages, "25_instances.json").DescribeInstanceTypesPagesResp,
+		DescribeInstanceTypeOfferingsResp: setupMock(t, describeInstanceTypeOfferings, "us-east-2a.json").DescribeInstanceTypeOfferingsResp,
+	}
+	itf := selector.Selector{
+		EC2: ec2Mock,
+	}
+	denyRegex, err := regexp.Compile("c4.large")
+	h.Ok(t, err)
+	filters := selector.Filters{
+		DenyList: denyRegex,
+	}
+	results, err := itf.Filter(filters)
+	h.Ok(t, err)
+	h.Assert(t, len(results) == 24, "c4.large should return 24 instance type matching regex but returned %d", len(results))
+}
+
+func TestFilter_AllowAndDenyList(t *testing.T) {
+	ec2Mock := mockedEC2{
+		DescribeInstanceTypesPagesResp:    setupMock(t, describeInstanceTypesPages, "25_instances.json").DescribeInstanceTypesPagesResp,
+		DescribeInstanceTypeOfferingsResp: setupMock(t, describeInstanceTypeOfferings, "us-east-2a.json").DescribeInstanceTypeOfferingsResp,
+	}
+	itf := selector.Selector{
+		EC2: ec2Mock,
+	}
+	allowRegex, err := regexp.Compile("c4.*")
+	h.Ok(t, err)
+	denyRegex, err := regexp.Compile("c4.large")
+	h.Ok(t, err)
+	filters := selector.Filters{
+		AllowList: allowRegex,
+		DenyList:  denyRegex,
+	}
+	results, err := itf.Filter(filters)
+	h.Ok(t, err)
+	h.Assert(t, len(results) == 4, "c4.large should return 4 instance type matching regex but returned %d", len(results))
 }

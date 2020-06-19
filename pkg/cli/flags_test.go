@@ -150,3 +150,19 @@ func TestIntMinMaxRangeFlags(t *testing.T) {
 	h.Assert(t, len(cli.Flags) == 3, "Should contain 3 flags w/ no shorthand")
 	h.Assert(t, ok, "Should contain %s flag w/ no shorthand", flagName)
 }
+
+func TestRegexFlag(t *testing.T) {
+	cli := getTestCLI()
+	for _, flagFn := range []func(string, *string, *string, string){cli.RegexFlag} {
+		flagName := "test-regex"
+		flagFn(flagName, cli.StringMe("t"), nil, "Test Regex")
+		_, ok := cli.Flags[flagName]
+		h.Assert(t, len(cli.Flags) == 1, "Should contain 1 flag")
+		h.Assert(t, ok, "Should contain %s flag", flagName)
+
+		cli = getTestCLI()
+		flagFn(flagName, nil, nil, "Test Regex")
+		h.Assert(t, len(cli.Flags) == 1, "Should contain 1 flag w/ no shorthand")
+		h.Assert(t, ok, "Should contain %s flag w/ no shorthand", flagName)
+	}
+}
