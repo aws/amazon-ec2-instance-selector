@@ -32,6 +32,7 @@ import (
 const (
 	binName             = "ec2-instance-selector"
 	awsRegionEnvVar     = "AWS_REGION"
+	awsProfileEnvVar    = "AWS_PROFILE"
 	defaultRegionEnvVar = "AWS_DEFAULT_REGION"
 	defaultProfile      = "default"
 	awsConfigFile       = "~/.aws/config"
@@ -270,9 +271,13 @@ func getOutputFn(outputFlag *string, currentFn selector.InstanceTypesOutputFn) s
 }
 
 func getRegionAndProfileAWSSession(regionName *string, profileName *string) (*session.Session, error) {
-	sessOpts := session.Options{}
+	sessOpts := session.Options{SharedConfigState: session.SharedConfigEnable}
 	if regionName != nil {
 		sessOpts.Config.Region = regionName
+	}
+
+	if awsProfileName, ok := os.LookupEnv(awsProfileEnvVar); profileName != nil && ok && awsProfileName != "" {
+		profileName = &awsProfileName
 	}
 
 	if profileName != nil {
