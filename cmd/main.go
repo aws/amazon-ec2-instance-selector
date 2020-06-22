@@ -276,10 +276,6 @@ func getRegionAndProfileAWSSession(regionName *string, profileName *string) (*se
 		sessOpts.Config.Region = regionName
 	}
 
-	if awsProfileName, ok := os.LookupEnv(awsProfileEnvVar); profileName == nil && ok && awsProfileName != "" {
-		profileName = &awsProfileName
-	}
-
 	if profileName != nil {
 		sessOpts.Profile = *profileName
 		if sessOpts.Config.Region == nil {
