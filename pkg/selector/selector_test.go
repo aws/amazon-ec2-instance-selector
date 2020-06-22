@@ -513,7 +513,7 @@ func TestFilter_AllowList(t *testing.T) {
 	}
 	results, err := itf.Filter(filters)
 	h.Ok(t, err)
-	h.Assert(t, len(results) == 1, "c4.large should return 1 instance type matching regex")
+	h.Assert(t, len(results) == 1, "Allow List Regex: 'c4.large' should return 1 instance type")
 }
 
 func TestFilter_DenyList(t *testing.T) {
@@ -531,7 +531,7 @@ func TestFilter_DenyList(t *testing.T) {
 	}
 	results, err := itf.Filter(filters)
 	h.Ok(t, err)
-	h.Assert(t, len(results) == 24, "c4.large should return 24 instance type matching regex but returned %d", len(results))
+	h.Assert(t, len(results) == 24, "Allow List Regex: 'c4.large' should return 24 instance type matching regex but returned %d", len(results))
 }
 
 func TestFilter_AllowAndDenyList(t *testing.T) {
@@ -552,5 +552,5 @@ func TestFilter_AllowAndDenyList(t *testing.T) {
 	}
 	results, err := itf.Filter(filters)
 	h.Ok(t, err)
-	h.Assert(t, len(results) == 4, "c4.large should return 4 instance type matching regex but returned %d", len(results))
+	h.Assert(t, len(results) == 4, "Allow List Regex: 'c4.large' should return 4 instance types matching the regex but returned %d", len(results))
 }
