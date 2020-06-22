@@ -26,7 +26,7 @@ fmt:
 	goimports -w ./ && gofmt -s -w ./
 
 docker-build:
-	${MAKEFILE_PATH}/scripts/build-docker-images -d -p ${GOOS}/${GOARCH} -r ${IMG} -v ${VERSION}
+	${MAKEFILE_PATH}/scripts/build-docker-images -p ${GOOS}/${GOARCH} -r ${IMG} -v ${VERSION}
 
 docker-run:
 	docker run ${IMG_W_TAG}
@@ -36,7 +36,7 @@ docker-push:
 	docker push ${IMG_W_TAG}
 
 build-docker-images:
-	${MAKEFILE_PATH}/scripts/build-docker-images -d -p ${SUPPORTED_PLATFORMS} -r ${IMG} -v ${VERSION}
+	${MAKEFILE_PATH}/scripts/build-docker-images -p ${SUPPORTED_PLATFORMS} -r ${IMG} -v ${VERSION}
 
 push-docker-images:
 	@echo ${DOCKERHUB_TOKEN} | docker login -u ${DOCKERHUB_USERNAME} --password-stdin
@@ -66,7 +66,7 @@ output-validation-test:
 	${MAKEFILE_PATH}/test/output-validation-test/test-output-validation
 
 build-binaries:
-	${MAKEFILE_PATH}/scripts/build-binaries -d -p ${SUPPORTED_PLATFORMS} -v ${VERSION}
+	${MAKEFILE_PATH}/scripts/build-binaries -p ${SUPPORTED_PLATFORMS} -v ${VERSION}
 
 ## requires a github token
 upload-resources-to-github:

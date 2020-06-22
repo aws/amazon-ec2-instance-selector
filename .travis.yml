@@ -4,38 +4,43 @@ language: minimal
 services:
 - docker
 
-matrix:
+jobs:
   include:
     - stage: Test
       language: go
       go: "1.14.x"
       script: make unit-test
-      env: GO_UNIT_TESTS=TRUE
+      name: Unit Tests
       after_success: bash <(curl -s https://codecov.io/bash) -v
     - stage: Test
       script: make go-report-card-test
-      env: GO_REPORT_CARD=true
+      name: Go Report Card Tests
     - stage: Test
       script: make spellcheck
-      env: SPELLCHECK=true
+      name: Markdown Spellcheck
+    - stage: Test
+      script: make build-binaries
+      name: Build Binaries
+    - stage: Test
+      script: make build-docker-images
+      name: Build Docker Images
     - stage: Test
       if: type = push AND env(DOCKERHUB_USERNAME) IS present
       script: make readme-codeblock-test
-      env: README_CODEBLOCK_TEST=true
+      name: README Codeblock Executions Test
     - stage: Test
       if: type = push AND env(DOCKERHUB_USERNAME) IS present
       script: make output-validation-test
-      env: CFN_AND_TERRAFORM_OUTPUT_VALIDATION_TESTS=true
+      name: CFN/Terraform Output Validation Tests
     - stage: Test
       if: type = push AND env(GITHUB_TOKEN) IS present
       script: test/license-test/run-license-test.sh
-      env: LICENSE_TEST=true
+      name: License Test
     - stage: Deploy
       if: type = push AND env(DOCKERHUB_USERNAME) IS present
       script: make sync-readme-to-dockerhub
-      env: SYNC_README_TO_DOCKERHUB=true
+      name: Sync README to Dockerhub
     - stage: Deploy
       if: type = push AND tag =~ /^v\d+\.\d+(\.\d+)?(-\S*)?$/ AND env(DOCKERHUB_USERNAME) IS present
       script: make release
-      env: RELEASE_ASSETS=true
-
+      name: Release Assets
