@@ -32,7 +32,6 @@ import (
 const (
 	binName             = "ec2-instance-selector"
 	awsRegionEnvVar     = "AWS_REGION"
-	awsProfileEnvVar    = "AWS_PROFILE"
 	defaultRegionEnvVar = "AWS_DEFAULT_REGION"
 	defaultProfile      = "default"
 	awsConfigFile       = "~/.aws/config"
