@@ -270,7 +270,7 @@ func getOutputFn(outputFlag *string, currentFn selector.InstanceTypesOutputFn) s
 }
 
 func getRegionAndProfileAWSSession(regionName *string, profileName *string) (*session.Session, error) {
-	sessOpts := session.Options{}
+	sessOpts := session.Options{SharedConfigState: session.SharedConfigEnable}
 	if regionName != nil {
 		sessOpts.Config.Region = regionName
 	}
