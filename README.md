@@ -134,12 +134,14 @@ ec2-instance-selector --vcpus 4 --region us-east-2 --availability-zones us-east-
 ec2-instance-selector --memory-min 4096 --memory-max 8192 --vcpus-min 4 --vcpus-max 8 --region us-east-2
 
 Filter Flags:
+      --allow-list string                 List of allowed instance types to select from w/ regex syntax (Example: m[3-5]\.*)
       --availability-zone string          [DEPRECATED] use --availability-zones instead
   -z, --availability-zones strings        Availability zones or zone ids to check EC2 capacity offered in specific AZs
       --baremetal                         Bare Metal instance types (.metal instances)
   -b, --burst-support                     Burstable instance types
   -a, --cpu-architecture string           CPU architecture [x86_64, i386, or arm64]
       --current-generation                Current generation instance types (explicitly set this to false to not return current generation instance types)
+      --deny-list string                  List of instance types which should be excluded w/ regex syntax (Example: m[1-2]\.*)
   -e, --ena-support                       Instance types where ENA is supported or required
   -f, --fpga-support                      FPGA instance types
       --gpu-memory-total int              Number of GPUs' total memory in MiB (Example: 4096) (sets --gpu-memory-total-min and -max to the same value)

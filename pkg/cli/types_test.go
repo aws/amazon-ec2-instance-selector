@@ -15,6 +15,7 @@ package cli_test
 
 import (
 	"reflect"
+	"regexp"
 	"testing"
 
 	"github.com/aws/amazon-ec2-instance-selector/pkg/selector"
@@ -103,5 +104,19 @@ func TestIntRangeMe(t *testing.T) {
 	val = cli.IntRangeMe(true)
 	h.Assert(t, val == nil, "Should return nil from other data type passed in")
 	val = cli.IntRangeMe(nil)
+	h.Assert(t, val == nil, "Should return nil if nil is passed in")
+}
+
+func TestRegexMe(t *testing.T) {
+	cli := getTestCLI()
+	regexVal, err := regexp.Compile("c4.*")
+	h.Ok(t, err)
+	val := cli.RegexMe(*regexVal)
+	h.Assert(t, val.String() == regexVal.String(), "Should return %s from passed in regex value", regexVal)
+	val = cli.RegexMe(regexVal)
+	h.Assert(t, val.String() == regexVal.String(), "Should return %s from passed in regex pointer", regexVal)
+	val = cli.RegexMe(true)
+	h.Assert(t, val == nil, "Should return nil from other data type passed in")
+	val = cli.RegexMe(nil)
 	h.Assert(t, val == nil, "Should return nil if nil is passed in")
 }

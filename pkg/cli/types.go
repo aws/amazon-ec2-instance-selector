@@ -16,6 +16,7 @@ package cli
 
 import (
 	"log"
+	"regexp"
 
 	"github.com/aws/amazon-ec2-instance-selector/pkg/selector"
 	"github.com/spf13/cobra"
@@ -163,6 +164,23 @@ func (*CommandLineInterface) StringSliceMe(i interface{}) *[]string {
 		return &v
 	default:
 		log.Printf("%s cannot be converted to a string list", i)
+		return nil
+	}
+}
+
+// RegexMe takes an interface and returns a pointer to a regex
+// If the underlying interface kind is not regexp.Regexp or *regexp.Regexp then nil is returned
+func (*CommandLineInterface) RegexMe(i interface{}) *regexp.Regexp {
+	if i == nil {
+		return nil
+	}
+	switch v := i.(type) {
+	case *regexp.Regexp:
+		return v
+	case regexp.Regexp:
+		return &v
+	default:
+		log.Printf("%s cannot be converted to a regexp", i)
 		return nil
 	}
 }

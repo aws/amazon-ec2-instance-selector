@@ -67,6 +67,8 @@ const (
 	currentGeneration      = "current-generation"
 	networkInterfaces      = "network-interfaces"
 	networkPerformance     = "network-performance"
+	allowList              = "allow-list"
+	denyList               = "deny-list"
 )
 
 // Aggregate Filter Flags
@@ -133,6 +135,8 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	cli.BoolFlag(currentGeneration, nil, nil, "Current generation instance types (explicitly set this to false to not return current generation instance types)")
 	cli.IntMinMaxRangeFlags(networkInterfaces, nil, nil, "Number of network interfaces (ENIs) that can be attached to the instance")
 	cli.IntMinMaxRangeFlags(networkPerformance, nil, nil, "Bandwidth in Gib/s of network performance (Example: 100)")
+	cli.RegexFlag(allowList, nil, nil, "List of allowed instance types to select from w/ regex syntax (Example: m[3-5]\\.*)")
+	cli.RegexFlag(denyList, nil, nil, "List of instance types which should be excluded w/ regex syntax (Example: m[1-2]\\.*)")
 
 	// Suite Flags - higher level aggregate filters that return opinionated result
 
@@ -204,6 +208,8 @@ Full docs can be found at github.com/aws/amazon-` + binName
 		MaxResults:             cli.IntMe(flags[maxResults]),
 		NetworkInterfaces:      cli.IntRangeMe(flags[networkInterfaces]),
 		NetworkPerformance:     cli.IntRangeMe(flags[networkPerformance]),
+		AllowList:              cli.RegexMe(flags[allowList]),
+		DenyList:               cli.RegexMe(flags[denyList]),
 		InstanceTypeBase:       cli.StringMe(flags[instanceTypeBase]),
 	}
 

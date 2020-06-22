@@ -17,6 +17,7 @@ package selector
 import (
 	"fmt"
 	"reflect"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -59,6 +60,8 @@ const (
 	currentGeneration      = "currentGeneration"
 	networkInterfaces      = "networkInterfaces"
 	networkPerformance     = "networkPerformance"
+	allowList              = "allowList"
+	denyList               = "denyList"
 
 	// AggregateLowPercentile is the default lower percentile for resource ranges on similar instance type comparisons
 	AggregateLowPercentile = 0.8
@@ -221,6 +224,10 @@ func (itf Selector) rawFilter(filters Filters) ([]*ec2.InstanceTypeInfo, error) 
 				currentGeneration:      {filters.CurrentGeneration, instanceTypeInfo.CurrentGeneration},
 				networkInterfaces:      {filters.NetworkInterfaces, instanceTypeInfo.NetworkInfo.MaximumNetworkInterfaces},
 				networkPerformance:     {filters.NetworkPerformance, getNetworkPerformance(instanceTypeInfo.NetworkInfo.NetworkPerformance)},
+			}
+
+			if isInDenyList(filters.DenyList, instanceTypeName) || !isInAllowList(filters.AllowList, instanceTypeName) {
+				delete(instanceTypeCandidates, instanceTypeName)
 			}
 
 			if !isSupportedInLocation(locationInstanceOfferings, instanceTypeName) {
@@ -402,4 +409,18 @@ func isSupportedInLocation(instanceOfferings map[string]string, instanceType str
 	}
 	_, ok := instanceOfferings[instanceType]
 	return ok
+}
+
+func isInDenyList(denyRegex *regexp.Regexp, instanceTypeName string) bool {
+	if denyRegex == nil {
+		return false
+	}
+	return denyRegex.MatchString(instanceTypeName)
+}
+
+func isInAllowList(allowRegex *regexp.Regexp, instanceTypeName string) bool {
+	if allowRegex == nil {
+		return true
+	}
+	return allowRegex.MatchString(instanceTypeName)
 }
