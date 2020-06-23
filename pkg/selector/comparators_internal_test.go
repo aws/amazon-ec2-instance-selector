@@ -217,17 +217,17 @@ func TestCalculateVCpusToMemoryRatio(t *testing.T) {
 	vcpus := aws.Int64(4)
 	memory := aws.Int64(4096)
 	ratio := calculateVCpusToMemoryRatio(vcpus, memory)
-	h.Assert(t, *ratio == 1.00, "nil should evaluate to nil")
+	h.Assert(t, *ratio == 1.00, "ratio should equal 1:1")
 
 	vcpus = aws.Int64(2)
 	memory = aws.Int64(4096)
 	ratio = calculateVCpusToMemoryRatio(vcpus, memory)
-	h.Assert(t, *ratio == 2.00, "nil should evaluate to nil")
+	h.Assert(t, *ratio == 2.00, "ration should equal 1:2")
 
 	vcpus = aws.Int64(1)
 	memory = aws.Int64(512)
 	ratio = calculateVCpusToMemoryRatio(vcpus, memory)
-	h.Assert(t, *ratio == 0.50, "nil should evaluate to nil")
+	h.Assert(t, *ratio == 1.0, "ratio should take the ceiling which equals 1:1")
 }
 
 func TestCalculateVCpusToMemoryRatio_Nil(t *testing.T) {

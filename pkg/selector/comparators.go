@@ -145,7 +145,8 @@ func calculateVCpusToMemoryRatio(vcpusVal *int64, memoryVal *int64) *float64 {
 		return nil
 	}
 	// normalize vcpus to a mebivcpu value
-	return aws.Float64(float64(*memoryVal) / float64(*vcpusVal*1024))
+	result := math.Ceil(float64(*memoryVal) / float64(*vcpusVal*1024))
+	return &result
 }
 
 // Slice helper function
