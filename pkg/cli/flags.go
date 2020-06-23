@@ -118,7 +118,7 @@ func (cl *CommandLineInterface) SuiteBoolFlag(name string, shorthand *string, de
 	cl.BoolFlagOnFlagSet(cl.suiteFlags, name, shorthand, defaultValue, description)
 }
 
-// SuiteIntFlag creates and registers a flag accepting a boolean for aggregate filters.
+// SuiteIntFlag creates and registers a flag accepting an int for aggregate filters.
 // Suite flags will be grouped in the middle of the output --help
 func (cl *CommandLineInterface) SuiteIntFlag(name string, shorthand *string, defaultValue *int, description string) {
 	cl.IntFlagOnFlagSet(cl.suiteFlags, name, shorthand, defaultValue, description)
