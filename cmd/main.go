@@ -14,7 +14,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -220,12 +219,12 @@ Full docs can be found at github.com/aws/amazon-` + binName
 			fmt.Printf("An error occurred while transforming the aggregate filters")
 			os.Exit(1)
 		}
-		filtersJSON, err := json.MarshalIndent(filters, "", "    ")
+		filtersJSON, err := filters.MarshalIndent("", "    ")
 		if err != nil {
 			fmt.Printf("An error occurred when printing filters due to --verbose being specified: %v", err)
 			os.Exit(1)
 		}
-		transformedFiltersJSON, err := json.MarshalIndent(transformedFilters, "", "    ")
+		transformedFiltersJSON, err := transformedFilters.MarshalIndent("", "    ")
 		if err != nil {
 			fmt.Printf("An error occurred when printing aggregate filters due to --verbose being specified: %v", err)
 			os.Exit(1)
