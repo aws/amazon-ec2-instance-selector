@@ -172,7 +172,7 @@ Filter Flags:
 
 Suite Flags:
       --base-instance-type string   Instance Type used to retrieve similarly spec'd instance types
-      --flexible              Retrieves a group of instance types spanning multiple generations based on opinionated defaults and user overridden resource filters
+      --flexible                    Retrieves a group of instance types spanning multiple generations based on opinionated defaults and user overridden resource filters
 
 
 Global Flags:
