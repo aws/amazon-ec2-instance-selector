@@ -62,11 +62,6 @@ const (
 	networkPerformance     = "networkPerformance"
 	allowList              = "allowList"
 	denyList               = "denyList"
-
-	// AggregateLowPercentile is the default lower percentile for resource ranges on similar instance type comparisons
-	AggregateLowPercentile = 0.8
-	// AggregateHighPercentile is the default upper percentile for resource ranges on similar instance type comparisons
-	AggregateHighPercentile = 1.2
 )
 
 // New creates an instance of Selector provided an aws session
@@ -121,45 +116,17 @@ func (itf Selector) truncateResults(maxResults *int, instanceTypeInfoSlice []*ec
 }
 
 // AggregateFilterTransform takes higher level filters which are used to affect multiple raw filters in an opinionated way.
-func (itf Selector) AggregateFilterTransform(filters Filters, lowerPercentile float64, upperPercentile float64) (Filters, error) {
-	if filters.InstanceTypeBase != nil {
-		instanceTypesOutput, err := itf.EC2.DescribeInstanceTypes(&ec2.DescribeInstanceTypesInput{
-			InstanceTypes: []*string{filters.InstanceTypeBase},
-		})
+func (itf Selector) AggregateFilterTransform(filters Filters) (Filters, error) {
+	transforms := []FiltersTransform{
+		TransformFn(itf.TransformBaseInstanceType),
+		TransformFn(itf.TransformFlexible),
+	}
+	var err error
+	for _, transform := range transforms {
+		filters, err = transform.Transform(filters)
 		if err != nil {
 			return filters, err
 		}
-		if len(instanceTypesOutput.InstanceTypes) == 0 {
-			return filters, fmt.Errorf("error instance type %s is not a valid instance type", *filters.InstanceTypeBase)
-		}
-		instanceTypeInfo := instanceTypesOutput.InstanceTypes[0]
-		if filters.BareMetal == nil {
-			filters.BareMetal = instanceTypeInfo.BareMetal
-		}
-		if filters.CPUArchitecture == nil {
-			filters.CPUArchitecture = instanceTypeInfo.ProcessorInfo.SupportedArchitectures[0]
-		}
-		if filters.Fpga == nil {
-			isFpgaSupported := instanceTypeInfo.FpgaInfo != nil
-			filters.Fpga = &isFpgaSupported
-		}
-		if filters.GpusRange == nil {
-			if instanceTypeInfo.GpuInfo != nil {
-				gpuCount := int(*getTotalGpusCount(instanceTypeInfo.GpuInfo))
-				filters.GpusRange = &IntRangeFilter{LowerBound: gpuCount, UpperBound: gpuCount}
-			}
-		}
-		if filters.MemoryRange == nil {
-			lowerBound := int(float64(*instanceTypeInfo.MemoryInfo.SizeInMiB) * lowerPercentile)
-			upperBound := int(float64(*instanceTypeInfo.MemoryInfo.SizeInMiB) * upperPercentile)
-			filters.MemoryRange = &IntRangeFilter{LowerBound: lowerBound, UpperBound: upperBound}
-		}
-		if filters.VCpusRange == nil {
-			lowerBound := int(float64(*instanceTypeInfo.VCpuInfo.DefaultVCpus) * lowerPercentile)
-			upperBound := int(float64(*instanceTypeInfo.VCpuInfo.DefaultVCpus) * upperPercentile)
-			filters.VCpusRange = &IntRangeFilter{LowerBound: lowerBound, UpperBound: upperBound}
-		}
-		filters.InstanceTypeBase = nil
 	}
 	return filters, nil
 }
@@ -167,7 +134,7 @@ func (itf Selector) AggregateFilterTransform(filters Filters, lowerPercentile fl
 // rawFilter accepts a Filters struct which is used to select the available instance types
 // matching the criteria within Filters and returns the detailed specs of matching instance types
 func (itf Selector) rawFilter(filters Filters) ([]*ec2.InstanceTypeInfo, error) {
-	filters, err := itf.AggregateFilterTransform(filters, AggregateLowPercentile, AggregateHighPercentile)
+	filters, err := itf.AggregateFilterTransform(filters)
 	if err != nil {
 		return nil, err
 	}
