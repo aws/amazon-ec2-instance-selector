@@ -400,7 +400,7 @@ func TestAggregateFilterTransform(t *testing.T) {
 	filters := selector.Filters{
 		InstanceTypeBase: &g22Xlarge,
 	}
-	filters, err := itf.AggregateFilterTransform(filters, 0.8, 1.2)
+	filters, err := itf.AggregateFilterTransform(filters)
 	h.Ok(t, err)
 	h.Assert(t, filters.GpusRange != nil, "g2.2Xlarge as a base instance type should filter out non-GPU instances")
 	h.Assert(t, *filters.BareMetal == false, "g2.2Xlarge as a base instance type should filter out bare metal instances")
@@ -417,7 +417,7 @@ func TestAggregateFilterTransform_InvalidInstanceType(t *testing.T) {
 	filters := selector.Filters{
 		InstanceTypeBase: &t3Micro,
 	}
-	_, err := itf.AggregateFilterTransform(filters, 0.8, 1.2)
+	_, err := itf.AggregateFilterTransform(filters)
 	h.Nok(t, err)
 }
 

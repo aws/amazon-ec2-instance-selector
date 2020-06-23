@@ -143,4 +143,8 @@ type Filters struct {
 
 	// InstanceTypeBase is a base instance type which is used to retrieve similarly spec'd instance types
 	InstanceTypeBase *string
+
+	// Flexible finds an opinionated set of general (c, m, r, t, a, etc.) instance types that match a criteria specified
+	// or defaults to 4 vcpus
+	Flexible *bool
 }

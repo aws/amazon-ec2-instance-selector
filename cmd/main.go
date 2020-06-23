@@ -74,6 +74,7 @@ const (
 // Aggregate Filter Flags
 const (
 	instanceTypeBase = "base-instance-type"
+	flexible         = "flexible"
 )
 
 // Configuration Flag Constants
@@ -141,6 +142,7 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	// Suite Flags - higher level aggregate filters that return opinionated result
 
 	cli.SuiteStringFlag(instanceTypeBase, nil, nil, "Instance Type used to retrieve similarly spec'd instance types", nil)
+	cli.SuiteBoolFlag(flexible, nil, nil, "Retrieves a group of instance types spanning multiple generations based on opinionated defaults and user overridden resource filters")
 
 	// Configuration Flags - These will be grouped at the bottom of the help flags
 
@@ -211,11 +213,12 @@ Full docs can be found at github.com/aws/amazon-` + binName
 		AllowList:              cli.RegexMe(flags[allowList]),
 		DenyList:               cli.RegexMe(flags[denyList]),
 		InstanceTypeBase:       cli.StringMe(flags[instanceTypeBase]),
+		Flexible:               cli.BoolMe(flags[flexible]),
 	}
 
 	if flags[verbose] != nil {
 		resultsOutputFn = outputs.VerboseInstanceTypeOutput
-		transformedFilters, err := instanceSelector.AggregateFilterTransform(filters, selector.AggregateLowPercentile, selector.AggregateHighPercentile)
+		transformedFilters, err := instanceSelector.AggregateFilterTransform(filters)
 		if err != nil {
 			fmt.Printf("An error occurred while transforming the aggregate filters")
 			os.Exit(1)
