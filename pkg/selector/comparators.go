@@ -141,11 +141,12 @@ func supportSyntaxToBool(instanceTypeSupport *string) *bool {
 }
 
 func calculateVCpusToMemoryRatio(vcpusVal *int64, memoryVal *int64) *float64 {
-	if vcpusVal == nil || memoryVal == nil {
+	if vcpusVal == nil || *vcpusVal == 0 || memoryVal == nil {
 		return nil
 	}
 	// normalize vcpus to a mebivcpu value
-	return aws.Float64(float64(*memoryVal) / float64(*vcpusVal*1024))
+	result := math.Ceil(float64(*memoryVal) / float64(*vcpusVal*1024))
+	return &result
 }
 
 // Slice helper function
