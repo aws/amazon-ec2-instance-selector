@@ -40,7 +40,7 @@ func TestBoolFlag(t *testing.T) {
 
 func TestIntFlag(t *testing.T) {
 	cli := getTestCLI()
-	for _, flagFn := range []func(string, *string, *int, string){cli.IntFlag, cli.ConfigIntFlag} {
+	for _, flagFn := range []func(string, *string, *int, string){cli.IntFlag, cli.ConfigIntFlag, cli.SuiteIntFlag} {
 		flagName := "test-int"
 		flagFn(flagName, cli.StringMe("t"), nil, "Test Int")
 		_, ok := cli.Flags[flagName]
