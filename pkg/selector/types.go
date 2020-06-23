@@ -14,6 +14,7 @@
 package selector
 
 import (
+	"encoding/json"
 	"regexp"
 
 	"github.com/aws/aws-sdk-go/service/ec2"
@@ -50,6 +51,28 @@ type IntRangeFilter struct {
 type filterPair struct {
 	filterValue  interface{}
 	instanceSpec interface{}
+}
+
+func getRegexpString(r *regexp.Regexp) *string {
+	if r == nil {
+		return nil
+	}
+	rStr := r.String()
+	return &rStr
+}
+
+// MarshalIndent is used to return a pretty-print json representation of a Filters struct
+func (f *Filters) MarshalIndent(prefix, indent string) ([]byte, error) {
+	type Alias Filters
+	return json.MarshalIndent(&struct {
+		AllowList *string
+		DenyList  *string
+		*Alias
+	}{
+		AllowList: getRegexpString(f.AllowList),
+		DenyList:  getRegexpString(f.DenyList),
+		Alias:     (*Alias)(f),
+	}, prefix, indent)
 }
 
 // Filters is used to group instance type resource attributes for filtering
