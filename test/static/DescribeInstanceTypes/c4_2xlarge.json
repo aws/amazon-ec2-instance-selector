@@ -1,0 +1,82 @@
+{
+    "InstanceTypes": [
+        {
+            "AutoRecoverySupported": true,
+            "BareMetal": false,
+            "BurstablePerformanceSupported": false,
+            "CurrentGeneration": true,
+            "DedicatedHostsSupported": true,
+            "EbsInfo": {
+                "EbsOptimizedInfo": {
+                    "BaselineBandwidthInMbps": 1000,
+                    "BaselineIops": 8000,
+                    "BaselineThroughputInMBps": 125,
+                    "MaximumBandwidthInMbps": 1000,
+                    "MaximumIops": 8000,
+                    "MaximumThroughputInMBps": 125
+                },
+                "EbsOptimizedSupport": "default",
+                "EncryptionSupport": "supported"
+            },
+            "FpgaInfo": null,
+            "FreeTierEligible": false,
+            "GpuInfo": null,
+            "HibernationSupported": true,
+            "Hypervisor": "xen",
+            "InferenceAcceleratorInfo": null,
+            "InstanceStorageInfo": null,
+            "InstanceStorageSupported": false,
+            "InstanceType": "c4.2xlarge",
+            "MemoryInfo": {
+                "SizeInMiB": 15360
+            },
+            "NetworkInfo": {
+                "EfaSupported": false,
+                "EnaSupport": "unsupported",
+                "Ipv4AddressesPerInterface": 15,
+                "Ipv6AddressesPerInterface": 15,
+                "Ipv6Supported": true,
+                "MaximumNetworkInterfaces": 4,
+                "NetworkPerformance": "High"
+            },
+            "PlacementGroupInfo": {
+                "SupportedStrategies": [
+                    "cluster",
+                    "partition",
+                    "spread"
+                ]
+            },
+            "ProcessorInfo": {
+                "SupportedArchitectures": [
+                    "x86_64"
+                ],
+                "SustainedClockSpeedInGhz": 2.9
+            },
+            "SupportedRootDeviceTypes": [
+                "ebs"
+            ],
+            "SupportedUsageClasses": [
+                "on-demand",
+                "spot"
+            ],
+            "SupportedVirtualizationTypes": [
+                "hvm"
+            ],
+            "VCpuInfo": {
+                "DefaultCores": 4,
+                "DefaultThreadsPerCore": 2,
+                "DefaultVCpus": 8,
+                "ValidCores": [
+                    1,
+                    2,
+                    3,
+                    4
+                ],
+                "ValidThreadsPerCore": [
+                    1,
+                    2
+                ]
+            }
+        }
+    ]
+}
