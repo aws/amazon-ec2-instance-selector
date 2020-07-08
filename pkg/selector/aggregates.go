@@ -55,10 +55,11 @@ func (itf Selector) TransformBaseInstanceType(filters Filters) (Filters, error) 
 		filters.Fpga = &isFpgaSupported
 	}
 	if filters.GpusRange == nil {
+		gpuCount := 0
 		if instanceTypeInfo.GpuInfo != nil {
-			gpuCount := int(*getTotalGpusCount(instanceTypeInfo.GpuInfo))
-			filters.GpusRange = &IntRangeFilter{LowerBound: gpuCount, UpperBound: gpuCount}
+			gpuCount = int(*getTotalGpusCount(instanceTypeInfo.GpuInfo))
 		}
+		filters.GpusRange = &IntRangeFilter{LowerBound: gpuCount, UpperBound: gpuCount}
 	}
 	if filters.MemoryRange == nil {
 		lowerBound := int(float64(*instanceTypeInfo.MemoryInfo.SizeInMiB) * AggregateLowPercentile)

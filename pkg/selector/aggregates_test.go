@@ -40,6 +40,28 @@ func TestTransformBaseInstanceType(t *testing.T) {
 	h.Assert(t, *filters.BareMetal == false, " should filter out bare metal instances")
 	h.Assert(t, *filters.Fpga == false, "should filter out FPGA instances")
 	h.Assert(t, *filters.CPUArchitecture == "x86_64", "should only return x86_64 instance types")
+	h.Assert(t, filters.GpusRange.LowerBound == 0 && filters.GpusRange.UpperBound == 0, "should only return non-gpu instance types")
+}
+
+func TestTransformBaseInstanceTypeWithGPU(t *testing.T) {
+	ec2Mock := mockedEC2{
+		DescribeInstanceTypesResp:         setupMock(t, describeInstanceTypes, "g2_2xlarge.json").DescribeInstanceTypesResp,
+		DescribeInstanceTypesPagesResp:    setupMock(t, describeInstanceTypesPages, "g2_2xlarge_group.json").DescribeInstanceTypesPagesResp,
+		DescribeInstanceTypeOfferingsResp: setupMock(t, describeInstanceTypeOfferings, "us-east-2a.json").DescribeInstanceTypeOfferingsResp,
+	}
+	itf := selector.Selector{
+		EC2: ec2Mock,
+	}
+	instanceTypeBase := "g2.2xlarge"
+	filters := selector.Filters{
+		InstanceTypeBase: &instanceTypeBase,
+	}
+	filters, err := itf.TransformBaseInstanceType(filters)
+	h.Ok(t, err)
+	h.Assert(t, *filters.BareMetal == false, " should filter out bare metal instances")
+	h.Assert(t, *filters.Fpga == false, "should filter out FPGA instances")
+	h.Assert(t, *filters.CPUArchitecture == "x86_64", "should only return x86_64 instance types")
+	h.Assert(t, filters.GpusRange.LowerBound == 1 && filters.GpusRange.UpperBound == 1, "should only return gpu instance types")
 }
 
 func TestTransformFamilyFlexibile(t *testing.T) {
