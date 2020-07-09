@@ -10,7 +10,7 @@ import (
 
 const (
 	// AggregateLowPercentile is the default lower percentile for resource ranges on similar instance type comparisons
-	AggregateLowPercentile = 0.8
+	AggregateLowPercentile = 0.9
 	// AggregateHighPercentile is the default upper percentile for resource ranges on similar instance type comparisons
 	AggregateHighPercentile = 1.2
 )
