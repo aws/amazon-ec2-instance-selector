@@ -1,0 +1,203 @@
+#!/bin/bash
+set -euo pipefail
+
+SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
+BUILD_DIR="${SCRIPTPATH}/../build"
+
+TAP_REPO="aws/homebrew-tap"
+TAP_NAME=$(echo ${TAP_REPO} | cut -d'/' -f2)
+
+SYNC_DIR="${BUILD_DIR}/homebrew-sync"
+FORK_DIR="${SYNC_DIR}/${TAP_NAME}"
+DOWNLOAD_DIR="${BUILD_DIR}/downloads"
+BREW_CONFIG_DIR="${BUILD_DIR}/brew-config"
+
+REPO=$(make -s -f "${SCRIPTPATH}/../Makefile" repo-full-name)
+BINARY_BASE=""
+PLATFORMS=("darwin/amd64" "linux/amd64")
+DRY_RUN=0
+
+GH_CLI_VERSION="0.10.1"
+GH_CLI_CONFIG_PATH="${HOME}/.config/gh/config.yml"
+KERNEL=$(uname -s | tr '[:upper:]' '[:lower:]')
+OS="${KERNEL}"
+if [[ "${KERNEL}" == "darwin" ]]; then 
+  OS="macOS"
+fi
+
+VERSION_REGEX="^v[0-9]+\.[0-9]+\.[0-9]+\$"
+VERSION=$(make -s -f "${SCRIPTPATH}/../Makefile" version)
+
+USAGE=$(cat << EOM
+  Usage: sync-to-aws-homebrew-tap  -r <repo> -b <binary-basename> -p <platform_pairs>
+  Syncs tar.gz\'d binaries to the aws/homebrew-tap
+
+  Example: sync-to-aws-homebrew-tap -r "aws/amazon-ec2-instance-selector"
+          Required:
+            -b          Binary basename (i.e. -b "ec2-instance-selector")
+
+          Optional:
+            -r          Github repo to sync to in the form of "org/name"  (i.e. -r "aws/amazon-ec2-instance-selector") [DEFAULT: output of \`make repo-full-name\`]
+            -v          VERSION: The application version of the docker image [DEFAULT: output of \`make version\`]
+            -p          Platform pair list (os/architecture) [DEFAULT: linux/amd64]
+            -d          Dry-Run will do all steps except pushing to git and opening the sync PR
+EOM
+)
+
+# Process our input arguments
+while getopts "p:b:r:v:d" opt; do
+  case ${opt} in
+    r ) # Github repo
+        REPO="$OPTARG"
+      ;;
+    b ) # binary basename
+        BINARY_BASE="$OPTARG"
+      ;;
+    p ) # Supported Platforms
+        IFS=',' read -ra PLATFORMS <<< "$OPTARG"
+      ;;
+    v ) # App Version
+        VERSION="$OPTARG"
+      ;;
+    d ) # Dry Run
+        DRY_RUN=1
+      ;;
+    \? )
+        echo "$USAGE" 1>&2
+        exit
+      ;;
+  esac
+done
+
+if [[ -z "${BINARY_BASE}" ]]; then 
+    echo "Binary Basename (-b) must be specified"
+    exit 3
+fi
+
+if [[ ! "${VERSION}" =~ $VERSION_REGEX ]]; then
+    echo "🙈 Not on a current release, so not syncing with tap $TAP_REPO"
+    exit 3
+fi
+
+if [[ -z $(command -v gh) ]] || [[ ! $(gh --version) =~ $GH_CLI_VERSION ]]; then
+  mkdir -p ${BUILD_DIR}/gh
+  curl -Lo ${BUILD_DIR}/gh/gh.tar.gz "https://github.com/cli/cli/releases/download/v${GH_CLI_VERSION}/gh_${GH_CLI_VERSION}_${OS}_amd64.tar.gz"
+  tar -C ${BUILD_DIR}/gh -xvf "${BUILD_DIR}/gh/gh.tar.gz"
+  export PATH="${BUILD_DIR}/gh/gh_${GH_CLI_VERSION}_${OS}_amd64/bin:$PATH"
+  if [[ ! $(gh --version) =~ $GH_CLI_VERSION ]]; then
+    echo "❌ Failed install of github cli"
+    exit 4
+  fi
+fi
+
+function restore_gh_config() {
+  mv -f "${GH_CLI_CONFIG_PATH}.bkup" "${GH_CLI_CONFIG_PATH}" || :
+}
+
+if [[ -n $(env | grep GITHUB_TOKEN) ]] && [[ -n "${GITHUB_TOKEN}" ]]; then
+  trap restore_gh_config EXIT INT TERM ERR
+  cp -f "${HOME}/.config/gh/config.yml" "${HOME}/.config/gh/config.yml.bkup"
+  cat << EOF > "${HOME}/.config/gh/config.yml"
+hosts:
+    github.com:
+        oauth_token: ${GITHUB_TOKEN}
+        user: ${GITHUB_USERNAME}
+EOF
+fi
+
+VERSION_NUM=$(echo "${VERSION}" | cut -c 2- | tr -d '\n')
+
+function fail() {
+  echo "❌ Homebrew sync failed"
+  exit 5
+}
+
+trap fail ERR TERM INT
+
+rm -rf "${DOWNLOAD_DIR}" "${SYNC_DIR}" "${BREW_CONFIG_DIR}"
+mkdir -p "${DOWNLOAD_DIR}" "${SYNC_DIR}" "${BREW_CONFIG_DIR}"
+
+BASE_ASSET_URL="https://github.com/${REPO}/releases/download/${VERSION}/${BINARY_BASE}"
+MAC_HASH=""
+LINUX_HASH=""
+LINUX_ARM64_HASH=""
+
+function hash_file() {
+  local file="${1}"
+  echo "$(openssl dgst -sha256 "${file}" | cut -d' ' -f2 | tr -d '\n')"
+}
+
+for os_arch in "${PLATFORMS[@]}"; do
+    os=$(echo "${os_arch}" | cut -d'/' -f1)
+    arch=$(echo "${os_arch}" | cut -d'/' -f2)
+
+    asset_url="${BASE_ASSET_URL}-${os}-${arch}.tar.gz"
+    asset_file="${BINARY_BASE}-${os}-${arch}.tar.gz"
+    asset_file_path="${DOWNLOAD_DIR}/${asset_file}"
+
+    curl -Lo "${asset_file_path}" "${asset_url}"
+
+    asset_file_size=$(du -k "${asset_file_path}" | cut -f1)
+    if [[ "${asset_file_size}" -lt 100 ]]; then
+      ## If we cannot download and dry-run is set, build it locally
+      if [[ "${DRY_RUN}" -eq 1 ]]; then 
+        ${SCRIPTPATH}/build-binaries -d -v "${VERSION}" -p "${os_arch}"
+        cp "${BUILD_DIR}/bin/${asset_file}" ${asset_file_path}
+      else 
+        echo "❗️${asset_file_path} is empty, skipping"
+        continue
+      fi
+    fi
+
+    if [[ "${os}" == "darwin" ]]; then
+      MAC_HASH=$(hash_file "${asset_file_path}")
+    elif [[ "${os}" == "linux" && "${arch}" == "amd64" ]]; then
+      LINUX_HASH=$(hash_file "${asset_file_path}")
+    elif [[ "${os}" == "linux" && "${arch}" == "arm64" ]]; then
+      LINUX_ARM64_HASH=$(hash_file "${asset_file_path}")
+    fi
+
+done
+
+cat << EOM > "${BREW_CONFIG_DIR}/${BINARY_BASE}.json"
+{
+    "name": "${BINARY_BASE}",
+    "version": "${VERSION_NUM}",
+    "bin": "${BINARY_BASE}",
+    "bottle": {
+        "root_url": "${BASE_ASSET_URL}",
+        "sha256": {
+            "sierra": "${MAC_HASH}",
+            "linux": "${LINUX_HASH}",
+            "linux_arm": "${LINUX_ARM64_HASH}"
+        }
+    }
+}
+EOM
+
+if [[ "${DRY_RUN}" -eq 0 ]]; then 
+  if [[ -z "${MAC_HASH}" ]] && [[ -z "${LINUX_HASH}" ]] && [[ -z "${LINUX_ARM64_HASH}" ]]; then 
+    echo "❌ No hashes were calculated and dry-run is NOT engaged. Bailing out so we don't open a bad PR to the tap."
+    exit 4
+  fi
+  cd "${SYNC_DIR}"
+  gh repo fork $TAP_REPO --clone --remote
+  cd "${FORK_DIR}"
+  git remote set-url origin https://${GITHUB_USERNAME}:${GITHUB_TOKEN}@github.com/${TAP_REPO}.git
+  DEFAULT_BRANCH=$(git rev-parse --abbrev-ref HEAD | tr -d '\n')
+
+  cp "${BREW_CONFIG_DIR}/${BINARY_BASE}.json" "${FORK_DIR}/bottle-configs/${BINARY_BASE}.json"
+
+  ## best effort sync of fork
+  git pull upstream ${DEFAULT_BRANCH} || :
+  git push -u origin ${DEFAULT_BRANCH} || :
+
+  git checkout -b "${BINARY_BASE}-${VERSION}"
+  git add "bottle-configs/${BINARY_BASE}.json"
+  git commit -m "${BINARY_BASE} update to version ${VERSION_NUM}"
+
+  git push -u origin "${BINARY_BASE}-${VERSION}"
+  gh pr create --fill 
+fi
+
+echo "✅ Homebrew sync complete"
