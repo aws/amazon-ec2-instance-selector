@@ -3,11 +3,12 @@ set -euo pipefail
 
 SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
 
-REPO_ROOT_PATH=$SCRIPTPATH/../
-MAKE_FILE_PATH=$REPO_ROOT_PATH/Makefile
-mkdir -p $SCRIPTPATH/../build/bin
+REPO_ROOT_PATH="${SCRIPTPATH}/../"
+MAKE_FILE_PATH="${REPO_ROOT_PATH}/Makefile"
+BIN_DIR="${SCRIPTPATH}/../build/bin"
+mkdir -p "${BIN_DIR}"
 
-VERSION=$(make -s -f $MAKE_FILE_PATH version)
+VERSION=$(make -s -f ${MAKE_FILE_PATH} version)
 PLATFORMS=("linux/amd64")
 PASS_THRU_ARGS=""
 
@@ -47,12 +48,15 @@ for os_arch in "${PLATFORMS[@]}"; do
     arch=$(echo $os_arch | cut -d'/' -f2)
     container_name="extract-aeis-$os-$arch"
     repo_name="aeis-bin"
-    bin_name="ec2-instance-selector-$os-$arch"
+    base_bin_name="ec2-instance-selector"
+    bin_name="${base_bin_name}-${os}-${arch}"
 
     docker container rm $container_name || :
     $SCRIPTPATH/build-docker-images -p $os_arch -v $VERSION -r $repo_name $PASS_THRU_ARGS
     docker container create --rm --name $container_name "$repo_name:$VERSION-$os-$arch"
-    docker container cp $container_name:/ec2-instance-selector $SCRIPTPATH/../build/bin/$bin_name
+    docker container cp $container_name:/ec2-instance-selector $BIN_DIR/$bin_name
 
-    tar -zcvf ${SCRIPTPATH}/../build/bin/${bin_name}.tar.gz -C ${SCRIPTPATH}/../build/bin ${bin_name}
+    cp ${BIN_DIR}/${bin_name} ${BIN_DIR}/${base_bin_name}
+    tar -zcvf ${BIN_DIR}/${bin_name}.tar.gz -C ${BIN_DIR} ${base_bin_name}
+    rm -f ${BIN_DIR}/${base_bin_name}
 done
