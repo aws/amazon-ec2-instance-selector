@@ -1,6 +1,7 @@
 VERSION ?= $(shell git describe --tags --always --dirty)
 BIN ?= ec2-instance-selector
 IMG ?= amazon/amazon-ec2-instance-selector
+GH_REPO ?= aws/amazon-ec2-instance-selector
 IMG_TAG ?= ${VERSION}
 IMG_W_TAG = ${IMG}:${IMG_TAG}
 DOCKERHUB_USERNAME ?= ""
@@ -12,6 +13,8 @@ MAKEFILE_PATH = $(dir $(realpath -s $(firstword $(MAKEFILE_LIST))))
 BUILD_DIR_PATH = ${MAKEFILE_PATH}/build
 SUPPORTED_PLATFORMS ?= "windows/amd64,darwin/amd64,linux/amd64,linux/arm64,linux/arm"
 SELECTOR_PKG_VERSION_VAR=github.com/aws/amazon-ec2-instance-selector/pkg/selector.versionID
+LATEST_RELEASE_TAG=$(shell git tag | tail -1)
+PREVIOUS_RELEASE_TAG=$(shell git tag | tail -2 | head -1)
 
 $(shell mkdir -p ${BUILD_DIR_PATH} && touch ${BUILD_DIR_PATH}/_go.mod)
 
@@ -44,6 +47,12 @@ push-docker-images:
 
 version:
 	@echo ${VERSION}
+
+latest-release-tag:
+	@echo ${LATEST_RELEASE_TAG}
+
+previous-release-tag:
+	@echo ${PREVIOUS_RELEASE_TAG}
 
 image:
 	@echo ${IMG_W_TAG}
@@ -78,6 +87,12 @@ sync-readme-to-dockerhub:
 
 unit-test:
 	go test -bench=. ${MAKEFILE_PATH}/...  -v -coverprofile=coverage.out -covermode=atomic -outputdir=${BUILD_DIR_PATH}
+
+homebrew-sync-dry-run:
+	${MAKEFILE_PATH}/scripts/sync-to-homebrew-tap -d -b ${BIN} -r ${GH_REPO} -p ${SUPPORTED_PLATFORMS} -v ${LATEST_RELEASE_TAG}
+
+homebrew-sync:
+	${MAKEFILE_PATH}/scripts/sync-to-homebrew-tap -b ${BIN} -r ${GH_REPO} -p ${SUPPORTED_PLATFORMS}
 
 build: compile
 
