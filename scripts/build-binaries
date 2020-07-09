@@ -53,4 +53,6 @@ for os_arch in "${PLATFORMS[@]}"; do
     $SCRIPTPATH/build-docker-images -p $os_arch -v $VERSION -r $repo_name $PASS_THRU_ARGS
     docker container create --rm --name $container_name "$repo_name:$VERSION-$os-$arch"
     docker container cp $container_name:/ec2-instance-selector $SCRIPTPATH/../build/bin/$bin_name
+
+    tar -zcvf ${SCRIPTPATH}/../build/bin/${bin_name}.tar.gz -C ${SCRIPTPATH}/../build/bin ${bin_name}
 done
