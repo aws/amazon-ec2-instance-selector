@@ -1,7 +1,7 @@
 VERSION ?= $(shell git describe --tags --always --dirty)
 BIN ?= ec2-instance-selector
 IMG ?= amazon/amazon-ec2-instance-selector
-GH_REPO ?= aws/amazon-ec2-instance-selector
+REPO_FULL_NAME ?= aws/amazon-ec2-instance-selector
 IMG_TAG ?= ${VERSION}
 IMG_W_TAG = ${IMG}:${IMG_TAG}
 DOCKERHUB_USERNAME ?= ""
@@ -17,6 +17,9 @@ LATEST_RELEASE_TAG=$(shell git tag | tail -1)
 PREVIOUS_RELEASE_TAG=$(shell git tag | tail -2 | head -1)
 
 $(shell mkdir -p ${BUILD_DIR_PATH} && touch ${BUILD_DIR_PATH}/_go.mod)
+
+repo-full-name:
+	@echo ${REPO_FULL_NAME}
 
 compile:
 	@echo ${MAKEFILE_PATH}
@@ -89,10 +92,10 @@ unit-test:
 	go test -bench=. ${MAKEFILE_PATH}/...  -v -coverprofile=coverage.out -covermode=atomic -outputdir=${BUILD_DIR_PATH}
 
 homebrew-sync-dry-run:
-	${MAKEFILE_PATH}/scripts/sync-to-homebrew-tap -d -b ${BIN} -r ${GH_REPO} -p ${SUPPORTED_PLATFORMS} -v ${LATEST_RELEASE_TAG}
+	${MAKEFILE_PATH}/scripts/sync-to-aws-homebrew-tap -d -b ${BIN} -r ${REPO_FULL_NAME} -p ${SUPPORTED_PLATFORMS} -v ${LATEST_RELEASE_TAG}
 
 homebrew-sync:
-	${MAKEFILE_PATH}/scripts/sync-to-homebrew-tap -b ${BIN} -r ${GH_REPO} -p ${SUPPORTED_PLATFORMS}
+	${MAKEFILE_PATH}/scripts/sync-to-aws-homebrew-tap -b ${BIN} -r ${GH_REPO} -p ${SUPPORTED_PLATFORMS}
 
 build: compile
 

@@ -4,7 +4,7 @@ set -euo pipefail
 SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
 BUILD_DIR="${SCRIPTPATH}/../build"
 
-TAP_REPO="bwagner5/homebrew-tap"
+TAP_REPO="aws/homebrew-tap"
 TAP_NAME=$(echo ${TAP_REPO} | cut -d'/' -f2)
 
 SYNC_DIR="${BUILD_DIR}/homebrew-sync"
@@ -12,7 +12,7 @@ FORK_DIR="${SYNC_DIR}/${TAP_NAME}"
 DOWNLOAD_DIR="${BUILD_DIR}/downloads"
 BREW_CONFIG_DIR="${BUILD_DIR}/brew-config"
 
-REPO=""
+REPO=$(make -s -f "${SCRIPTPATH}/../Makefile" repo-full-name)
 BINARY_BASE=""
 PLATFORMS=("darwin/amd64" "linux/amd64")
 DRY_RUN=0
@@ -29,18 +29,18 @@ VERSION_REGEX="^v[0-9]+\.[0-9]+\.[0-9]+\$"
 VERSION=$(make -s -f "${SCRIPTPATH}/../Makefile" version)
 
 USAGE=$(cat << EOM
-  Usage: sync-to-homebrew-tap  -r <repo> -b <binary-basename> -p <platform_pairs>
+  Usage: sync-to-aws-homebrew-tap  -r <repo> -b <binary-basename> -p <platform_pairs>
   Syncs tar.gz\'d binaries to the aws/homebrew-tap
 
-  Example: sync-to-homebrew-tap -r "aws/amazon-ec2-instance-selector"
+  Example: sync-to-aws-homebrew-tap -r "aws/amazon-ec2-instance-selector"
           Required:
-            -r          Github repo org/name  (i.e. -r "aws/amazon-ec2-instance-selector")
             -b          Binary basename (i.e. -b "ec2-instance-selector")
 
           Optional:
+            -r          Github repo to sync to in the form of "org/name"  (i.e. -r "aws/amazon-ec2-instance-selector") [DEFAULT: output of \`make repo-full-name\`]
             -v          VERSION: The application version of the docker image [DEFAULT: output of \`make version\`]
             -p          Platform pair list (os/architecture) [DEFAULT: linux/amd64]
-            -d          Dry-Run will do all steps except posting pushing to git and opening the sync PR
+            -d          Dry-Run will do all steps except pushing to git and opening the sync PR
 EOM
 )
 
@@ -69,19 +69,14 @@ while getopts "p:b:r:v:d" opt; do
   esac
 done
 
-if [[ -z "${REPO}" ]]; then 
-    echo "Repo (-r) must be specified"
-    exit 1
-fi
-
 if [[ -z "${BINARY_BASE}" ]]; then 
     echo "Binary Basename (-b) must be specified"
-    exit 1
+    exit 3
 fi
 
 if [[ ! "${VERSION}" =~ $VERSION_REGEX ]]; then
     echo "🙈 Not on a current release, so not syncing with tap $TAP_REPO"
-    exit 1
+    exit 3
 fi
 
 if [[ -z $(command -v gh) ]] || [[ ! $(gh --version) =~ $GH_CLI_VERSION ]]; then
@@ -91,7 +86,7 @@ if [[ -z $(command -v gh) ]] || [[ ! $(gh --version) =~ $GH_CLI_VERSION ]]; then
   export PATH="${BUILD_DIR}/gh/gh_${GH_CLI_VERSION}_${OS}_amd64/bin:$PATH"
   if [[ ! $(gh --version) =~ $GH_CLI_VERSION ]]; then
     echo "❌ Failed install of github cli"
-    exit 3
+    exit 4
   fi
 fi
 
@@ -114,7 +109,7 @@ VERSION_NUM=$(echo "${VERSION}" | cut -c 2- | tr -d '\n')
 
 function fail() {
   echo "❌ Homebrew sync failed"
-  exit 2
+  exit 5
 }
 
 trap fail ERR TERM INT
