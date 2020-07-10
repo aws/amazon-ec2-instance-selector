@@ -13,7 +13,7 @@ trap exit_and_fail INT ERR
 docker build --target=builder --build-arg="GOPROXY=direct" -t codeblocks -f $SCRIPTPATH/../../Dockerfile $SCRIPTPATH/../../
 docker build -t rundoc -f $SCRIPTPATH/rundoc-Dockerfile $SCRIPTPATH/
 function rd() {
-   docker run -it --rm -v $SCRIPTPATH/../../:/aeis rundoc rundoc $@
+   docker run -it --rm -v $SCRIPTPATH/../../:/aeis rundoc rundoc "$@"
 }
 
 rundoc_output=$(rd list-blocks /aeis/README.md)

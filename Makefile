@@ -69,6 +69,9 @@ go-report-card-test:
 spellcheck:
 	${MAKEFILE_PATH}/test/readme-test/run-readme-spellcheck
 
+shellcheck:
+	${MAKEFILE_PATH}/test/shellcheck/run-shellcheck
+
 ## requires aws credentials
 readme-codeblock-test: 
 	${MAKEFILE_PATH}/test/readme-test/run-readme-codeblocks
@@ -101,7 +104,7 @@ build: compile
 
 release: build-binaries build-docker-images push-docker-images upload-resources-to-github
 
-test: spellcheck unit-test license-test go-report-card-test output-validation-test readme-codeblock-test
+test: spellcheck shellcheck unit-test license-test go-report-card-test output-validation-test readme-codeblock-test
 
 help:
 	@echo $(CURDIR)
