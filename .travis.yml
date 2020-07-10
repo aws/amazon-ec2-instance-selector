@@ -19,6 +19,9 @@ jobs:
       script: make spellcheck
       name: Markdown Spellcheck
     - stage: Test
+      script: make shellcheck
+      name: Shell Script Check
+    - stage: Test
       script: make homebrew-sync-dry-run
       name: Homebrew Sync Dry-Run
     - stage: Test

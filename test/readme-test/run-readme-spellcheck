@@ -1,5 +1,5 @@
 #!/bin/bash
-set -euo errexit
+set -euo pipefail
 
 SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
 
@@ -7,7 +7,7 @@ function exit_and_fail() {
    echo "❌ Test Failed! Found a markdown file with spelling errors."
    exit 1
 }
-trap exit_and_fail INT ERR
+trap exit_and_fail INT ERR TERM
 
 docker build -t misspell -f $SCRIPTPATH/spellcheck-Dockerfile $SCRIPTPATH/
 docker run -i --rm -v $SCRIPTPATH/../../:/aeis misspell /bin/bash -c 'find /aeis/ -type f -name "*.md" -not -path "build" | grep -v "/build/" | xargs misspell -error -debug'
