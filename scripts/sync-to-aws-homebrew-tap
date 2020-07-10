@@ -97,7 +97,7 @@ function restore_gh_config() {
 if [[ -n $(env | grep GITHUB_TOKEN) ]] && [[ -n "${GITHUB_TOKEN}" ]]; then
   trap restore_gh_config EXIT INT TERM ERR
   mkdir -p "${HOME}/.config/gh"
-  cp -f "${GH_CLI_CONFIG_PATH}" "${GH_CLI_CONFIG_PATH}.bkup"
+  cp -f "${GH_CLI_CONFIG_PATH}" "${GH_CLI_CONFIG_PATH}.bkup" || :
   cat << EOF > "${GH_CLI_CONFIG_PATH}"
 hosts:
     github.com:
