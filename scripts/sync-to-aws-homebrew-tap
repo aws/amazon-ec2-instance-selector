@@ -136,7 +136,7 @@ for os_arch in "${PLATFORMS[@]}"; do
     asset_file="${BINARY_BASE}-${os}-${arch}.tar.gz"
     asset_file_path="${DOWNLOAD_DIR}/${asset_file}"
 
-    curl -Lo "${asset_file_path}" "${asset_url}"
+    curl -H 'Cache-Control: no-cache' -Lo "${asset_file_path}" "${asset_url}?$(date +%s)"
 
     asset_file_size=$(du -k "${asset_file_path}" | cut -f1)
     if [[ "${asset_file_size}" -lt 100 ]]; then
@@ -184,7 +184,7 @@ if [[ "${DRY_RUN}" -eq 0 ]]; then
   cd "${SYNC_DIR}"
   gh repo fork $TAP_REPO --clone --remote
   cd "${FORK_DIR}"
-  git remote set-url origin https://${GITHUB_USERNAME}:${GITHUB_TOKEN}@github.com/${TAP_REPO}.git
+  git remote set-url origin https://${GITHUB_USERNAME}:${GITHUB_TOKEN}@github.com/${GITHUB_USERNAME}/${TAP_NAME}.git
   DEFAULT_BRANCH=$(git rev-parse --abbrev-ref HEAD | tr -d '\n')
 
   cp "${BREW_CONFIG_DIR}/${BINARY_BASE}.json" "${FORK_DIR}/bottle-configs/${BINARY_BASE}.json"
