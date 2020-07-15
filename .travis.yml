@@ -50,3 +50,7 @@ jobs:
       if: type = push AND tag =~ /^v\d+\.\d+(\.\d+)?(-\S*)?$/ AND env(DOCKERHUB_USERNAME) IS present
       script: make release
       name: Release Assets
+    - stage: Deploy
+      if: type = push AND tag =~ /^v\d+\.\d+(\.\d+)?(-\S*)?$/ AND env(GITHUB_USERNAME) IS present
+      script: make homebrew-sync
+      name: Sync to AWS homebrew-tap
