@@ -98,7 +98,7 @@ homebrew-sync-dry-run:
 	${MAKEFILE_PATH}/scripts/sync-to-aws-homebrew-tap -d -b ${BIN} -r ${REPO_FULL_NAME} -p ${SUPPORTED_PLATFORMS} -v ${LATEST_RELEASE_TAG}
 
 homebrew-sync:
-	${MAKEFILE_PATH}/scripts/sync-to-aws-homebrew-tap -b ${BIN} -r ${GH_REPO} -p ${SUPPORTED_PLATFORMS}
+	${MAKEFILE_PATH}/scripts/sync-to-aws-homebrew-tap -b ${BIN} -r ${REPO_FULL_NAME} -p ${SUPPORTED_PLATFORMS}
 
 build: compile
 
