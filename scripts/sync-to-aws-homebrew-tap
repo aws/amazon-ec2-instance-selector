@@ -1,8 +1,9 @@
 #!/bin/bash
 set -euo pipefail
-
+set -x
 SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
 BUILD_DIR="${SCRIPTPATH}/../build"
+BUILD_ID=$(uuidgen | cut -d'-' -f1 | tr '[:upper:]' '[:lower:]')
 
 TAP_REPO="aws/homebrew-tap"
 TAP_NAME=$(echo ${TAP_REPO} | cut -d'/' -f2)
@@ -70,13 +71,17 @@ while getopts "p:b:r:v:d" opt; do
 done
 
 if [[ -z "${BINARY_BASE}" ]]; then 
-    echo "Binary Basename (-b) must be specified"
-    exit 3
+  echo "Binary Basename (-b) must be specified"
+  exit 3
 fi
 
 if [[ ! "${VERSION}" =~ $VERSION_REGEX ]]; then
-    echo "🙈 Not on a current release, so not syncing with tap $TAP_REPO"
-    exit 3
+  echo "🙈 Not on a current release, so not syncing with tap $TAP_REPO"
+  exit 3
+fi
+
+if [[ -z "${REPO}" ]]; then 
+  echo "Repo (-r) must be specified if no \"make repo-full-name\" target exists"
 fi
 
 if [[ -z $(command -v gh) ]] || [[ ! $(gh --version) =~ $GH_CLI_VERSION ]]; then
@@ -182,20 +187,42 @@ if [[ "${DRY_RUN}" -eq 0 ]]; then
     exit 4
   fi
   cd "${SYNC_DIR}"
-  gh repo fork $TAP_REPO --clone --remote
+  gh repo fork $TAP_REPO --clone=false --remote=false
   cd "${FORK_DIR}"
   git remote set-url origin https://${GITHUB_USERNAME}:${GITHUB_TOKEN}@github.com/${GITHUB_USERNAME}/${TAP_NAME}.git
   DEFAULT_BRANCH=$(git rev-parse --abbrev-ref HEAD | tr -d '\n')
 
   cp "${BREW_CONFIG_DIR}/${BINARY_BASE}.json" "${FORK_DIR}/bottle-configs/${BINARY_BASE}.json"
 
-  git checkout -b "${BINARY_BASE}-${VERSION}" upstream/${DEFAULT_BRANCH}
+  FORK_RELEASE_BRANCH="${BINARY_BASE}-${VERSION}-${BUILD_DIR}"
+
+  git config user.name "ec2-bot 🤖"
+  git config user.email "ec2-bot@users.noreply.github.com"
+  
+  git checkout -b "${FORK_RELEASE_BRANCH}" upstream/${DEFAULT_BRANCH}
   git add "bottle-configs/${BINARY_BASE}.json"
   git commit -m "${BINARY_BASE} update to version ${VERSION_NUM}"
 
-  git push -u origin "${BINARY_BASE}-${VERSION}"
+  RELEASE_ID=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+    https://api.github.com/repos/${REPO}/releases | \
+    jq --arg VERSION "$VERSION" '.[] | select(.tag_name==$VERSION) | .id')
+  
+  RELEASE_NOTES=$(curl -s -H "Authorization: token ${GITHUB_TOKEN}" \
+    https://api.github.com/repos/${REPO}/releases/${RELEASE_ID} | \
+    jq -r '.body')
+
+  PR_BODY=$(cat << EOM
+  ## ${BINARY_BASE} ${VERSION} Automated Release! 🤖🤖
+
+  ### Release Notes 📝:
+
+  ${RELEASE_NOTES}
+EOM
+)
+
+  git push -u origin "${FORK_RELEASE_BRANCH}"
   gh pr create --title "🥳 ${BINARY_BASE} ${VERSION} Automated Release! 🥑" \
-    --body "## ${BINARY_BASE} ${VERSION} Automated Release! 🤖🤖"
+    --body "${PR_BODY}"
 fi
 
 echo "✅ Homebrew sync complete"
