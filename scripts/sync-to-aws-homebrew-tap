@@ -187,7 +187,7 @@ if [[ "${DRY_RUN}" -eq 0 ]]; then
     exit 4
   fi
   cd "${SYNC_DIR}"
-  gh repo fork $TAP_REPO --clone=false --remote=false
+  gh repo fork $TAP_REPO --clone --remote
   cd "${FORK_DIR}"
   git remote set-url origin https://${GITHUB_USERNAME}:${GITHUB_TOKEN}@github.com/${GITHUB_USERNAME}/${TAP_NAME}.git
   DEFAULT_BRANCH=$(git rev-parse --abbrev-ref HEAD | tr -d '\n')
