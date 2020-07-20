@@ -139,7 +139,7 @@ Filter Flags:
   -z, --availability-zones strings        Availability zones or zone ids to check EC2 capacity offered in specific AZs
       --baremetal                         Bare Metal instance types (.metal instances)
   -b, --burst-support                     Burstable instance types
-  -a, --cpu-architecture string           CPU architecture [x86_64, i386, or arm64]
+  -a, --cpu-architecture string           CPU architecture [x86_64/amd64, i386, or arm64]
       --current-generation                Current generation instance types (explicitly set this to false to not return current generation instance types)
       --deny-list string                  List of instance types which should be excluded w/ regex syntax (Example: m[1-2]\.*)
   -e, --ena-support                       Instance types where ENA is supported or required

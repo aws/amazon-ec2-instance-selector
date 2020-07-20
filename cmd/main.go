@@ -118,7 +118,7 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	cli.IntMinMaxRangeFlags(vcpus, cli.StringMe("c"), nil, "Number of vcpus available to the instance type.")
 	cli.IntMinMaxRangeFlags(memory, cli.StringMe("m"), nil, "Amount of Memory available in MiB (Example: 4096)")
 	cli.RatioFlag(vcpusToMemoryRatio, nil, nil, "The ratio of vcpus to memory in MiB. (Example: 1:2)")
-	cli.StringFlag(cpuArchitecture, cli.StringMe("a"), nil, "CPU architecture [x86_64, i386, or arm64]", nil)
+	cli.StringFlag(cpuArchitecture, cli.StringMe("a"), nil, "CPU architecture [x86_64/amd64, i386, or arm64]", nil)
 	cli.IntMinMaxRangeFlags(gpus, cli.StringMe("g"), nil, "Total Number of GPUs (Example: 4)")
 	cli.IntMinMaxRangeFlags(gpuMemoryTotal, nil, nil, "Number of GPUs' total memory in MiB (Example: 4096)")
 	cli.StringFlag(placementGroupStrategy, nil, nil, "Placement group strategy: [cluster, partition, spread]", nil)

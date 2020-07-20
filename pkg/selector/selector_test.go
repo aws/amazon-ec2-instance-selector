@@ -554,3 +554,18 @@ func TestFilter_AllowAndDenyList(t *testing.T) {
 	h.Ok(t, err)
 	h.Assert(t, len(results) == 4, "Allow/Deny List Regex: 'c4.large' should return 4 instance types matching the regex but returned %d", len(results))
 }
+
+func TestFilter_X8664_AMD64(t *testing.T) {
+	ec2Mock := setupMock(t, describeInstanceTypesPages, "t3_micro.json")
+	itf := selector.Selector{
+		EC2: ec2Mock,
+	}
+	filters := selector.Filters{
+		CPUArchitecture: aws.String("amd64"),
+	}
+	results, err := itf.Filter(filters)
+	h.Ok(t, err)
+	log.Println(results)
+	h.Assert(t, len(results) == 1, "Should only return 1 instance type with x86_64/amd64 cpu architecture")
+	h.Assert(t, results[0] == "t3.micro", "Should return t3.micro, got %s instead", results[0])
+}

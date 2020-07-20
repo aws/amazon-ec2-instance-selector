@@ -96,7 +96,7 @@ type Filters struct {
 	Burstable *bool
 
 	// CPUArchitecture of the EC2 instance type
-	// Possible values are: x86_64 or arm64
+	// Possible values are: x86_64/amd64 or arm64
 	CPUArchitecture *string
 
 	// CurrentGeneration returns the latest generation of instance types

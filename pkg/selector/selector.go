@@ -62,6 +62,9 @@ const (
 	networkPerformance     = "networkPerformance"
 	allowList              = "allowList"
 	denyList               = "denyList"
+
+	cpuArchitectureAMD64 = "amd64"
+	cpuArchitectureX8664 = "x86_64"
 )
 
 // New creates an instance of Selector provided an aws session
@@ -147,6 +150,10 @@ func (itf Selector) rawFilter(filters Filters) ([]*ec2.InstanceTypeInfo, error) 
 		} else {
 			filters.AvailabilityZones = &[]string{*filters.AvailabilityZone}
 		}
+	}
+
+	if filters.CPUArchitecture != nil && *filters.CPUArchitecture == cpuArchitectureAMD64 {
+		*filters.CPUArchitecture = cpuArchitectureX8664
 	}
 
 	if filters.AvailabilityZones != nil {
