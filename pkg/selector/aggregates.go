@@ -62,9 +62,9 @@ func (itf Selector) TransformBaseInstanceType(filters Filters) (Filters, error) 
 		filters.GpusRange = &IntRangeFilter{LowerBound: gpuCount, UpperBound: gpuCount}
 	}
 	if filters.MemoryRange == nil {
-		lowerBound := int(float64(*instanceTypeInfo.MemoryInfo.SizeInMiB) * AggregateLowPercentile)
-		upperBound := int(float64(*instanceTypeInfo.MemoryInfo.SizeInMiB) * AggregateHighPercentile)
-		filters.MemoryRange = &IntRangeFilter{LowerBound: lowerBound, UpperBound: upperBound}
+		lowerBound := (float64(*instanceTypeInfo.MemoryInfo.SizeInMiB) * AggregateLowPercentile) / 1024
+		upperBound := (float64(*instanceTypeInfo.MemoryInfo.SizeInMiB) * AggregateHighPercentile) / 1024
+		filters.MemoryRange = &Float64RangeFilter{LowerBound: lowerBound, UpperBound: upperBound}
 	}
 	if filters.VCpusRange == nil {
 		lowerBound := int(float64(*instanceTypeInfo.VCpuInfo.DefaultVCpus) * AggregateLowPercentile)

@@ -37,12 +37,12 @@ func New(binaryName string, shortUsage string, longUsage, examples string, run r
 		Run:     run,
 	}
 	return CommandLineInterface{
-		Command:       cmd,
-		Flags:         map[string]interface{}{},
-		nilDefaults:   map[string]bool{},
-		intRangeFlags: map[string]bool{},
-		validators:    map[string]validator{},
-		suiteFlags:    pflag.NewFlagSet("suite", pflag.ExitOnError),
+		Command:     cmd,
+		Flags:       map[string]interface{}{},
+		nilDefaults: map[string]bool{},
+		rangeFlags:  map[string]bool{},
+		validators:  map[string]validator{},
+		suiteFlags:  pflag.NewFlagSet("suite", pflag.ExitOnError),
 	}
 }
 
@@ -164,6 +164,10 @@ func (cl *CommandLineInterface) SetUntouchedFlagValuesToNil() error {
 				if reflect.ValueOf(*v).IsZero() {
 					cl.Flags[f.Name] = nil
 				}
+			case *float64:
+				if reflect.ValueOf(*v).IsZero() {
+					cl.Flags[f.Name] = nil
+				}
 			case *string:
 				if reflect.ValueOf(*v).IsZero() {
 					cl.Flags[f.Name] = nil
@@ -188,29 +192,51 @@ func (cl *CommandLineInterface) SetUntouchedFlagValuesToNil() error {
 	return nil
 }
 
-// ProcessRangeFilterFlags sets min and max to the appropriate 0 or maxInt bounds based on the 3-tuple that a user specifies for base flag, min, and/or max
+// ProcessRangeFilterFlags sets min and max to the appropriate 0 or max bounds based on the 3-tuple that a user specifies for base flag, min, and/or max
 func (cl *CommandLineInterface) ProcessRangeFilterFlags() error {
-	for flagName := range cl.intRangeFlags {
+	for flagName := range cl.rangeFlags {
 		rangeHelperMin := fmt.Sprintf("%s-%s", flagName, "min")
 		rangeHelperMax := fmt.Sprintf("%s-%s", flagName, "max")
 		if cl.Flags[flagName] != nil {
 			if cl.Flags[rangeHelperMin] != nil || cl.Flags[rangeHelperMax] != nil {
 				return fmt.Errorf("error: --%s and --%s cannot be set when using --%s", rangeHelperMin, rangeHelperMax, flagName)
 			}
-			cl.Flags[rangeHelperMin] = cl.IntMe(cl.Flags[flagName])
-			cl.Flags[rangeHelperMax] = cl.IntMe(cl.Flags[flagName])
+			cl.Flags[rangeHelperMin] = cl.Flags[flagName]
+			cl.Flags[rangeHelperMax] = cl.Flags[flagName]
 		}
 		if cl.Flags[rangeHelperMin] == nil && cl.Flags[rangeHelperMax] == nil {
 			continue
-		} else if cl.Flags[rangeHelperMin] == nil {
-			cl.Flags[rangeHelperMin] = cl.IntMe(0)
+		}
+
+		if cl.Flags[rangeHelperMin] == nil {
+			switch cl.Flags[rangeHelperMax].(type) {
+			case *int:
+				cl.Flags[rangeHelperMin] = cl.IntMe(0)
+			case *float64:
+				cl.Flags[rangeHelperMin] = cl.Float64Me(0)
+			}
 		} else if cl.Flags[rangeHelperMax] == nil {
-			cl.Flags[rangeHelperMax] = cl.IntMe(maxInt)
+			switch cl.Flags[rangeHelperMin].(type) {
+			case *int:
+				cl.Flags[rangeHelperMax] = cl.IntMe(maxInt)
+			case *float64:
+				cl.Flags[rangeHelperMax] = cl.Float64Me(maxFloat64)
+			}
 		}
-		cl.Flags[flagName] = &selector.IntRangeFilter{
-			LowerBound: *cl.IntMe(cl.Flags[rangeHelperMin]),
-			UpperBound: *cl.IntMe(cl.Flags[rangeHelperMax]),
+
+		switch cl.Flags[rangeHelperMin].(type) {
+		case *int:
+			cl.Flags[flagName] = &selector.IntRangeFilter{
+				LowerBound: *cl.IntMe(cl.Flags[rangeHelperMin]),
+				UpperBound: *cl.IntMe(cl.Flags[rangeHelperMax]),
+			}
+		case *float64:
+			cl.Flags[flagName] = &selector.Float64RangeFilter{
+				LowerBound: *cl.Float64Me(cl.Flags[rangeHelperMin]),
+				UpperBound: *cl.Float64Me(cl.Flags[rangeHelperMax]),
+			}
 		}
+
 	}
 	return nil
 }

@@ -107,6 +107,18 @@ func TestIntRangeMe(t *testing.T) {
 	h.Assert(t, val == nil, "Should return nil if nil is passed in")
 }
 
+func TestFloat64RangeMe(t *testing.T) {
+	cli := getTestCLI()
+	float64RangeVal := selector.Float64RangeFilter{LowerBound: 1.0, UpperBound: 2.0}
+	val := cli.Float64RangeMe(float64RangeVal)
+	h.Assert(t, *val == float64RangeVal, "Should return %s from passed in float64 range value", float64RangeVal)
+	val = cli.Float64RangeMe(&float64RangeVal)
+	h.Assert(t, *val == float64RangeVal, "Should return %s from passed in range pointer", float64RangeVal)
+	val = cli.Float64RangeMe(true)
+	h.Assert(t, val == nil, "Should return nil from other data type passed in")
+	val = cli.Float64RangeMe(nil)
+	h.Assert(t, val == nil, "Should return nil if nil is passed in")
+}
 func TestRegexMe(t *testing.T) {
 	cli := getTestCLI()
 	regexVal, err := regexp.Compile("c4.*")

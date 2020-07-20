@@ -243,7 +243,7 @@ func TestFilterVerbose_Gpus(t *testing.T) {
 	}
 	filters := selector.Filters{
 		GpusRange:      &selector.IntRangeFilter{LowerBound: 8, UpperBound: 8},
-		GpuMemoryRange: &selector.IntRangeFilter{LowerBound: 131072, UpperBound: 131072},
+		GpuMemoryRange: &selector.Float64RangeFilter{LowerBound: 128.0, UpperBound: 128.0},
 	}
 	results, err := itf.FilterVerbose(filters)
 	h.Ok(t, err)

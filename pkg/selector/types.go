@@ -47,6 +47,13 @@ type IntRangeFilter struct {
 	LowerBound int
 }
 
+// Float64RangeFilter holds an upper and lower bound float64
+// The lower and upper bound are used to range filter resource specs
+type Float64RangeFilter struct {
+	UpperBound float64
+	LowerBound float64
+}
+
 // filterPair holds a tuple of the passed in filter value and the instance resource spec value
 type filterPair struct {
 	filterValue  interface{}
@@ -111,8 +118,8 @@ type Filters struct {
 	// GpusRange filter is a range of acceptable GPU count available to an EC2 instance type
 	GpusRange *IntRangeFilter
 
-	// GpuMemoryRange filter is a range of acceptable GPU memory available to an EC2 instance type in aggreagte across all GPUs.
-	GpuMemoryRange *IntRangeFilter
+	// GpuMemoryRange filter is a range of acceptable GPU memory in Gibibytes (GiB) available to an EC2 instance type in aggreagte across all GPUs.
+	GpuMemoryRange *Float64RangeFilter
 
 	// HibernationSupported denotes whether EC2 hibernate is supported
 	// Possible values are: true or false
@@ -125,8 +132,8 @@ type Filters struct {
 	// MaxResults is the maximum number of instance types to return that match the filter criteria
 	MaxResults *int
 
-	// MemoryRange filter is a range of acceptable DRAM memory in Mebibytes (MiB) for the instance type
-	MemoryRange *IntRangeFilter
+	// MemoryRange filter is a range of acceptable DRAM memory in Gibibytes (GiB) for the instance type
+	MemoryRange *Float64RangeFilter
 
 	// NetworkInterfaces filter is a range of the number of ENI attachments an instance type can support
 	NetworkInterfaces *IntRangeFilter

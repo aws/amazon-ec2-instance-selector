@@ -16,6 +16,7 @@ package selector
 
 import (
 	"fmt"
+	"math"
 	"reflect"
 	"regexp"
 	"sort"
@@ -178,8 +179,8 @@ func (itf Selector) rawFilter(filters Filters) ([]*ec2.InstanceTypeInfo, error) 
 				rootDeviceType:         {filters.RootDeviceType, instanceTypeInfo.SupportedRootDeviceTypes},
 				hibernationSupported:   {filters.HibernationSupported, instanceTypeInfo.HibernationSupported},
 				vcpusRange:             {filters.VCpusRange, instanceTypeInfo.VCpuInfo.DefaultVCpus},
-				memoryRange:            {filters.MemoryRange, instanceTypeInfo.MemoryInfo.SizeInMiB},
-				gpuMemoryRange:         {filters.GpuMemoryRange, getTotalGpuMemory(instanceTypeInfo.GpuInfo)},
+				memoryRange:            {gibToMibRange(filters.MemoryRange), instanceTypeInfo.MemoryInfo.SizeInMiB},
+				gpuMemoryRange:         {gibToMibRange(filters.GpuMemoryRange), getTotalGpuMemory(instanceTypeInfo.GpuInfo)},
 				gpusRange:              {filters.GpusRange, getTotalGpusCount(instanceTypeInfo.GpuInfo)},
 				placementGroupStrategy: {filters.PlacementGroupStrategy, instanceTypeInfo.PlacementGroupInfo.SupportedStrategies},
 				hypervisor:             {filters.Hypervisor, instanceTypeInfo.Hypervisor},
@@ -390,4 +391,19 @@ func isInAllowList(allowRegex *regexp.Regexp, instanceTypeName string) bool {
 		return true
 	}
 	return allowRegex.MatchString(instanceTypeName)
+}
+
+func gibToMibRange(gbRange *Float64RangeFilter) *IntRangeFilter {
+	if gbRange == nil {
+		return nil
+	}
+	mbRangeFilter := IntRangeFilter{
+		LowerBound: int(gbRange.LowerBound * 1024),
+	}
+	if gbRange.UpperBound == math.MaxFloat64 {
+		mbRangeFilter.UpperBound = math.MaxInt32
+		return &mbRangeFilter
+	}
+	mbRangeFilter.UpperBound = int(gbRange.UpperBound * 1024)
+	return &mbRangeFilter
 }

@@ -27,10 +27,10 @@ func main() {
 		LowerBound: 2,
 		UpperBound: 4,
 	}
-	// Instantiate an int range filter to specify min and max memory in MiB
-	memoryRange := selector.IntRangeFilter{
-		LowerBound: 1024,
-		UpperBound: 4096,
+	// Instantiate a float64 range filter to specify min and max memory in GiB
+	memoryRange := selector.Float64RangeFilter{
+		LowerBound: 1.0,
+		UpperBound: 4.0,
 	}
 	// Create a string for the CPU Architecture so that it can be passed as a pointer
 	// when creating the Filter struct

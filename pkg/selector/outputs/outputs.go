@@ -164,7 +164,7 @@ func TableOutputShort(instanceTypeInfoSlice []*ec2.InstanceTypeInfo) []string {
 	headers := []interface{}{
 		"Instance Type",
 		"VCPUs",
-		"Mem (MiB)",
+		"Mem (GiB)",
 	}
 	separators := []interface{}{}
 
@@ -177,10 +177,10 @@ func TableOutputShort(instanceTypeInfoSlice []*ec2.InstanceTypeInfo) []string {
 	fmt.Fprintf(w, "\n"+headerFormat, separators...)
 
 	for _, instanceTypeInfo := range instanceTypeInfoSlice {
-		fmt.Fprintf(w, "\n%s\t%d\t%d\t",
+		fmt.Fprintf(w, "\n%s\t%d\t%.3f\t",
 			*instanceTypeInfo.InstanceType,
 			*instanceTypeInfo.VCpuInfo.DefaultVCpus,
-			*instanceTypeInfo.MemoryInfo.SizeInMiB,
+			float64(*instanceTypeInfo.MemoryInfo.SizeInMiB)/1024.0,
 		)
 	}
 	w.Flush()
@@ -242,10 +242,10 @@ func TableOutputWide(instanceTypeInfoSlice []*ec2.InstanceTypeInfo) []string {
 			}
 		}
 
-		fmt.Fprintf(w, "\n%s\t%d\t%d\t%s\t%t\t%t\t%s\t%s\t%d\t%d\t%d\t%s\t",
+		fmt.Fprintf(w, "\n%s\t%d\t%.3f\t%s\t%t\t%t\t%s\t%s\t%d\t%d\t%.2f\t%s\t",
 			*instanceTypeInfo.InstanceType,
 			*instanceTypeInfo.VCpuInfo.DefaultVCpus,
-			*instanceTypeInfo.MemoryInfo.SizeInMiB,
+			float64(*instanceTypeInfo.MemoryInfo.SizeInMiB)/1024.0,
 			*hypervisor,
 			*instanceTypeInfo.CurrentGeneration,
 			*instanceTypeInfo.HibernationSupported,
@@ -253,7 +253,7 @@ func TableOutputWide(instanceTypeInfoSlice []*ec2.InstanceTypeInfo) []string {
 			*instanceTypeInfo.NetworkInfo.NetworkPerformance,
 			*instanceTypeInfo.NetworkInfo.MaximumNetworkInterfaces,
 			gpus,
-			gpuMemory,
+			float64(gpuMemory)/1024.0,
 			strings.Join(gpuType, ", "),
 		)
 	}

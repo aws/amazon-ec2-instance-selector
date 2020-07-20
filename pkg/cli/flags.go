@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"math"
 	"regexp"
 	"strconv"
 	"strings"
@@ -10,7 +11,8 @@ import (
 )
 
 const (
-	maxInt = int(^uint(0) >> 1)
+	maxFloat64 = math.MaxFloat64
+	maxInt     = int(^uint(0) >> 1)
 )
 
 // RatioFlag creates and registers a flag accepting a Ratio
@@ -49,6 +51,11 @@ func (cl *CommandLineInterface) RatioFlag(name string, shorthand *string, defaul
 // IntMinMaxRangeFlags creates and registers a min, max, and helper flag each accepting an Integer
 func (cl *CommandLineInterface) IntMinMaxRangeFlags(name string, shorthand *string, defaultValue *int, description string) {
 	cl.IntMinMaxRangeFlagOnFlagSet(cl.Command.Flags(), name, shorthand, defaultValue, description)
+}
+
+// Float64MinMaxRangeFlags creates and registers a min, max, and helper flag each accepting a Float64
+func (cl *CommandLineInterface) Float64MinMaxRangeFlags(name string, shorthand *string, defaultValue *float64, description string) {
+	cl.Float64MinMaxRangeFlagOnFlagSet(cl.Command.Flags(), name, shorthand, defaultValue, description)
 }
 
 // IntFlag creates and registers a flag accepting an Integer
@@ -167,7 +174,28 @@ func (cl *CommandLineInterface) IntMinMaxRangeFlagOnFlagSet(flagSet *pflag.FlagS
 		}
 		return nil
 	}
-	cl.intRangeFlags[name] = true
+	cl.rangeFlags[name] = true
+}
+
+// Float64MinMaxRangeFlagOnFlagSet creates and registers a min, max, and helper flag each accepting a Float64
+func (cl *CommandLineInterface) Float64MinMaxRangeFlagOnFlagSet(flagSet *pflag.FlagSet, name string, shorthand *string, defaultValue *float64, description string) {
+	cl.Float64FlagOnFlagSet(flagSet, name, shorthand, defaultValue, fmt.Sprintf("%s (sets --%s-min and -max to the same value)", description, name))
+	cl.Float64FlagOnFlagSet(flagSet, name+"-min", nil, nil, fmt.Sprintf("Minimum %s If --%s-max is not specified, the upper bound will be infinity", description, name))
+	cl.Float64FlagOnFlagSet(flagSet, name+"-max", nil, nil, fmt.Sprintf("Maximum %s If --%s-min is not specified, the lower bound will be 0", description, name))
+	cl.validators[name] = func(val interface{}) error {
+		if cl.Flags[name+"-min"] == nil || cl.Flags[name+"-max"] == nil {
+			return nil
+		}
+		minArg := name + "-min"
+		maxArg := name + "-max"
+		minVal := cl.Flags[minArg].(*float64)
+		maxVal := cl.Flags[maxArg].(*float64)
+		if *minVal > *maxVal {
+			return fmt.Errorf("Invalid input for --%s and --%s. %s must be less than or equal to %s", minArg, maxArg, minArg, maxArg)
+		}
+		return nil
+	}
+	cl.rangeFlags[name] = true
 }
 
 // IntFlagOnFlagSet creates and registers a flag accepting an Integer
@@ -181,6 +209,19 @@ func (cl *CommandLineInterface) IntFlagOnFlagSet(flagSet *pflag.FlagSet, name st
 		return
 	}
 	cl.Flags[name] = flagSet.Int(name, *defaultValue, description)
+}
+
+// Float64FlagOnFlagSet creates and registers a flag accepting a Float64
+func (cl *CommandLineInterface) Float64FlagOnFlagSet(flagSet *pflag.FlagSet, name string, shorthand *string, defaultValue *float64, description string) {
+	if defaultValue == nil {
+		cl.nilDefaults[name] = true
+		defaultValue = cl.Float64Me(0.0)
+	}
+	if shorthand != nil {
+		cl.Flags[name] = flagSet.Float64P(name, string(*shorthand), *defaultValue, description)
+		return
+	}
+	cl.Flags[name] = flagSet.Float64(name, *defaultValue, description)
 }
 
 // StringFlagOnFlagSet creates and registers a flag accepting a String and a validator function.

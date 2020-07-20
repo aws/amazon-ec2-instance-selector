@@ -52,12 +52,12 @@ type validator = func(val interface{}) error
 
 // CommandLineInterface is a type to group CLI funcs and state
 type CommandLineInterface struct {
-	Command       *cobra.Command
-	Flags         map[string]interface{}
-	nilDefaults   map[string]bool
-	intRangeFlags map[string]bool
-	validators    map[string]validator
-	suiteFlags    *pflag.FlagSet
+	Command     *cobra.Command
+	Flags       map[string]interface{}
+	nilDefaults map[string]bool
+	rangeFlags  map[string]bool
+	validators  map[string]validator
+	suiteFlags  *pflag.FlagSet
 }
 
 // Float64Me takes an interface and returns a pointer to a float64 value
@@ -113,6 +113,23 @@ func (*CommandLineInterface) IntRangeMe(i interface{}) *selector.IntRangeFilter 
 		return &v
 	default:
 		log.Printf("%s cannot be converted to an IntRange", i)
+		return nil
+	}
+}
+
+// Float64RangeMe takes an interface and returns a pointer to a Float64RangeFilter value
+// If the underlying interface kind is not Float64RangeFilter or *Float64RangeFilter then nil is returned
+func (*CommandLineInterface) Float64RangeMe(i interface{}) *selector.Float64RangeFilter {
+	if i == nil {
+		return nil
+	}
+	switch v := i.(type) {
+	case *selector.Float64RangeFilter:
+		return v
+	case selector.Float64RangeFilter:
+		return &v
+	default:
+		log.Printf("%s cannot be converted to a Float64Range", i)
 		return nil
 	}
 }
