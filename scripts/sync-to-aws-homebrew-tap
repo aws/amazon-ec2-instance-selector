@@ -1,6 +1,6 @@
 #!/bin/bash
 set -euo pipefail
-set -x
+
 SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
 BUILD_DIR="${SCRIPTPATH}/../build"
 BUILD_ID=$(uuidgen | cut -d'-' -f1 | tr '[:upper:]' '[:lower:]')
@@ -137,6 +137,11 @@ for os_arch in "${PLATFORMS[@]}"; do
     os=$(echo "${os_arch}" | cut -d'/' -f1)
     arch=$(echo "${os_arch}" | cut -d'/' -f2)
 
+    ## Windows is not supported with homebrew
+    if [[ "${os}" == "windows" ]]; then 
+      continue
+    fi
+
     asset_url="${BASE_ASSET_URL}-${os}-${arch}.tar.gz"
     asset_file="${BINARY_BASE}-${os}-${arch}.tar.gz"
     asset_file_path="${DOWNLOAD_DIR}/${asset_file}"
@@ -192,14 +197,18 @@ if [[ "${DRY_RUN}" -eq 0 ]]; then
   git remote set-url origin https://${GITHUB_USERNAME}:${GITHUB_TOKEN}@github.com/${GITHUB_USERNAME}/${TAP_NAME}.git
   DEFAULT_BRANCH=$(git rev-parse --abbrev-ref HEAD | tr -d '\n')
 
-  cp "${BREW_CONFIG_DIR}/${BINARY_BASE}.json" "${FORK_DIR}/bottle-configs/${BINARY_BASE}.json"
-
-  FORK_RELEASE_BRANCH="${BINARY_BASE}-${VERSION}-${BUILD_ID}"
-
   git config user.name "ec2-bot 🤖"
   git config user.email "ec2-bot@users.noreply.github.com"
   
+  # Sync the fork
+  git pull upstream "${DEFAULT_BRANCH}"
+  git push -u origin "${DEFAULT_BRANCH}"
+
+  FORK_RELEASE_BRANCH="${BINARY_BASE}-${VERSION}-${BUILD_ID}"
   git checkout -b "${FORK_RELEASE_BRANCH}" upstream/${DEFAULT_BRANCH}
+
+  cp "${BREW_CONFIG_DIR}/${BINARY_BASE}.json" "${FORK_DIR}/bottle-configs/${BINARY_BASE}.json"
+  
   git add "bottle-configs/${BINARY_BASE}.json"
   git commit -m "${BINARY_BASE} update to version ${VERSION_NUM}"
 
