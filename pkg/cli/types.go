@@ -18,6 +18,7 @@ import (
 	"log"
 	"regexp"
 
+	"github.com/aws/amazon-ec2-instance-selector/pkg/bytequantity"
 	"github.com/aws/amazon-ec2-instance-selector/pkg/selector"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -50,6 +51,9 @@ Global Flags:
 // validator defines the function for providing validation on a flag
 type validator = func(val interface{}) error
 
+// processor defines the function for providing mutating processing on a flag
+type processor = func(val interface{}) error
+
 // CommandLineInterface is a type to group CLI funcs and state
 type CommandLineInterface struct {
 	Command     *cobra.Command
@@ -57,6 +61,7 @@ type CommandLineInterface struct {
 	nilDefaults map[string]bool
 	rangeFlags  map[string]bool
 	validators  map[string]validator
+	processors  map[string]processor
 	suiteFlags  *pflag.FlagSet
 }
 
@@ -117,19 +122,19 @@ func (*CommandLineInterface) IntRangeMe(i interface{}) *selector.IntRangeFilter 
 	}
 }
 
-// Float64RangeMe takes an interface and returns a pointer to a Float64RangeFilter value
-// If the underlying interface kind is not Float64RangeFilter or *Float64RangeFilter then nil is returned
-func (*CommandLineInterface) Float64RangeMe(i interface{}) *selector.Float64RangeFilter {
+// ByteQuantityRangeMe takes an interface and returns a pointer to a ByteQuantityRangeFilter value
+// If the underlying interface kind is not ByteQuantityRangeFilter or *ByteQuantityRangeFilter then nil is returned
+func (*CommandLineInterface) ByteQuantityRangeMe(i interface{}) *selector.ByteQuantityRangeFilter {
 	if i == nil {
 		return nil
 	}
 	switch v := i.(type) {
-	case *selector.Float64RangeFilter:
+	case *selector.ByteQuantityRangeFilter:
 		return v
-	case selector.Float64RangeFilter:
+	case selector.ByteQuantityRangeFilter:
 		return &v
 	default:
-		log.Printf("%s cannot be converted to a Float64Range", i)
+		log.Printf("%s cannot be converted to a ByteQuantityRange", i)
 		return nil
 	}
 }
@@ -198,6 +203,23 @@ func (*CommandLineInterface) RegexMe(i interface{}) *regexp.Regexp {
 		return &v
 	default:
 		log.Printf("%s cannot be converted to a regexp", i)
+		return nil
+	}
+}
+
+// ByteQuantityMe takes an interface and returns a pointer to a regex
+// If the underlying interface kind is not bytequantity.ByteQuantity or *bytequantity.ByteQuantity then nil is returned
+func (*CommandLineInterface) ByteQuantityMe(i interface{}) *bytequantity.ByteQuantity {
+	if i == nil {
+		return nil
+	}
+	switch v := i.(type) {
+	case *bytequantity.ByteQuantity:
+		return v
+	case bytequantity.ByteQuantity:
+		return &v
+	default:
+		log.Printf("%s cannot be converted to a byte quantity", i)
 		return nil
 	}
 }

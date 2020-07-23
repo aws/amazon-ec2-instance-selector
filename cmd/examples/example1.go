@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 
+	"github.com/aws/amazon-ec2-instance-selector/pkg/bytequantity"
 	"github.com/aws/amazon-ec2-instance-selector/pkg/selector"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -27,10 +28,10 @@ func main() {
 		LowerBound: 2,
 		UpperBound: 4,
 	}
-	// Instantiate a float64 range filter to specify min and max memory in GiB
-	memoryRange := selector.Float64RangeFilter{
-		LowerBound: 1.0,
-		UpperBound: 4.0,
+	// Instantiate a byte quantity range filter to specify min and max memory in GiB
+	memoryRange := selector.ByteQuantityRangeFilter{
+		LowerBound: bytequantity.FromGiB(2),
+		UpperBound: bytequantity.FromGiB(4),
 	}
 	// Create a string for the CPU Architecture so that it can be passed as a pointer
 	// when creating the Filter struct

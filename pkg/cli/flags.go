@@ -7,12 +7,13 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/aws/amazon-ec2-instance-selector/pkg/bytequantity"
 	"github.com/spf13/pflag"
 )
 
 const (
-	maxFloat64 = math.MaxFloat64
-	maxInt     = int(^uint(0) >> 1)
+	maxInt    = int(^uint(0) >> 1)
+	maxUint64 = math.MaxUint64
 )
 
 // RatioFlag creates and registers a flag accepting a Ratio
@@ -53,9 +54,14 @@ func (cl *CommandLineInterface) IntMinMaxRangeFlags(name string, shorthand *stri
 	cl.IntMinMaxRangeFlagOnFlagSet(cl.Command.Flags(), name, shorthand, defaultValue, description)
 }
 
-// Float64MinMaxRangeFlags creates and registers a min, max, and helper flag each accepting a Float64
-func (cl *CommandLineInterface) Float64MinMaxRangeFlags(name string, shorthand *string, defaultValue *float64, description string) {
-	cl.Float64MinMaxRangeFlagOnFlagSet(cl.Command.Flags(), name, shorthand, defaultValue, description)
+// ByteQuantityMinMaxRangeFlags creates and registers a min, max, and helper flag each accepting a byte quantity like 512mb
+func (cl *CommandLineInterface) ByteQuantityMinMaxRangeFlags(name string, shorthand *string, defaultValue *bytequantity.ByteQuantity, description string) {
+	cl.ByteQuantityMinMaxRangeFlagOnFlagSet(cl.Command.Flags(), name, shorthand, defaultValue, description)
+}
+
+// ByteQuantityFlag creates and registers a flag accepting a byte quantity like 512mb
+func (cl *CommandLineInterface) ByteQuantityFlag(name string, shorthand *string, defaultValue *bytequantity.ByteQuantity, description string) {
+	cl.ByteQuantityFlagOnFlagSet(cl.Command.Flags(), name, shorthand, defaultValue, description)
 }
 
 // IntFlag creates and registers a flag accepting an Integer
@@ -66,7 +72,7 @@ func (cl *CommandLineInterface) IntFlag(name string, shorthand *string, defaultV
 // StringFlag creates and registers a flag accepting a String and a validator function.
 // The validator function is provided so that more complex flags can be created from a string input.
 func (cl *CommandLineInterface) StringFlag(name string, shorthand *string, defaultValue *string, description string, validationFn validator) {
-	cl.StringFlagOnFlagSet(cl.Command.Flags(), name, shorthand, defaultValue, description, validationFn)
+	cl.StringFlagOnFlagSet(cl.Command.Flags(), name, shorthand, defaultValue, description, nil, validationFn)
 }
 
 // StringSliceFlag creates and registers a flag accepting a list of strings.
@@ -92,7 +98,7 @@ func (cl *CommandLineInterface) BoolFlag(name string, shorthand *string, default
 // ConfigStringFlag creates and registers a flag accepting a String for configuration purposes.
 // Config flags will be grouped at the bottom in the output of --help
 func (cl *CommandLineInterface) ConfigStringFlag(name string, shorthand *string, defaultValue *string, description string, validationFn validator) {
-	cl.StringFlagOnFlagSet(cl.Command.PersistentFlags(), name, shorthand, defaultValue, description, validationFn)
+	cl.StringFlagOnFlagSet(cl.Command.PersistentFlags(), name, shorthand, defaultValue, description, nil, validationFn)
 }
 
 // ConfigStringSliceFlag creates and registers a flag accepting a list of strings.
@@ -128,7 +134,7 @@ func (cl *CommandLineInterface) SuiteBoolFlag(name string, shorthand *string, de
 // SuiteStringFlag creates and registers a flag accepting a string for aggreagate filters.
 // Suite flags will be grouped in the middle of the output --help
 func (cl *CommandLineInterface) SuiteStringFlag(name string, shorthand *string, defaultValue *string, description string, validationFn validator) {
-	cl.StringFlagOnFlagSet(cl.suiteFlags, name, shorthand, defaultValue, description, validationFn)
+	cl.StringFlagOnFlagSet(cl.suiteFlags, name, shorthand, defaultValue, description, nil, validationFn)
 }
 
 // SuiteStringOptionsFlag creates and registers a flag accepting a string and valid options for use in validation.
@@ -177,25 +183,66 @@ func (cl *CommandLineInterface) IntMinMaxRangeFlagOnFlagSet(flagSet *pflag.FlagS
 	cl.rangeFlags[name] = true
 }
 
-// Float64MinMaxRangeFlagOnFlagSet creates and registers a min, max, and helper flag each accepting a Float64
-func (cl *CommandLineInterface) Float64MinMaxRangeFlagOnFlagSet(flagSet *pflag.FlagSet, name string, shorthand *string, defaultValue *float64, description string) {
-	cl.Float64FlagOnFlagSet(flagSet, name, shorthand, defaultValue, fmt.Sprintf("%s (sets --%s-min and -max to the same value)", description, name))
-	cl.Float64FlagOnFlagSet(flagSet, name+"-min", nil, nil, fmt.Sprintf("Minimum %s If --%s-max is not specified, the upper bound will be infinity", description, name))
-	cl.Float64FlagOnFlagSet(flagSet, name+"-max", nil, nil, fmt.Sprintf("Maximum %s If --%s-min is not specified, the lower bound will be 0", description, name))
+// ByteQuantityMinMaxRangeFlagOnFlagSet creates and registers a min, max, and helper flag each accepting a ByteQuantity like 5mb or 12gb
+func (cl *CommandLineInterface) ByteQuantityMinMaxRangeFlagOnFlagSet(flagSet *pflag.FlagSet, name string, shorthand *string, defaultValue *bytequantity.ByteQuantity, description string) {
+	cl.ByteQuantityFlagOnFlagSet(flagSet, name, shorthand, defaultValue, fmt.Sprintf("%s (sets --%s-min and -max to the same value)", description, name))
+	cl.ByteQuantityFlagOnFlagSet(flagSet, name+"-min", nil, nil, fmt.Sprintf("Minimum %s If --%s-max is not specified, the upper bound will be infinity", description, name))
+	cl.ByteQuantityFlagOnFlagSet(flagSet, name+"-max", nil, nil, fmt.Sprintf("Maximum %s If --%s-min is not specified, the lower bound will be 0", description, name))
 	cl.validators[name] = func(val interface{}) error {
 		if cl.Flags[name+"-min"] == nil || cl.Flags[name+"-max"] == nil {
 			return nil
 		}
 		minArg := name + "-min"
 		maxArg := name + "-max"
-		minVal := cl.Flags[minArg].(*float64)
-		maxVal := cl.Flags[maxArg].(*float64)
-		if *minVal > *maxVal {
+		minVal := cl.Flags[name+"-min"].(*bytequantity.ByteQuantity).MiB()
+		maxVal := cl.Flags[name+"-max"].(*bytequantity.ByteQuantity).MiB()
+		if minVal > maxVal {
 			return fmt.Errorf("Invalid input for --%s and --%s. %s must be less than or equal to %s", minArg, maxArg, minArg, maxArg)
 		}
 		return nil
 	}
 	cl.rangeFlags[name] = true
+}
+
+// ByteQuantityFlagOnFlagSet creates and registers a flag accepting a ByteQuantity
+func (cl *CommandLineInterface) ByteQuantityFlagOnFlagSet(flagSet *pflag.FlagSet, name string, shorthand *string, defaultValue *bytequantity.ByteQuantity, description string) {
+	invalidInputMsg := fmt.Sprintf("Invalid input for --%s. A valid example is 16gb. ", name)
+	byteQuantityProcessor := func(val interface{}) error {
+		if val == nil {
+			return nil
+		}
+		switch byteQuantityInput := val.(type) {
+		case *string:
+			bq, err := bytequantity.ParseToByteQuantity(*byteQuantityInput)
+			if err != nil {
+				return fmt.Errorf(invalidInputMsg+"Can't parse byte quantity %s.", *byteQuantityInput)
+			}
+			cl.Flags[name] = &bq
+		case *bytequantity.ByteQuantity:
+			return nil
+		default:
+			return fmt.Errorf(invalidInputMsg + "Input type is unsupported.")
+		}
+		return nil
+	}
+	byteQuantityValidator := func(val interface{}) error {
+		if val == nil {
+			return nil
+		}
+		switch val.(type) {
+		case *bytequantity.ByteQuantity:
+			return nil
+		default:
+			return fmt.Errorf(invalidInputMsg + "Processing failed.")
+		}
+	}
+	var stringDefaultValue *string
+	if defaultValue != nil {
+		stringDefaultValue = cl.StringMe(defaultValue.StringGiB())
+	} else {
+		stringDefaultValue = nil
+	}
+	cl.StringFlagOnFlagSet(flagSet, name, shorthand, stringDefaultValue, description, byteQuantityProcessor, byteQuantityValidator)
 }
 
 // IntFlagOnFlagSet creates and registers a flag accepting an Integer
@@ -211,32 +258,19 @@ func (cl *CommandLineInterface) IntFlagOnFlagSet(flagSet *pflag.FlagSet, name st
 	cl.Flags[name] = flagSet.Int(name, *defaultValue, description)
 }
 
-// Float64FlagOnFlagSet creates and registers a flag accepting a Float64
-func (cl *CommandLineInterface) Float64FlagOnFlagSet(flagSet *pflag.FlagSet, name string, shorthand *string, defaultValue *float64, description string) {
-	if defaultValue == nil {
-		cl.nilDefaults[name] = true
-		defaultValue = cl.Float64Me(0.0)
-	}
-	if shorthand != nil {
-		cl.Flags[name] = flagSet.Float64P(name, string(*shorthand), *defaultValue, description)
-		return
-	}
-	cl.Flags[name] = flagSet.Float64(name, *defaultValue, description)
-}
-
 // StringFlagOnFlagSet creates and registers a flag accepting a String and a validator function.
 // The validator function is provided so that more complex flags can be created from a string input.
-func (cl *CommandLineInterface) StringFlagOnFlagSet(flagSet *pflag.FlagSet, name string, shorthand *string, defaultValue *string, description string, validationFn validator) {
+func (cl *CommandLineInterface) StringFlagOnFlagSet(flagSet *pflag.FlagSet, name string, shorthand *string, defaultValue *string, description string, processorFn processor, validationFn validator) {
 	if defaultValue == nil {
 		cl.nilDefaults[name] = true
 		defaultValue = cl.StringMe("")
 	}
 	if shorthand != nil {
 		cl.Flags[name] = flagSet.StringP(name, string(*shorthand), *defaultValue, description)
-		cl.validators[name] = validationFn
 	} else {
 		cl.Flags[name] = flagSet.String(name, *defaultValue, description)
 	}
+	cl.processors[name] = processorFn
 	cl.validators[name] = validationFn
 }
 
@@ -254,7 +288,7 @@ func (cl *CommandLineInterface) StringOptionsFlagOnFlagSet(flagSet *pflag.FlagSe
 		}
 		return fmt.Errorf("error %s must be one of: %s", name, strings.Join(validOpts, ", "))
 	}
-	cl.StringFlagOnFlagSet(flagSet, name, shorthand, defaultValue, description, validationFn)
+	cl.StringFlagOnFlagSet(flagSet, name, shorthand, defaultValue, description, nil, validationFn)
 }
 
 // StringSliceFlagOnFlagSet creates and registers a flag accepting a String Slice.
@@ -272,33 +306,36 @@ func (cl *CommandLineInterface) StringSliceFlagOnFlagSet(flagSet *pflag.FlagSet,
 
 // RegexFlagOnFlagSet creates and registers a flag accepting a string slice of regular expressions.
 func (cl *CommandLineInterface) RegexFlagOnFlagSet(flagSet *pflag.FlagSet, name string, shorthand *string, defaultValue *string, description string) {
-	if defaultValue == nil {
-		cl.nilDefaults[name] = true
-		defaultValue = cl.StringMe("")
-	}
-	if shorthand != nil {
-		cl.Flags[name] = flagSet.StringP(name, string(*shorthand), *defaultValue, description)
-	} else {
-		cl.Flags[name] = flagSet.String(name, *defaultValue, description)
-	}
-	cl.validators[name] = func(val interface{}) error {
+	invalidInputMsg := fmt.Sprintf("Invalid regex input for --%s. ", name)
+	regexProcessor := func(val interface{}) error {
 		if val == nil {
 			return nil
 		}
-		regexStringVal := ""
 		switch v := val.(type) {
 		case *string:
-			regexStringVal = *v
+			regexVal, err := regexp.Compile(*v)
+			if err != nil {
+				return fmt.Errorf(invalidInputMsg + "Unable to compile the regex.")
+			}
+			cl.Flags[name] = regexVal
 		case *regexp.Regexp:
 			return nil
 		default:
-			return fmt.Errorf("Invalid regex input for --%s", name)
+			return fmt.Errorf(invalidInputMsg + "Input type is unsupported.")
 		}
-		regexVal, err := regexp.Compile(regexStringVal)
-		if err != nil {
-			return fmt.Errorf("Invalid regex input for --%s", name)
-		}
-		cl.Flags[name] = regexVal
+
 		return nil
 	}
+	regexValidator := func(val interface{}) error {
+		if val == nil {
+			return nil
+		}
+		switch val.(type) {
+		case *regexp.Regexp:
+			return nil
+		default:
+			return fmt.Errorf(invalidInputMsg + "Processing failed.")
+		}
+	}
+	cl.StringFlagOnFlagSet(flagSet, name, shorthand, defaultValue, description, regexProcessor, regexValidator)
 }

@@ -14,6 +14,7 @@
 package selector
 
 import (
+	"math"
 	"testing"
 
 	h "github.com/aws/amazon-ec2-instance-selector/pkg/test"
@@ -148,40 +149,49 @@ func TestIsSupportedWithRangeInt64_SourceNilTarget0(t *testing.T) {
 	h.Assert(t, isSupported == true, "IntRangeFilter should match with 0 target and nil source")
 }
 
-func TestIsSupportedWithFloat64_Supported(t *testing.T) {
-	isSupported := isSupportedWithFloat64(aws.Float64(0.33), aws.Float64(0.33))
-	h.Assert(t, isSupported == true, "Float64 comparison should match exactly with 2 decimal places")
+// uint64
+
+func TestIsSupportedWithRangeUint64_SupportedExact(t *testing.T) {
+	target := IntRangeFilter{LowerBound: 4, UpperBound: 4}
+	isSupported := isSupportedWithRangeInt64(aws.Int64(4), &target)
+	h.Assert(t, isSupported == true, "IntRangeFilter should match exactly")
 }
 
-func TestIsSupportedWithFloat64_SupportedTruncatedDecPlacesExact(t *testing.T) {
-	isSupported := isSupportedWithFloat64(aws.Float64(0.3322), aws.Float64(0.3322))
-	h.Assert(t, isSupported == true, "Float64 comparison should match exactly with 4 decimal places")
+func TestIsSupportedWithRangeUint64_SupportedAround(t *testing.T) {
+	target := Uint64RangeFilter{LowerBound: 2, UpperBound: 6}
+	isSupported := isSupportedWithRangeUint64(aws.Int64(4), &target)
+	h.Assert(t, isSupported == true, "UintRangeFilter should match with lower and upper bound around the desired source")
 }
 
-func TestIsSupportedWithFloat64_SupportedTruncatedDecPlaces(t *testing.T) {
-	isSupported := isSupportedWithFloat64(aws.Float64(0.3399), aws.Float64(0.3311))
-	h.Assert(t, isSupported == true, "Float64 comparison should match when truncating to 2 decimal places")
+func TestIsSupportedWithRangeUint64_Nil(t *testing.T) {
+	target := Uint64RangeFilter{LowerBound: 2, UpperBound: 6}
+	isSupported := isSupportedWithRangeUint64(nil, &target)
+	h.Assert(t, isSupported == false, "Uint64RangeFilter should NOT match with nil source")
 }
 
-func TestIsSupportedWithFloat64_Unsupported(t *testing.T) {
-	isSupported := isSupportedWithFloat64(aws.Float64(0.4), aws.Float64(0.3399))
-	h.Assert(t, isSupported == false, "Float64 comparison should NOT match")
+func TestIsSupportedWithRangeUint64_NilTarget(t *testing.T) {
+	isSupported := isSupportedWithRangeUint64(aws.Int64(4), nil)
+	h.Assert(t, isSupported == true, "Uint64RangeFilter should match with nil target")
 }
 
-func TestIsSupportedWithFloat64_SourceNil(t *testing.T) {
-	isSupported := isSupportedWithFloat64(nil, aws.Float64(0.3399))
-	h.Assert(t, isSupported == false, "Float64 comparison should NOT match with nil source")
+func TestIsSupportedWithRangeUint64_BothNil(t *testing.T) {
+	isSupported := isSupportedWithRangeUint64(nil, nil)
+	h.Assert(t, isSupported == true, "Uint64RangeFilter should match with nil target and nil source")
 }
 
-func TestIsSupportedWithFloat64_TargetNil(t *testing.T) {
-	isSupported := isSupportedWithFloat64(aws.Float64(0.3399), nil)
-	h.Assert(t, isSupported == true, "Float64 comparison should match with nil target")
+func TestIsSupportedWithRangeUint64_SourceNilTarget0(t *testing.T) {
+	target := Uint64RangeFilter{LowerBound: 0, UpperBound: 0}
+	isSupported := isSupportedWithRangeUint64(nil, &target)
+	h.Assert(t, isSupported == true, "Uint64RangeFilter should match with 0 target and nil source")
 }
 
-func TestIsSupportedWithFloat64_BothNil(t *testing.T) {
-	isSupported := isSupportedWithFloat64(nil, nil)
-	h.Assert(t, isSupported == true, "Float64 comparison should match with nil target and source")
+func TestIsSupportedWithRangeUint64_Overflow(t *testing.T) {
+	target := Uint64RangeFilter{LowerBound: 0, UpperBound: math.MaxUint64}
+	isSupported := isSupportedWithRangeUint64(aws.Int64(4), &target)
+	h.Assert(t, isSupported == true, "Uint64RangeFilter should match with 0 - MAX target and source 4")
 }
+
+// bools
 
 func TestSupportSyntaxToBool_Supported(t *testing.T) {
 	isSupported := supportSyntaxToBool(aws.String("supported"))

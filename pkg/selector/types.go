@@ -17,6 +17,7 @@ import (
 	"encoding/json"
 	"regexp"
 
+	"github.com/aws/amazon-ec2-instance-selector/pkg/bytequantity"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/ec2/ec2iface"
 )
@@ -47,11 +48,18 @@ type IntRangeFilter struct {
 	LowerBound int
 }
 
-// Float64RangeFilter holds an upper and lower bound float64
+// Uint64RangeFilter holds an upper and lower bound uint64
 // The lower and upper bound are used to range filter resource specs
-type Float64RangeFilter struct {
-	UpperBound float64
-	LowerBound float64
+type Uint64RangeFilter struct {
+	UpperBound uint64
+	LowerBound uint64
+}
+
+// ByteQuantityRangeFilter holds an upper and lower bound byte quantity
+// The lower and upper bound are used to range filter resource specs
+type ByteQuantityRangeFilter struct {
+	UpperBound bytequantity.ByteQuantity
+	LowerBound bytequantity.ByteQuantity
 }
 
 // filterPair holds a tuple of the passed in filter value and the instance resource spec value
@@ -119,7 +127,7 @@ type Filters struct {
 	GpusRange *IntRangeFilter
 
 	// GpuMemoryRange filter is a range of acceptable GPU memory in Gibibytes (GiB) available to an EC2 instance type in aggreagte across all GPUs.
-	GpuMemoryRange *Float64RangeFilter
+	GpuMemoryRange *ByteQuantityRangeFilter
 
 	// HibernationSupported denotes whether EC2 hibernate is supported
 	// Possible values are: true or false
@@ -133,7 +141,7 @@ type Filters struct {
 	MaxResults *int
 
 	// MemoryRange filter is a range of acceptable DRAM memory in Gibibytes (GiB) for the instance type
-	MemoryRange *Float64RangeFilter
+	MemoryRange *ByteQuantityRangeFilter
 
 	// NetworkInterfaces filter is a range of the number of ENI attachments an instance type can support
 	NetworkInterfaces *IntRangeFilter
