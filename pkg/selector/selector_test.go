@@ -18,7 +18,6 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"regexp"
 	"strconv"
 	"testing"
@@ -279,7 +278,6 @@ func TestFilter_MoreFilters(t *testing.T) {
 	}
 	results, err := itf.Filter(filters)
 	h.Ok(t, err)
-	log.Println(results)
 	h.Assert(t, len(results) == 1, "Should only return 1 instance type with 2 vcpus")
 	h.Assert(t, results[0] == "t3.micro", "Should return t3.micro, got %s instead", results[0])
 }
