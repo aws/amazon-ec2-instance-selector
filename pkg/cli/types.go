@@ -207,7 +207,7 @@ func (*CommandLineInterface) RegexMe(i interface{}) *regexp.Regexp {
 	}
 }
 
-// ByteQuantityMe takes an interface and returns a pointer to a regex
+// ByteQuantityMe takes an interface and returns a pointer to a ByteQuantity
 // If the underlying interface kind is not bytequantity.ByteQuantity or *bytequantity.ByteQuantity then nil is returned
 func (*CommandLineInterface) ByteQuantityMe(i interface{}) *bytequantity.ByteQuantity {
 	if i == nil {

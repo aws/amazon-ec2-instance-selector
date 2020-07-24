@@ -38,7 +38,8 @@ type ByteQuantity struct {
 	Quantity uint64
 }
 
-// ParseToByteQuantity parses a string representation of a byte quantity to a ByteQuantity type
+// ParseToByteQuantity parses a string representation of a byte quantity to a ByteQuantity type.
+// A unit can be appended such as 16 GiB. If no unit is appended, GiB is assumed.
 func ParseToByteQuantity(byteQuantityStr string) (ByteQuantity, error) {
 	bqRegexp := regexp.MustCompile(byteQuantityRegex)
 	matches := bqRegexp.FindStringSubmatch(strings.ToLower(byteQuantityStr))
