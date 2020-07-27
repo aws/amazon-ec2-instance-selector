@@ -101,7 +101,7 @@ func main() {
 Filtering allows you to select all the instance types that match your application requirements.
 Full docs can be found at github.com/aws/amazon-` + binName
 	examples := fmt.Sprintf(`%s --vcpus 4 --region us-east-2 --availability-zones us-east-2b
-%s --memory-min 4096 --memory-max 8192 --vcpus-min 4 --vcpus-max 8 --region us-east-2`, binName, binName)
+%s --memory-min 4 --memory-max 8 --vcpus-min 4 --vcpus-max 8 --region us-east-2`, binName, binName)
 
 	runFunc := func(cmd *cobra.Command, args []string) {}
 	cli := commandline.New(binName, shortUsage, longUsage, examples, runFunc)
