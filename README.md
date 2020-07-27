@@ -168,7 +168,7 @@ Filter Flags:
   -c, --vcpus int                         Number of vcpus available to the instance type. (sets --vcpus-min and -max to the same value)
       --vcpus-max int                     Maximum Number of vcpus available to the instance type. If --vcpus-min is not specified, the lower bound will be 0
       --vcpus-min int                     Minimum Number of vcpus available to the instance type. If --vcpus-max is not specified, the upper bound will be infinity
-      --vcpus-to-memory-ratio string      The ratio of vcpus to memory in MiB. (Example: 1:2)
+      --vcpus-to-memory-ratio string      The ratio of vcpus to GiBs of memory. (Example: 1:2)
 
 
 Suite Flags:
