@@ -132,7 +132,7 @@ Usage:
 
 Examples:
 ec2-instance-selector --vcpus 4 --region us-east-2 --availability-zones us-east-2b
-ec2-instance-selector --memory-min 4096 --memory-max 8192 --vcpus-min 4 --vcpus-max 8 --region us-east-2
+ec2-instance-selector --memory-min 4 --memory-max 8 --vcpus-min 4 --vcpus-max 8 --region us-east-2
 
 Filter Flags:
       --allow-list string                 List of allowed instance types to select from w/ regex syntax (Example: m[3-5]\.*)
