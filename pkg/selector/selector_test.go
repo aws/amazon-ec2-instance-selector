@@ -18,11 +18,11 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"regexp"
 	"strconv"
 	"testing"
 
+	"github.com/aws/amazon-ec2-instance-selector/pkg/bytequantity"
 	"github.com/aws/amazon-ec2-instance-selector/pkg/selector"
 	h "github.com/aws/amazon-ec2-instance-selector/pkg/test"
 	"github.com/aws/aws-sdk-go/aws"
@@ -241,9 +241,14 @@ func TestFilterVerbose_Gpus(t *testing.T) {
 	itf := selector.Selector{
 		EC2: ec2Mock,
 	}
+	gpuMemory, err := bytequantity.ParseToByteQuantity("128g")
+	h.Ok(t, err)
 	filters := selector.Filters{
-		GpusRange:      &selector.IntRangeFilter{LowerBound: 8, UpperBound: 8},
-		GpuMemoryRange: &selector.IntRangeFilter{LowerBound: 131072, UpperBound: 131072},
+		GpusRange: &selector.IntRangeFilter{LowerBound: 8, UpperBound: 8},
+		GpuMemoryRange: &selector.ByteQuantityRangeFilter{
+			LowerBound: gpuMemory,
+			UpperBound: gpuMemory,
+		},
 	}
 	results, err := itf.FilterVerbose(filters)
 	h.Ok(t, err)
@@ -279,7 +284,6 @@ func TestFilter_MoreFilters(t *testing.T) {
 	}
 	results, err := itf.Filter(filters)
 	h.Ok(t, err)
-	log.Println(results)
 	h.Assert(t, len(results) == 1, "Should only return 1 instance type with 2 vcpus")
 	h.Assert(t, results[0] == "t3.micro", "Should return t3.micro, got %s instead", results[0])
 }
@@ -451,7 +455,6 @@ func TestRetrieveInstanceTypesSupportedInAZs_Intersection(t *testing.T) {
 	}
 	results, err := itf.RetrieveInstanceTypesSupportedInLocations([]string{"us-east-2a", "us-east-2b"})
 	h.Ok(t, err)
-	fmt.Println(results)
 	h.Assert(t, len(results) == 3, "Should return instance types that are included in both files")
 
 	// Check reversed zones to ensure order does not matter

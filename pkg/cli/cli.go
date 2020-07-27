@@ -20,6 +20,7 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/aws/amazon-ec2-instance-selector/pkg/bytequantity"
 	"github.com/aws/amazon-ec2-instance-selector/pkg/selector"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -37,12 +38,13 @@ func New(binaryName string, shortUsage string, longUsage, examples string, run r
 		Run:     run,
 	}
 	return CommandLineInterface{
-		Command:       cmd,
-		Flags:         map[string]interface{}{},
-		nilDefaults:   map[string]bool{},
-		intRangeFlags: map[string]bool{},
-		validators:    map[string]validator{},
-		suiteFlags:    pflag.NewFlagSet("suite", pflag.ExitOnError),
+		Command:     cmd,
+		Flags:       map[string]interface{}{},
+		nilDefaults: map[string]bool{},
+		rangeFlags:  map[string]bool{},
+		validators:  map[string]validator{},
+		processors:  map[string]processor{},
+		suiteFlags:  pflag.NewFlagSet("suite", pflag.ExitOnError),
 	}
 }
 
@@ -52,24 +54,23 @@ func (cl *CommandLineInterface) ParseFlags() (map[string]interface{}, error) {
 	// Remove Suite Flags so that args only include Config and Filter Flags
 	cl.Command.SetArgs(removeIntersectingArgs(cl.suiteFlags))
 	// This parses Config and Filter flags only
-	err := cl.Command.Execute()
-	if err != nil {
+	if err := cl.Command.Execute(); err != nil {
 		return nil, err
 	}
+
 	// Remove Config and Filter flags so that only suite flags are parsed
-	err = cl.suiteFlags.Parse(removeIntersectingArgs(cl.Command.Flags()))
-	if err != nil {
+	if err := cl.suiteFlags.Parse(removeIntersectingArgs(cl.Command.Flags())); err != nil {
 		return nil, err
 	}
+
 	// Add suite flags to Command flagset so that other processing can occur
 	// This has to be done after usage is printed so that the flagsets can be grouped properly when printed
 	cl.Command.Flags().AddFlagSet(cl.suiteFlags)
-	err = cl.SetUntouchedFlagValuesToNil()
-	if err != nil {
+	if err := cl.SetUntouchedFlagValuesToNil(); err != nil {
 		return nil, err
 	}
-	err = cl.ProcessRangeFilterFlags()
-	if err != nil {
+
+	if err := cl.ProcessFlags(); err != nil {
 		return nil, err
 	}
 	return cl.Flags, nil
@@ -82,11 +83,27 @@ func (cl *CommandLineInterface) ParseAndValidateFlags() (map[string]interface{},
 	if err != nil {
 		return nil, err
 	}
-	err = cl.ValidateFlags()
-	if err != nil {
+	if err := cl.ValidateFlags(); err != nil {
 		return nil, err
 	}
 	return flags, nil
+}
+
+// ProcessFlags iterates through any registered processors and executes them
+// Processors are executed before validators
+func (cl *CommandLineInterface) ProcessFlags() error {
+	for flagName, processorFn := range cl.processors {
+		if processorFn == nil {
+			continue
+		}
+		if err := processorFn(cl.Flags[flagName]); err != nil {
+			return err
+		}
+	}
+	if err := cl.ProcessRangeFilterFlags(); err != nil {
+		return err
+	}
+	return nil
 }
 
 // ValidateFlags iterates through any registered validators and executes them
@@ -164,6 +181,10 @@ func (cl *CommandLineInterface) SetUntouchedFlagValuesToNil() error {
 				if reflect.ValueOf(*v).IsZero() {
 					cl.Flags[f.Name] = nil
 				}
+			case *bytequantity.ByteQuantity:
+				if v.Quantity == 0 {
+					cl.Flags[f.Name] = nil
+				}
 			case *string:
 				if reflect.ValueOf(*v).IsZero() {
 					cl.Flags[f.Name] = nil
@@ -188,28 +209,53 @@ func (cl *CommandLineInterface) SetUntouchedFlagValuesToNil() error {
 	return nil
 }
 
-// ProcessRangeFilterFlags sets min and max to the appropriate 0 or maxInt bounds based on the 3-tuple that a user specifies for base flag, min, and/or max
+// ProcessRangeFilterFlags sets min and max to the appropriate 0 or max bounds based on the 3-tuple that a user specifies for base flag, min, and/or max
 func (cl *CommandLineInterface) ProcessRangeFilterFlags() error {
-	for flagName := range cl.intRangeFlags {
+	for flagName := range cl.rangeFlags {
 		rangeHelperMin := fmt.Sprintf("%s-%s", flagName, "min")
 		rangeHelperMax := fmt.Sprintf("%s-%s", flagName, "max")
 		if cl.Flags[flagName] != nil {
 			if cl.Flags[rangeHelperMin] != nil || cl.Flags[rangeHelperMax] != nil {
 				return fmt.Errorf("error: --%s and --%s cannot be set when using --%s", rangeHelperMin, rangeHelperMax, flagName)
 			}
-			cl.Flags[rangeHelperMin] = cl.IntMe(cl.Flags[flagName])
-			cl.Flags[rangeHelperMax] = cl.IntMe(cl.Flags[flagName])
+			cl.Flags[rangeHelperMin] = cl.Flags[flagName]
+			cl.Flags[rangeHelperMax] = cl.Flags[flagName]
 		}
 		if cl.Flags[rangeHelperMin] == nil && cl.Flags[rangeHelperMax] == nil {
 			continue
-		} else if cl.Flags[rangeHelperMin] == nil {
-			cl.Flags[rangeHelperMin] = cl.IntMe(0)
-		} else if cl.Flags[rangeHelperMax] == nil {
-			cl.Flags[rangeHelperMax] = cl.IntMe(maxInt)
 		}
-		cl.Flags[flagName] = &selector.IntRangeFilter{
-			LowerBound: *cl.IntMe(cl.Flags[rangeHelperMin]),
-			UpperBound: *cl.IntMe(cl.Flags[rangeHelperMax]),
+
+		if cl.Flags[rangeHelperMin] == nil {
+			switch cl.Flags[rangeHelperMax].(type) {
+			case *int:
+				cl.Flags[rangeHelperMin] = cl.IntMe(0)
+			case *bytequantity.ByteQuantity:
+				cl.Flags[rangeHelperMin] = cl.ByteQuantityMe(bytequantity.ByteQuantity{Quantity: 0})
+			default:
+				return fmt.Errorf("Unable to set %s", rangeHelperMax)
+			}
+		} else if cl.Flags[rangeHelperMax] == nil {
+			switch cl.Flags[rangeHelperMin].(type) {
+			case *int:
+				cl.Flags[rangeHelperMax] = cl.IntMe(maxInt)
+			case *bytequantity.ByteQuantity:
+				cl.Flags[rangeHelperMax] = cl.ByteQuantityMe(bytequantity.ByteQuantity{Quantity: maxUint64})
+			default:
+				return fmt.Errorf("Unable to set %s", rangeHelperMin)
+			}
+		}
+
+		switch cl.Flags[rangeHelperMin].(type) {
+		case *int:
+			cl.Flags[flagName] = &selector.IntRangeFilter{
+				LowerBound: *cl.IntMe(cl.Flags[rangeHelperMin]),
+				UpperBound: *cl.IntMe(cl.Flags[rangeHelperMax]),
+			}
+		case *bytequantity.ByteQuantity:
+			cl.Flags[flagName] = &selector.ByteQuantityRangeFilter{
+				LowerBound: *cl.ByteQuantityMe(cl.Flags[rangeHelperMin]),
+				UpperBound: *cl.ByteQuantityMe(cl.Flags[rangeHelperMax]),
+			}
 		}
 	}
 	return nil

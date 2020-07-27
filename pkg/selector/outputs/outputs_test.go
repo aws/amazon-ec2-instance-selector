@@ -117,3 +117,15 @@ func TestTableOutputWide(t *testing.T) {
 	h.Assert(t, strings.Contains(outputStr, "Moderate"), "wide table should include network performance")
 	h.Assert(t, strings.Contains(outputStr, "NVIDIA K520"), "wide table should include GPU Info")
 }
+
+func TestTableOutput_MBtoGB(t *testing.T) {
+	instanceTypes := getInstanceTypes(t, "g2_2xlarge.json")
+	instanceTypeOut := outputs.TableOutputWide(instanceTypes)
+	outputStr := strings.Join(instanceTypeOut, "")
+	h.Assert(t, strings.Contains(outputStr, "15.000"), "table should include 15.000 GB of memory")
+	h.Assert(t, strings.Contains(outputStr, "4.00"), "wide table should include 4.00 GB of gpu memory")
+
+	instanceTypeOut = outputs.TableOutputShort(instanceTypes)
+	outputStr = strings.Join(instanceTypeOut, "")
+	h.Assert(t, strings.Contains(outputStr, "15.000"), "table should include 15.000 GB of memory")
+}

@@ -297,10 +297,27 @@ func (itf Selector) executeFilters(filterToInstanceSpecMapping map[string]filter
 			default:
 				return false, fmt.Errorf(invalidInstanceSpecTypeMsg)
 			}
-		case *float64:
+		case *ByteQuantityRangeFilter:
+			mibRange := Uint64RangeFilter{
+				LowerBound: filter.LowerBound.Quantity,
+				UpperBound: filter.UpperBound.Quantity,
+			}
 			switch iSpec := instanceSpec.(type) {
-			case *float64:
-				if !isSupportedWithFloat64(iSpec, filter) {
+			case *int:
+				var iSpec64 *int64
+				if iSpec != nil {
+					iSpecVal := int64(*iSpec)
+					iSpec64 = &iSpecVal
+				}
+				if !isSupportedWithRangeUint64(iSpec64, &mibRange) {
+					return false, nil
+				}
+			case *int64:
+				mibRange := Uint64RangeFilter{
+					LowerBound: filter.LowerBound.Quantity,
+					UpperBound: filter.UpperBound.Quantity,
+				}
+				if !isSupportedWithRangeUint64(iSpec, &mibRange) {
 					return false, nil
 				}
 			default:

@@ -68,7 +68,7 @@ $ export AWS_REGION="us-east-1"
 
 **Find Instance Types with 4 GiB of memory, 2 vcpus, and runs on the x86_64 CPU architecture**
 ```
-$ ec2-instance-selector --memory 4096 --vcpus 2 --cpu-architecture x86_64 -r us-east-1
+$ ec2-instance-selector --memory 4 --vcpus 2 --cpu-architecture x86_64 -r us-east-1
 c5.large
 c5d.large
 t2.medium
@@ -93,26 +93,27 @@ r5n.24xlarge
 
 **Short Table Output**
 ```
-$ ec2-instance-selector --memory 4096 --vcpus 2 --cpu-architecture x86_64 -r us-east-1 -o table
-Instance Type        VCPUs        Mem (MiB)
+$ ec2-instance-selector --memory 4 --vcpus 2 --cpu-architecture x86_64 -r us-east-1 -o table
+Instance Type        VCPUs        Mem (GiB)
 -------------        -----        ---------
-c5.large             2            4096
-c5d.large            2            4096
-t2.medium            2            4096
-t3.medium            2            4096
-t3a.medium           2            4096
+c5.large             2            4.000
+c5d.large            2            4.000
+t2.medium            2            4.000
+t3.medium            2            4.000
+t3a.medium           2            4.000
 ```
 
 **Wide Table Output**
 ```
-$ ec2-instance-selector --memory 4096 --vcpus 2 --cpu-architecture x86_64 -r us-east-1 -o table-wide
-Instance Type  VCPUs   Mem (MiB)  Hypervisor  Current Gen  Hibernation Support  CPU Arch      Network Performance  ENIs    GPUs    
--------------  -----   ---------  ----------  -----------  -------------------  --------      -------------------  ----    ----
-c5.large       2       4096       nitro       true         true                 x86_64        Up to 10 Gigabit     3       0   
-c5d.large      2       4096       nitro       true         false                x86_64        Up to 10 Gigabit     3       0    
-t2.medium      2       4096       xen         true         true                 i386, x86_64  Low to Moderate      3       0    
-t3.medium      2       4096       nitro       true         false                x86_64        Up to 5 Gigabit      3       0  
-t3a.medium     2       4096       nitro       true         false                x86_64        Up to 5 Gigabit      3       0
+$ ec2-instance-selector --memory 4 --vcpus 2 --cpu-architecture x86_64 -r us-east-1 -o table-wide
+Instance Type  VCPUs   Mem (GiB)  Hypervisor  Current Gen  Hibernation Support  CPU Arch      Network Performance  ENIs    GPUs    
+-------------  -----   ---------  ----------  -----------  -------------------  --------      -------------------  ----    ----    
+c5.large       2       4.000      nitro       true         true                 x86_64        Up to 10 Gigabit     3       0       
+c5a.large      2       4.000      nitro       true         false                x86_64        Up to 10 Gigabit     3       0       
+c5d.large      2       4.000      nitro       true         false                x86_64        Up to 10 Gigabit     3       0       
+t2.medium      2       4.000      xen         true         true                 i386, x86_64  Low to Moderate      3       0       
+t3.medium      2       4.000      nitro       true         false                x86_64        Up to 5 Gigabit      3       0       
+t3a.medium     2       4.000      nitro       true         false                x86_64        Up to 5 Gigabit      3       0     
 ```
 
 **All CLI Options**
@@ -144,17 +145,17 @@ Filter Flags:
       --deny-list string                  List of instance types which should be excluded w/ regex syntax (Example: m[1-2]\.*)
   -e, --ena-support                       Instance types where ENA is supported or required
   -f, --fpga-support                      FPGA instance types
-      --gpu-memory-total int              Number of GPUs' total memory in MiB (Example: 4096) (sets --gpu-memory-total-min and -max to the same value)
-      --gpu-memory-total-max int          Maximum Number of GPUs' total memory in MiB (Example: 4096) If --gpu-memory-total-min is not specified, the lower bound will be 0
-      --gpu-memory-total-min int          Minimum Number of GPUs' total memory in MiB (Example: 4096) If --gpu-memory-total-max is not specified, the upper bound will be infinity
+      --gpu-memory-total float            Number of GPUs' total memory in GiB (Example: 4) (sets --gpu-memory-total-min and -max to the same value)
+      --gpu-memory-total-max float        Maximum Number of GPUs' total memory in GiB (Example: 4) If --gpu-memory-total-min is not specified, the lower bound will be 0
+      --gpu-memory-total-min float        Minimum Number of GPUs' total memory in GiB (Example: 4) If --gpu-memory-total-max is not specified, the upper bound will be infinity
   -g, --gpus int                          Total Number of GPUs (Example: 4) (sets --gpus-min and -max to the same value)
       --gpus-max int                      Maximum Total Number of GPUs (Example: 4) If --gpus-min is not specified, the lower bound will be 0
       --gpus-min int                      Minimum Total Number of GPUs (Example: 4) If --gpus-max is not specified, the upper bound will be infinity
       --hibernation-support               Hibernation supported
       --hypervisor string                 Hypervisor: [xen or nitro]
-  -m, --memory int                        Amount of Memory available in MiB (Example: 4096) (sets --memory-min and -max to the same value)
-      --memory-max int                    Maximum Amount of Memory available in MiB (Example: 4096) If --memory-min is not specified, the lower bound will be 0
-      --memory-min int                    Minimum Amount of Memory available in MiB (Example: 4096) If --memory-max is not specified, the upper bound will be infinity
+  -m, --memory float                      Amount of Memory available in GiB (Example: 4) (sets --memory-min and -max to the same value)
+      --memory-max float                  Maximum Amount of Memory available in GiB (Example: 4) If --memory-min is not specified, the lower bound will be 0
+      --memory-min float                  Minimum Amount of Memory available in GiB (Example: 4) If --memory-max is not specified, the upper bound will be infinity
       --network-interfaces int            Number of network interfaces (ENIs) that can be attached to the instance (sets --network-interfaces-min and -max to the same value)
       --network-interfaces-max int        Maximum Number of network interfaces (ENIs) that can be attached to the instance If --network-interfaces-min is not specified, the lower bound will be 0
       --network-interfaces-min int        Minimum Number of network interfaces (ENIs) that can be attached to the instance If --network-interfaces-max is not specified, the upper bound will be infinity
@@ -221,10 +222,10 @@ func main() {
 		LowerBound: 2,
 		UpperBound: 4,
 	}
-	// Instantiate an int range filter to specify min and max memory in MiB
-	memoryRange := selector.IntRangeFilter{
-		LowerBound: 1024,
-		UpperBound: 4096,
+	// Instantiate a float64 range filter to specify min and max memory in GiB
+	memoryRange := selector.Float64RangeFilter{
+		LowerBound: 1.0,
+		UpperBound: 4.0,
 	}
 	// Create a string for the CPU Architecture so that it can be passed as a pointer
 	// when creating the Filter struct

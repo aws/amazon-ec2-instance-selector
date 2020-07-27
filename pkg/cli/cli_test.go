@@ -15,10 +15,14 @@ package cli_test
 
 import (
 	"fmt"
+	"math"
 	"os"
+	"reflect"
 	"testing"
 
+	"github.com/aws/amazon-ec2-instance-selector/pkg/bytequantity"
 	"github.com/aws/amazon-ec2-instance-selector/pkg/cli"
+	"github.com/aws/amazon-ec2-instance-selector/pkg/selector"
 	h "github.com/aws/amazon-ec2-instance-selector/pkg/test"
 	"github.com/spf13/cobra"
 )
@@ -168,6 +172,98 @@ func TestParseFlags_IntRangeErr(t *testing.T) {
 	h.Nok(t, err)
 }
 
+func TestParseFlags_ByteQuantityRange(t *testing.T) {
+	flagName := "test-flag"
+	flagMinArg := fmt.Sprintf("%s-%s", flagName, "min")
+	flagMaxArg := fmt.Sprintf("%s-%s", flagName, "max")
+	flagArg := fmt.Sprintf("--%s", flagName)
+
+	// Root set Min and Max to the same val
+	cli := getTestCLI()
+	cli.ByteQuantityMinMaxRangeFlags(flagName, nil, nil, "Test")
+	os.Args = []string{"ec2-instance-selector", flagArg, "5"}
+	flags, err := cli.ParseFlags()
+	h.Ok(t, err)
+	flagMinOutput := flags[flagMinArg].(*bytequantity.ByteQuantity)
+	flagMaxOutput := flags[flagMaxArg].(*bytequantity.ByteQuantity)
+	h.Assert(t, flagMinOutput.GiB() == 5.0 && flagMaxOutput.GiB() == 5.0, "Flag %s min and max should have been parsed to the same number", flagArg)
+
+	// Min is set to a val and max is set to maxInt
+	cli = getTestCLI()
+	cli.ByteQuantityMinMaxRangeFlags(flagName, nil, nil, "Test")
+	os.Args = []string{"ec2-instance-selector", "--" + flagMinArg, "5"}
+	flags, err = cli.ParseFlags()
+	h.Ok(t, err)
+	flagMinOutput = flags[flagMinArg].(*bytequantity.ByteQuantity)
+	flagMaxOutput = flags[flagMaxArg].(*bytequantity.ByteQuantity)
+	h.Assert(t, flagMinOutput.GiB() == 5.0 && flagMaxOutput.Quantity == math.MaxUint64, "Flag %s min should have been parsed from cmdline and max set to maxInt", flagArg)
+
+	// Max is set to a val and min is set to 0
+	cli = getTestCLI()
+	cli.ByteQuantityMinMaxRangeFlags(flagName, nil, nil, "Test")
+	os.Args = []string{"ec2-instance-selector", "--" + flagMaxArg, "50"}
+	flags, err = cli.ParseFlags()
+	h.Ok(t, err)
+	flagMinOutput = flags[flagMinArg].(*bytequantity.ByteQuantity)
+	flagMaxOutput = flags[flagMaxArg].(*bytequantity.ByteQuantity)
+	h.Assert(t, flagMinOutput.Quantity == 0 && flagMaxOutput.GiB() == 50.0, "Flag %s max should have been parsed from cmdline and min set to 0", flagArg)
+
+	// Min and Max are set to separate values
+	cli = getTestCLI()
+	cli.ByteQuantityMinMaxRangeFlags(flagName, nil, nil, "Test")
+	os.Args = []string{"ec2-instance-selector", "--" + flagMinArg, "10", "--" + flagMaxArg, "500"}
+	flags, err = cli.ParseFlags()
+	h.Ok(t, err)
+	flagMinOutput = flags[flagMinArg].(*bytequantity.ByteQuantity)
+	flagMaxOutput = flags[flagMaxArg].(*bytequantity.ByteQuantity)
+	h.Assert(t, flagMinOutput.GiB() == 10.0 && flagMaxOutput.GiB() == 500.0, "Flag %s max and min should have been parsed from cmdline", flagArg)
+	flagType := reflect.TypeOf(flags[flagName])
+	bqRangeFilterType := reflect.TypeOf(&selector.ByteQuantityRangeFilter{})
+	h.Assert(t, flagType == bqRangeFilterType, "%s should be of type %v, instead got %v", flagArg, bqRangeFilterType, flagType)
+}
+
+func TestParseAndValidateFlags_ByteQuantityRange(t *testing.T) {
+	flagName := "test-flag"
+	flagMinArg := fmt.Sprintf("%s-%s", flagName, "min")
+	flagMaxArg := fmt.Sprintf("%s-%s", flagName, "max")
+	flagArg := fmt.Sprintf("--%s", flagName)
+
+	// Root set Min and Max to the same val
+	cli := getTestCLI()
+	cli.ByteQuantityMinMaxRangeFlags(flagName, nil, nil, "Test")
+	os.Args = []string{"ec2-instance-selector", flagArg, "5"}
+	_, err := cli.ParseAndValidateFlags()
+	h.Ok(t, err)
+
+	// Min is set to a val and max is set to maxInt
+	cli = getTestCLI()
+	cli.ByteQuantityMinMaxRangeFlags(flagName, nil, nil, "Test")
+	os.Args = []string{"ec2-instance-selector", "--" + flagMinArg, "5"}
+	_, err = cli.ParseAndValidateFlags()
+	h.Ok(t, err)
+
+	// Max is set to a val and min is set to 0
+	cli = getTestCLI()
+	cli.ByteQuantityMinMaxRangeFlags(flagName, nil, nil, "Test")
+	os.Args = []string{"ec2-instance-selector", "--" + flagMaxArg, "50"}
+	_, err = cli.ParseAndValidateFlags()
+	h.Ok(t, err)
+
+	// Min and Max are set to separate values
+	cli = getTestCLI()
+	cli.ByteQuantityMinMaxRangeFlags(flagName, nil, nil, "Test")
+	os.Args = []string{"ec2-instance-selector", "--" + flagMinArg, "10", "--" + flagMaxArg, "500"}
+	_, err = cli.ParseFlags()
+	h.Ok(t, err)
+
+	// no args
+	cli = getTestCLI()
+	cli.ByteQuantityMinMaxRangeFlags(flagName, nil, nil, "Test")
+	os.Args = []string{"ec2-instance-selector"}
+	_, err = cli.ParseAndValidateFlags()
+	h.Ok(t, err)
+}
+
 func TestParseFlags_RootErr(t *testing.T) {
 	cli := getTestCLI()
 	os.Args = []string{"ec2-instance-selector", "--test", "test"}
@@ -244,30 +340,26 @@ func TestParseFlags_UntouchedFlags(t *testing.T) {
 
 func TestParseFlags_UntouchedFlagsAllTypes(t *testing.T) {
 	cli := getTestCLI()
-	flagName := "test-flag"
-	ratioName := flagName + "-ratio"
-	configName := flagName + "-config"
-	suiteName := flagName + "-suite"
-	flagArg := fmt.Sprintf("--%s", flagName)
-	ratioArg := fmt.Sprintf("--%s", ratioName)
-	configArg := fmt.Sprintf("--%s", configName)
-	suiteArg := fmt.Sprintf("--%s", suiteName)
+	intName := "int"
+	ratioName := "ratio"
+	byteQName := "bq"
+	configName := "config"
+	suiteName := "suite"
 
-	cli.IntFlag(flagName, nil, nil, "Test Filter Flag")
+	cli.IntFlag(intName, nil, nil, "Test Filter Flag")
 	cli.RatioFlag(ratioName, nil, nil, "Test Ratio Flag")
+	cli.ByteQuantityFlag(byteQName, nil, nil, "Test Byte Quantity Flag")
 	cli.ConfigStringFlag(configName, nil, nil, "Test Config Flag", nil)
 	cli.SuiteBoolFlag(suiteName, nil, nil, "Test Suite Flag")
 
 	os.Args = []string{"ec2-instance-selector"}
 	flags, err := cli.ParseFlags()
 	h.Ok(t, err)
-	val, ok := flags[flagName]
-	ratioVal, ratioOk := flags[ratioName]
-	configVal, configOk := flags[configName]
-	suiteVal, suiteOk := flags[suiteName]
-	h.Assert(t, ok && ratioOk && configOk && suiteOk, "Flags %s, %s, %s should exist for all types in flags map", flagArg, ratioArg, configArg, suiteArg)
-	h.Assert(t, val == nil && ratioVal == nil && configVal == nil && suiteVal == nil,
-		"Flag %s, %s, %s should be set to nil when not explicitly set", flagArg, ratioArg, configArg, suiteArg)
+	for _, name := range []string{intName, ratioName, byteQName, configName, suiteName} {
+		val, ok := flags[name]
+		h.Assert(t, ok, "Flag %s should exist in flags map", "--"+name)
+		h.Assert(t, val == nil, "Flag %s should be set to nil when not explicitly set", "--"+name)
+	}
 }
 
 func TestParseAndValidateFlags_Err(t *testing.T) {
@@ -282,6 +374,18 @@ func TestParseAndValidateFlags_Err(t *testing.T) {
 	h.Nok(t, err)
 }
 
+func TestParseAndValidateFlags_ByteQuantityErr(t *testing.T) {
+	cli := getTestCLI()
+	flagName := "test-flag"
+	flagArg := fmt.Sprintf("--%s", flagName)
+	flagMin := flagArg + "-min"
+	flagMax := flagArg + "-max"
+	cli.ByteQuantityMinMaxRangeFlags(flagName, nil, nil, "Test with validation")
+	os.Args = []string{"ec2-instance-selector", flagMin, "5", flagMax, "1"}
+	_, err := cli.ParseAndValidateFlags()
+	h.Nok(t, err)
+}
+
 func TestParseAndValidateFlags(t *testing.T) {
 	cli := getTestCLI()
 	flagName := "test-flag"
@@ -289,9 +393,12 @@ func TestParseAndValidateFlags(t *testing.T) {
 	flagMin := flagArg + "-min"
 	flagMax := flagArg + "-max"
 	cli.IntMinMaxRangeFlags(flagName, nil, nil, "Test with validation")
-	os.Args = []string{"ec2-instance-selector", flagMin, "5", flagMax, "1"}
-	_, err := cli.ParseAndValidateFlags()
-	h.Nok(t, err)
+	os.Args = []string{"ec2-instance-selector", flagMin, "1", flagMax, "5"}
+	flags, err := cli.ParseAndValidateFlags()
+	h.Ok(t, err)
+	flagType := reflect.TypeOf(flags[flagName])
+	intRangeFilterType := reflect.TypeOf(&selector.IntRangeFilter{})
+	h.Assert(t, flagType == intRangeFilterType, "%s should be of type %v, instead got %v", flagArg, intRangeFilterType, flagType)
 }
 
 func TestParseAndValidateRegexFlag(t *testing.T) {
@@ -309,6 +416,26 @@ func TestParseAndValidateRegexFlag(t *testing.T) {
 
 	cli = getTestCLI()
 	cli.RegexFlag(flagName, nil, nil, "Test with validation")
+	os.Args = []string{"ec2-instance-selector", flagArg, "(("}
+	_, err = cli.ParseAndValidateFlags()
+	h.Nok(t, err)
+}
+
+func TestParseAndValidateByteQuantityFlag(t *testing.T) {
+	flagName := "test-bq-flag"
+	flagArg := fmt.Sprintf("--%s", flagName)
+
+	cli := getTestCLI()
+	cli.ByteQuantityFlag(flagName, nil, nil, "Test with validation")
+	os.Args = []string{"ec2-instance-selector", flagArg, "450"}
+	flags, err := cli.ParseAndValidateFlags()
+	h.Ok(t, err)
+	h.Assert(t, len(flags) == 1, "1 flag should have been processed")
+	_, err = cli.ParseAndValidateFlags()
+	h.Ok(t, err)
+
+	cli = getTestCLI()
+	cli.ByteQuantityFlag(flagName, nil, nil, "Test with validation")
 	os.Args = []string{"ec2-instance-selector", flagArg, "(("}
 	_, err = cli.ParseAndValidateFlags()
 	h.Nok(t, err)

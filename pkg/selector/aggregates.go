@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"regexp"
 
+	"github.com/aws/amazon-ec2-instance-selector/pkg/bytequantity"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ec2"
 )
@@ -62,9 +63,9 @@ func (itf Selector) TransformBaseInstanceType(filters Filters) (Filters, error) 
 		filters.GpusRange = &IntRangeFilter{LowerBound: gpuCount, UpperBound: gpuCount}
 	}
 	if filters.MemoryRange == nil {
-		lowerBound := int(float64(*instanceTypeInfo.MemoryInfo.SizeInMiB) * AggregateLowPercentile)
-		upperBound := int(float64(*instanceTypeInfo.MemoryInfo.SizeInMiB) * AggregateHighPercentile)
-		filters.MemoryRange = &IntRangeFilter{LowerBound: lowerBound, UpperBound: upperBound}
+		lowerBound := bytequantity.ByteQuantity{Quantity: uint64(float64(*instanceTypeInfo.MemoryInfo.SizeInMiB) * AggregateLowPercentile)}
+		upperBound := bytequantity.ByteQuantity{Quantity: uint64(float64(*instanceTypeInfo.MemoryInfo.SizeInMiB) * AggregateHighPercentile)}
+		filters.MemoryRange = &ByteQuantityRangeFilter{LowerBound: lowerBound, UpperBound: upperBound}
 	}
 	if filters.VCpusRange == nil {
 		lowerBound := int(float64(*instanceTypeInfo.VCpuInfo.DefaultVCpus) * AggregateLowPercentile)

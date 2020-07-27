@@ -18,6 +18,7 @@ import (
 	"regexp"
 	"testing"
 
+	"github.com/aws/amazon-ec2-instance-selector/pkg/bytequantity"
 	"github.com/aws/amazon-ec2-instance-selector/pkg/selector"
 	h "github.com/aws/amazon-ec2-instance-selector/pkg/test"
 )
@@ -107,6 +108,19 @@ func TestIntRangeMe(t *testing.T) {
 	h.Assert(t, val == nil, "Should return nil if nil is passed in")
 }
 
+func TestByteQuantityRangeMe(t *testing.T) {
+	cli := getTestCLI()
+	bq1 := bytequantity.ByteQuantity{Quantity: 1}
+	bqRangeVal := selector.ByteQuantityRangeFilter{LowerBound: bq1, UpperBound: bq1}
+	val := cli.ByteQuantityRangeMe(bqRangeVal)
+	h.Assert(t, *val == bqRangeVal, "Should return %s from passed in byte quantity range value", bqRangeVal)
+	val = cli.ByteQuantityRangeMe(&bqRangeVal)
+	h.Assert(t, *val == bqRangeVal, "Should return %s from passed in range pointer", bqRangeVal)
+	val = cli.ByteQuantityRangeMe(true)
+	h.Assert(t, val == nil, "Should return nil from other data type passed in")
+	val = cli.ByteQuantityRangeMe(nil)
+	h.Assert(t, val == nil, "Should return nil if nil is passed in")
+}
 func TestRegexMe(t *testing.T) {
 	cli := getTestCLI()
 	regexVal, err := regexp.Compile("c4.*")

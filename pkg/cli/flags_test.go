@@ -17,6 +17,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/aws/amazon-ec2-instance-selector/pkg/bytequantity"
 	h "github.com/aws/amazon-ec2-instance-selector/pkg/test"
 )
 
@@ -149,6 +150,40 @@ func TestIntMinMaxRangeFlags(t *testing.T) {
 	cli.IntMinMaxRangeFlags(flagName, nil, nil, "Test Min Max Range")
 	h.Assert(t, len(cli.Flags) == 3, "Should contain 3 flags w/ no shorthand")
 	h.Assert(t, ok, "Should contain %s flag w/ no shorthand", flagName)
+}
+
+func TestByteQuantityMinMaxRangeFlags(t *testing.T) {
+	cli := getTestCLI()
+	flagName := "test-bq-min-max-range"
+	cli.ByteQuantityMinMaxRangeFlags(flagName, cli.StringMe("t"), nil, "Test Min Max Range")
+	_, ok := cli.Flags[flagName]
+	_, minOk := cli.Flags[flagName+"-min"]
+	_, maxOk := cli.Flags[flagName+"-max"]
+	h.Assert(t, len(cli.Flags) == 3, "Should contain 3 flags")
+	h.Assert(t, ok, "Should contain %s flag", flagName)
+	h.Assert(t, minOk, "Should contain %s flag", flagName)
+	h.Assert(t, maxOk, "Should contain %s flag", flagName)
+
+	cli = getTestCLI()
+	cli.ByteQuantityMinMaxRangeFlags(flagName, nil, nil, "Test Min Max Range")
+	h.Assert(t, len(cli.Flags) == 3, "Should contain 3 flags w/ no shorthand")
+	h.Assert(t, ok, "Should contain %s flag w/ no shorthand", flagName)
+}
+
+func TestByteQuantityFlag(t *testing.T) {
+	cli := getTestCLI()
+	for _, flagFn := range []func(string, *string, *bytequantity.ByteQuantity, string){cli.ByteQuantityFlag} {
+		flagName := "test-bq-flag"
+		flagFn(flagName, cli.StringMe("t"), nil, "Test Byte Quantity")
+		_, ok := cli.Flags[flagName]
+		h.Assert(t, ok, "Should contain %s flag", flagName)
+		h.Assert(t, len(cli.Flags) == 1, "Should contain 1 flag")
+
+		cli = getTestCLI()
+		flagFn(flagName, nil, nil, "Test Byte Quantity")
+		h.Assert(t, len(cli.Flags) == 1, "Should contain 3 flags w/ no shorthand")
+		h.Assert(t, ok, "Should contain %s flag w/ no shorthand", flagName)
+	}
 }
 
 func TestRegexFlag(t *testing.T) {

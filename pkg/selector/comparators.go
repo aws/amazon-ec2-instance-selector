@@ -66,15 +66,18 @@ func isSupportedWithRangeInt64(instanceTypeValue *int64, target *IntRangeFilter)
 	return int(*instanceTypeValue) >= target.LowerBound && int(*instanceTypeValue) <= target.UpperBound
 }
 
-func isSupportedWithFloat64(instanceTypeValue *float64, target *float64) bool {
+func isSupportedWithRangeUint64(instanceTypeValue *int64, target *Uint64RangeFilter) bool {
 	if target == nil {
 		return true
-	}
-	if instanceTypeValue == nil {
+	} else if instanceTypeValue == nil && target.LowerBound == 0 && target.UpperBound == 0 {
+		return true
+	} else if instanceTypeValue == nil {
 		return false
 	}
-	// compare up to values' two decimal floor
-	return math.Floor(*instanceTypeValue*100)/100 == math.Floor(*target*100)/100
+	if target.UpperBound > math.MaxInt64 {
+		target.UpperBound = math.MaxInt64
+	}
+	return uint64(*instanceTypeValue) >= target.LowerBound && uint64(*instanceTypeValue) <= target.UpperBound
 }
 
 func isSupportedWithBool(instanceTypeValue *bool, target *bool) bool {
