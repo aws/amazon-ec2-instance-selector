@@ -145,17 +145,17 @@ Filter Flags:
       --deny-list string                  List of instance types which should be excluded w/ regex syntax (Example: m[1-2]\.*)
   -e, --ena-support                       Instance types where ENA is supported or required
   -f, --fpga-support                      FPGA instance types
-      --gpu-memory-total float            Number of GPUs' total memory in GiB (Example: 4) (sets --gpu-memory-total-min and -max to the same value)
-      --gpu-memory-total-max float        Maximum Number of GPUs' total memory in GiB (Example: 4) If --gpu-memory-total-min is not specified, the lower bound will be 0
-      --gpu-memory-total-min float        Minimum Number of GPUs' total memory in GiB (Example: 4) If --gpu-memory-total-max is not specified, the upper bound will be infinity
+      --gpu-memory-total string           Number of GPUs' total memory (Example: 4 GiB) (sets --gpu-memory-total-min and -max to the same value)
+      --gpu-memory-total-max string       Maximum Number of GPUs' total memory (Example: 4 GiB) If --gpu-memory-total-min is not specified, the lower bound will be 0
+      --gpu-memory-total-min string       Minimum Number of GPUs' total memory (Example: 4 GiB) If --gpu-memory-total-max is not specified, the upper bound will be infinity
   -g, --gpus int                          Total Number of GPUs (Example: 4) (sets --gpus-min and -max to the same value)
       --gpus-max int                      Maximum Total Number of GPUs (Example: 4) If --gpus-min is not specified, the lower bound will be 0
       --gpus-min int                      Minimum Total Number of GPUs (Example: 4) If --gpus-max is not specified, the upper bound will be infinity
       --hibernation-support               Hibernation supported
       --hypervisor string                 Hypervisor: [xen or nitro]
-  -m, --memory float                      Amount of Memory available in GiB (Example: 4) (sets --memory-min and -max to the same value)
-      --memory-max float                  Maximum Amount of Memory available in GiB (Example: 4) If --memory-min is not specified, the lower bound will be 0
-      --memory-min float                  Minimum Amount of Memory available in GiB (Example: 4) If --memory-max is not specified, the upper bound will be infinity
+  -m, --memory string                     Amount of Memory available (Example: 4 GiB) (sets --memory-min and -max to the same value)
+      --memory-max string                 Maximum Amount of Memory available (Example: 4 GiB) If --memory-min is not specified, the lower bound will be 0
+      --memory-min string                 Minimum Amount of Memory available (Example: 4 GiB) If --memory-max is not specified, the upper bound will be infinity
       --network-interfaces int            Number of network interfaces (ENIs) that can be attached to the instance (sets --network-interfaces-min and -max to the same value)
       --network-interfaces-max int        Maximum Number of network interfaces (ENIs) that can be attached to the instance If --network-interfaces-min is not specified, the lower bound will be 0
       --network-interfaces-min int        Minimum Number of network interfaces (ENIs) that can be attached to the instance If --network-interfaces-max is not specified, the upper bound will be infinity
@@ -198,6 +198,7 @@ package main
 import (
 	"fmt"
 
+	"github.com/aws/amazon-ec2-instance-selector/pkg/bytequantity"
 	"github.com/aws/amazon-ec2-instance-selector/pkg/selector"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -222,10 +223,10 @@ func main() {
 		LowerBound: 2,
 		UpperBound: 4,
 	}
-	// Instantiate a float64 range filter to specify min and max memory in GiB
-	memoryRange := selector.Float64RangeFilter{
-		LowerBound: 1.0,
-		UpperBound: 4.0,
+	// Instantiate a byte quantity range filter to specify min and max memory in GiB
+	memoryRange := selector.ByteQuantityRangeFilter{
+		LowerBound: bytequantity.FromGiB(2),
+		UpperBound: bytequantity.FromGiB(4),
 	}
 	// Create a string for the CPU Architecture so that it can be passed as a pointer
 	// when creating the Filter struct
