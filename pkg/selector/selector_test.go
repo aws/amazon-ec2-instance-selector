@@ -568,7 +568,6 @@ func TestFilter_X8664_AMD64(t *testing.T) {
 	}
 	results, err := itf.Filter(filters)
 	h.Ok(t, err)
-	log.Println(results)
 	h.Assert(t, len(results) == 1, "Should only return 1 instance type with x86_64/amd64 cpu architecture")
 	h.Assert(t, results[0] == "t3.micro", "Should return t3.micro, got %s instead", results[0])
 }
