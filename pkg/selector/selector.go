@@ -323,6 +323,15 @@ func (itf Selector) executeFilters(filterToInstanceSpecMapping map[string]filter
 			default:
 				return false, fmt.Errorf(invalidInstanceSpecTypeMsg)
 			}
+		case *float64:
+			switch iSpec := instanceSpec.(type) {
+			case *float64:
+				if !isSupportedWithFloat64(iSpec, filter) {
+					return false, nil
+				}
+			default:
+				return false, fmt.Errorf(invalidInstanceSpecTypeMsg)
+			}
 		default:
 			return false, fmt.Errorf("No filter handler found for %s", filterDetailsMsg)
 		}

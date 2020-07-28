@@ -55,6 +55,17 @@ func isSupportedWithRangeInt(instanceTypeValue *int, target *IntRangeFilter) boo
 	return isSupportedWithRangeInt64(instanceTypeValueInt64, target)
 }
 
+func isSupportedWithFloat64(instanceTypeValue *float64, target *float64) bool {
+	if target == nil {
+		return true
+	}
+	if instanceTypeValue == nil {
+		return false
+	}
+	// compare up to values' two decimal floor
+	return math.Floor(*instanceTypeValue*100)/100 == math.Floor(*target*100)/100
+}
+
 func isSupportedWithRangeInt64(instanceTypeValue *int64, target *IntRangeFilter) bool {
 	if target == nil {
 		return true
