@@ -197,8 +197,8 @@ func TestFilterVerbose_AZFilteredIn(t *testing.T) {
 		EC2: ec2Mock,
 	}
 	filters := selector.Filters{
-		VCpusRange:       &selector.IntRangeFilter{LowerBound: 2, UpperBound: 2},
-		AvailabilityZone: aws.String("us-east-2a"),
+		VCpusRange:        &selector.IntRangeFilter{LowerBound: 2, UpperBound: 2},
+		AvailabilityZones: &[]string{"us-east-2a"},
 	}
 	results, err := itf.FilterVerbose(filters)
 	h.Ok(t, err)
@@ -216,7 +216,7 @@ func TestFilterVerbose_AZFilteredOut(t *testing.T) {
 		EC2: ec2Mock,
 	}
 	filters := selector.Filters{
-		AvailabilityZone: aws.String("us-east-2a"),
+		AvailabilityZones: &[]string{"us-east-2a"},
 	}
 	results, err := itf.FilterVerbose(filters)
 	h.Ok(t, err)
@@ -229,8 +229,8 @@ func TestFilterVerboseAZ_FilteredErr(t *testing.T) {
 		EC2: ec2Mock,
 	}
 	filters := selector.Filters{
-		VCpusRange:       &selector.IntRangeFilter{LowerBound: 2, UpperBound: 2},
-		AvailabilityZone: aws.String("blah"),
+		VCpusRange:        &selector.IntRangeFilter{LowerBound: 2, UpperBound: 2},
+		AvailabilityZones: &[]string{"blah"},
 	}
 	_, err := itf.FilterVerbose(filters)
 	h.Assert(t, err != nil, "Should error since bad zone was passed in")

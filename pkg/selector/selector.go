@@ -143,15 +143,6 @@ func (itf Selector) rawFilter(filters Filters) ([]*ec2.InstanceTypeInfo, error) 
 	}
 	var locations []string
 
-	// Support the deprecated singular availabilityZone filter in favor of the plural
-	if filters.AvailabilityZone != nil {
-		if filters.AvailabilityZones != nil {
-			*filters.AvailabilityZones = append(*filters.AvailabilityZones, *filters.AvailabilityZone)
-		} else {
-			filters.AvailabilityZones = &[]string{*filters.AvailabilityZone}
-		}
-	}
-
 	if filters.CPUArchitecture != nil && *filters.CPUArchitecture == cpuArchitectureAMD64 {
 		*filters.CPUArchitecture = cpuArchitectureX8664
 	}
