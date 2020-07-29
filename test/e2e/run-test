@@ -8,7 +8,7 @@ TEST_FAILURES_LOG="${BUILD_DIR}/test-failures.log"
 
 AEIS="${BUILD_DIR}/ec2-instance-selector"
 
-## Build binary for tests to run 
+## Build binary for tests to run
 make -f $MAKEFILE build
 
 ## Print to stderr
@@ -89,8 +89,7 @@ params=(
     "--memory-min=1 --memory-max=1"
     "--memory=1024m"
 )
-test_name="Memory 1 GiB"
-echo "${expected[*]}" | execute_test "${test_name}" "${params[@]}"
+echo "${expected[*]}" | execute_test "Memory 1 GiB" "${params[@]}"
 
 expected=(i3en.6xlarge inf1.6xlarge z1d.6xlarge)
 params=(

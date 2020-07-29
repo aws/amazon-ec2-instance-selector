@@ -42,6 +42,10 @@ jobs:
       if: type = push AND env(GITHUB_TOKEN) IS present
       script: test/license-test/run-license-test.sh
       name: License Test
+    - stage: Test
+      if: type = push AND env(GITHUB_TOKEN) IS present
+      script: test/e2e/run-test
+      name: E2E Tests
     - stage: Deploy
       if: type = push AND env(DOCKERHUB_USERNAME) IS present
       script: make sync-readme-to-dockerhub
