@@ -2,14 +2,10 @@
 set -euo pipefail
 
 SCRIPTPATH="$(cd "$(dirname "$0")"; pwd -P)"
-MAKEFILE="${SCRIPTPATH}/../../Makefile"
 BUILD_DIR="${SCRIPTPATH}/../../build"
 TEST_FAILURES_LOG="${BUILD_DIR}/test-failures.log"
 
 AEIS="${BUILD_DIR}/ec2-instance-selector"
-
-## Build binary for tests to run
-make -f $MAKEFILE build
 
 ## Print to stderr
 function echoerr() {
@@ -63,13 +59,11 @@ function execute_test() {
     echo "=========================== Test: ${test_name} ==========================="
 
     for p in "${params[@]}"; do
-        set -x
         if $AEIS ${p} | assert_contains_instance_types "${expected[*]}"; then  
             echo "✅ ${test_name} \"$p\" passed!"
         else
             echo "❌ Failed ${test_name} \"$p\"" | tee "${TEST_FAILURES_LOG}"
         fi
-        set +x
     done   
     echo -e "========================= End Test: ${test_name} ===========================\n\n" 
 }
@@ -81,7 +75,7 @@ rm -f "${TEST_FAILURES_LOG}"
 
 expected=(t3a.micro t3.micro t2.micro)
 params=(
-    "--memory=2"
+    "--memory=1"
     "--memory=1GiB"
     "--memory=1 GiB"
     "--memory=1gb"
