@@ -44,6 +44,7 @@ jobs:
       name: License Test
     - stage: Test
       if: type = push AND env(GITHUB_TOKEN) IS present
+      language: go
       go: "1.14.x"
       script: make e2e-test
       name: E2E Tests
