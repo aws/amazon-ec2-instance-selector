@@ -1,0 +1,189 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPTPATH="$(cd "$(dirname "$0")"; pwd -P)"
+MAKEFILE="${SCRIPTPATH}/../../Makefile"
+BUILD_DIR="${SCRIPTPATH}/../../build"
+TEST_FAILURES_LOG="${BUILD_DIR}/test-failures.log"
+
+AEIS="${BUILD_DIR}/ec2-instance-selector"
+
+## Build binary for tests to run 
+make -f $MAKEFILE build
+
+## Print to stderr
+function echoerr() {
+    echo "$@" 1>&2;
+}
+
+## Sort a bash array
+function sort_array() {
+    local input=( "$@" )
+    IFS=$'\n' 
+    local sorted=($(sort <<<"${input[*]}"))
+    unset IFS
+    echo "${sorted[*]}"
+}
+
+## Checks if expected items (consumed as an array in args) 
+## are all contained in the actual list (consumed on stdin)
+function assert_contains_instance_types() {
+    local expected=( "$@" )
+    local actual=()
+    while read actual_input; do
+        actual+=($actual_input)
+    done
+    [[ 0 -eq "${#actual[@]}" ]] && return 1
+    local actual_sorted=($(sort_array "${actual[@]}"))
+    local expected_sorted=($(sort_array "${expected[@]}"))
+    
+    for expectation in "${expected_sorted[@]}"; do
+        if [[ ! " ${actual_sorted[*]} " =~ ${expectation} ]]; then
+            echoerr -e "\t🔺ACTUAL: ${actual_sorted[*]}\n\t🔺Expected: ${expected_sorted[*]}"
+            return 1
+        fi
+    done
+}
+
+## Executes an expected vs actual test execution of amazon-ec2-instance-selector
+## Test success or failure is output to stdout and failures are also logged to a file ($TEST_FAILURES_LOG)
+##        $1        = test name string
+##        shift; $@ = params to amazon-ec2-instance-selector (i.e. --vcpus=2)
+##        STDIN     = expected list
+function execute_test() {
+    local test_name=$1
+    shift
+    local params=( "$@" )
+    local expected=()
+    while read expected_input; do
+        expected+=($expected_input)
+    done
+    [[ 0 -eq "${#expected[@]}" ]] && return 1
+
+    echo "=========================== Test: ${test_name} ==========================="
+
+    for p in "${params[@]}"; do
+        set -x
+        if $AEIS ${p} | assert_contains_instance_types "${expected[*]}"; then  
+            echo "✅ ${test_name} \"$p\" passed!"
+        else
+            echo "❌ Failed ${test_name} \"$p\"" | tee "${TEST_FAILURES_LOG}"
+        fi
+        set +x
+    done   
+    echo -e "========================= End Test: ${test_name} ===========================\n\n" 
+}
+
+## Clean up previous test failures
+rm -f "${TEST_FAILURES_LOG}"
+
+################################################ TESTS ################################################
+
+expected=(t3a.micro t3.micro t2.micro)
+params=(
+    "--memory=2"
+    "--memory=1GiB"
+    "--memory=1 GiB"
+    "--memory=1gb"
+    "--memory=1.0"
+    "--memory-min=1 --memory-max=1"
+    "--memory=1024m"
+)
+test_name="Memory 1 GiB"
+echo "${expected[*]}" | execute_test "${test_name}" "${params[@]}"
+
+expected=(i3en.6xlarge inf1.6xlarge z1d.6xlarge)
+params=(
+    "--vcpus=24"
+    "--vcpus-min=24 --vcpus-max=24"
+)
+echo "${expected[*]}" | execute_test "24 VCPUs" "${params[@]}"
+
+expected=(g2.8xlarge g3.16xlarge g4dn.12xlarge p3.8xlarge)
+params=(
+    "--gpus=4"
+    "--gpus-min=4 --gpus-max=4"
+)
+echo "${expected[*]}" | execute_test "4 GPUs" "${params[@]}"
+
+
+expected=(p2.16xlarge)
+params=(
+    "--vcpus-to-memory-ratio=1:12"
+)
+echo "${expected[*]}" | execute_test "1:12 vcpus-to-memory-ratio" "${params[@]}"
+
+
+expected=(p2.8xlarge)
+params=(
+    "--gpu-memory-total=96"
+    "--gpu-memory-total=96gb"
+    "--gpu-memory-total=96GiB"
+    "--gpu-memory-total=98304m"
+    "--gpu-memory-total-min=96 --gpu-memory-total-max=96"
+)
+echo "${expected[*]}" | execute_test "96 GiB gpu-memory-total" "${params[@]}"
+
+
+expected=(a1.large c3.large c4.large c5.large c5a.large c5d.large c5n.large c6g.large c6gd.large \
+    g4dn.2xlarge g4dn.4xlarge g4dn.xlarge i3.large i3en.large m1.large m3.large m5.large m5a.large m5ad.large m5d.large)
+params=(
+    "--network-interfaces=3"
+    "--network-interfaces-min=3 --network-interfaces-max=3"
+    "--network-interfaces 3 --memory-min=1 --vcpus-min=1"
+)
+echo "${expected[*]}" | execute_test "3 network interfaces" "${params[@]}"
+
+
+expected=(c5n.18xlarge c5n.metal g4dn.metal i3en.24xlarge i3en.metal inf1.24xlarge m5dn.24xlarge m5n.24xlarge p3dn.24xlarge r5dn.24xlarge r5n.24xlarge)
+params=(
+    "--network-performance=100"
+    "--network-performance-min=100 --network-performance-max=100"
+    "--network-performance=100 --vcpus-min 1 --memory-min=1"
+)
+echo "${expected[*]}" | execute_test "100 Gib/s Networking Performance" "${params[@]}"
+
+expected=(t3.micro)
+params=(
+    "--allow-list=^t3\.micro$"
+    "--allow-list=t3.micro"
+    "--allow-list=t[03].mic"
+    "--allow-list=t3.mi"
+)
+echo "${expected[*]}" | execute_test "Allow List" "${params[@]}"
+
+expected=(t1.micro t2.micro t3.micro t3a.micro)
+params=(
+    "--deny-list=^[a-z].*\.[0-9]*(sm|me|la|na|xl).*"
+    "--deny-list=^[a-z].*\.[0-9]*(sm|me|la|na|xl).* --allow-list=t.*"
+)
+echo "${expected[*]}" | execute_test "Deny List" "${params[@]}"
+
+
+expected=(t2.micro t2.nano t2.small)
+params=(
+    "--burst-support --vcpus-max=1"
+    "--burst-support --vcpus-max=1 --hypervisor=xen"
+    "--burst-support --vcpus-max=1 --hibernation-support"
+    "--burst-support --vcpus-max=1 --usage-class=on-demand"
+)
+echo "${expected[*]}" | execute_test "Burst Support" "${params[@]}"
+
+
+expected=(f1.16xlarge f1.2xlarge f1.4xlarge)
+params=(
+    "--fpga-support"
+    "--fpga-support --hypervisor=xen"
+    "--fpga-support --cpu-architecture=x86_64"
+    "--fpga-support --vcpus-min 1"
+)
+echo "${expected[*]}" | execute_test "FPGAs" "${params[@]}"
+
+
+
+if [[ -f "${TEST_FAILURES_LOG}" ]]; then
+    echo -e "\n\n\n=========================== FAILURE SUMMARY ===========================\n"
+    cat "${TEST_FAILURES_LOG}"
+    echo -e "\n========================= END FAILURE SUMMARY ========================="
+    exit 1
+fi

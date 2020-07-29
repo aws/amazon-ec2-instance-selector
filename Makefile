@@ -94,6 +94,9 @@ sync-readme-to-dockerhub:
 unit-test:
 	go test -bench=. ${MAKEFILE_PATH}/...  -v -coverprofile=coverage.out -covermode=atomic -outputdir=${BUILD_DIR_PATH}
 
+e2e-test:
+	${MAKEFILE_PATH}/test/e2e/run-test
+
 homebrew-sync-dry-run:
 	${MAKEFILE_PATH}/scripts/sync-to-aws-homebrew-tap -d -b ${BIN} -r ${REPO_FULL_NAME} -p ${SUPPORTED_PLATFORMS} -v ${LATEST_RELEASE_TAG}
 
@@ -104,7 +107,7 @@ build: compile
 
 release: build-binaries build-docker-images push-docker-images upload-resources-to-github
 
-test: spellcheck shellcheck unit-test license-test go-report-card-test output-validation-test readme-codeblock-test
+test: spellcheck shellcheck unit-test license-test go-report-card-test e2e-test output-validation-test readme-codeblock-test
 
 help:
 	@echo $(CURDIR)
