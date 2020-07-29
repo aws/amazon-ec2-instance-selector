@@ -201,7 +201,7 @@ func TableOutputWide(instanceTypeInfoSlice []*ec2.InstanceTypeInfo) []string {
 	headers := []interface{}{
 		"Instance Type",
 		"VCPUs",
-		"Mem (MiB)",
+		"Mem (GiB)",
 		"Hypervisor",
 		"Current Gen",
 		"Hibernation Support",
@@ -209,7 +209,7 @@ func TableOutputWide(instanceTypeInfoSlice []*ec2.InstanceTypeInfo) []string {
 		"Network Performance",
 		"ENIs",
 		"GPUs",
-		"GPU Mem (MiB)",
+		"GPU Mem (GiB)",
 		"GPU Info",
 	}
 	separators := []interface{}{}
