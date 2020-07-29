@@ -191,6 +191,43 @@ func TestIsSupportedWithRangeUint64_Overflow(t *testing.T) {
 	h.Assert(t, isSupported == true, "Uint64RangeFilter should match with 0 - MAX target and source 4")
 }
 
+// float64
+
+func TestIsSupportedWithFloat64_Supported(t *testing.T) {
+	isSupported := isSupportedWithFloat64(aws.Float64(0.33), aws.Float64(0.33))
+	h.Assert(t, isSupported == true, "Float64 comparison should match exactly with 2 decimal places")
+}
+
+func TestIsSupportedWithFloat64_SupportedTruncatedDecPlacesExact(t *testing.T) {
+	isSupported := isSupportedWithFloat64(aws.Float64(0.3322), aws.Float64(0.3322))
+	h.Assert(t, isSupported == true, "Float64 comparison should match exactly with 4 decimal places")
+}
+
+func TestIsSupportedWithFloat64_SupportedTruncatedDecPlaces(t *testing.T) {
+	isSupported := isSupportedWithFloat64(aws.Float64(0.3399), aws.Float64(0.3311))
+	h.Assert(t, isSupported == true, "Float64 comparison should match when truncating to 2 decimal places")
+}
+
+func TestIsSupportedWithFloat64_Unsupported(t *testing.T) {
+	isSupported := isSupportedWithFloat64(aws.Float64(0.4), aws.Float64(0.3399))
+	h.Assert(t, isSupported == false, "Float64 comparison should NOT match")
+}
+
+func TestIsSupportedWithFloat64_SourceNil(t *testing.T) {
+	isSupported := isSupportedWithFloat64(nil, aws.Float64(0.3399))
+	h.Assert(t, isSupported == false, "Float64 comparison should NOT match with nil source")
+}
+
+func TestIsSupportedWithFloat64_TargetNil(t *testing.T) {
+	isSupported := isSupportedWithFloat64(aws.Float64(0.3399), nil)
+	h.Assert(t, isSupported == true, "Float64 comparison should match with nil target")
+}
+
+func TestIsSupportedWithFloat64_BothNil(t *testing.T) {
+	isSupported := isSupportedWithFloat64(nil, nil)
+	h.Assert(t, isSupported == true, "Float64 comparison should match with nil target and source")
+}
+
 // bools
 
 func TestSupportSyntaxToBool_Supported(t *testing.T) {
