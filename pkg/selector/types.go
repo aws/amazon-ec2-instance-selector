@@ -98,12 +98,6 @@ type Filters struct {
 	// Example: us-east-1a, us-east-1b, us-east-2a, etc. OR use1-az1, use2-az2, etc.
 	AvailabilityZones *[]string
 
-	// AvailabilityZone [DEPRECATED] is the AWS Availability Zone where instances will be provisioned.
-	// Instance type capacity can vary between availability zones.
-	// Will accept zone name or id
-	// Example: us-east-1a, us-east-1b, us-east-2a, etc. OR use1-az1, use2-az2, etc.
-	AvailabilityZone *string
-
 	// BareMetal is used to only return bare metal instance type results
 	BareMetal *bool
 
