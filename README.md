@@ -136,7 +136,6 @@ ec2-instance-selector --memory-min 4 --memory-max 8 --vcpus-min 4 --vcpus-max 8 
 
 Filter Flags:
       --allow-list string                 List of allowed instance types to select from w/ regex syntax (Example: m[3-5]\.*)
-      --availability-zone string          [DEPRECATED] use --availability-zones instead
   -z, --availability-zones strings        Availability zones or zone ids to check EC2 capacity offered in specific AZs
       --baremetal                         Bare Metal instance types (.metal instances)
   -b, --burst-support                     Burstable instance types

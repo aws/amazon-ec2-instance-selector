@@ -61,7 +61,6 @@ const (
 	fpgaSupport            = "fpga-support"
 	burstSupport           = "burst-support"
 	hypervisor             = "hypervisor"
-	availabilityZone       = "availability-zone"
 	availabilityZones      = "availability-zones"
 	currentGeneration      = "current-generation"
 	networkInterfaces      = "network-interfaces"
@@ -130,7 +129,6 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	cli.BoolFlag(fpgaSupport, cli.StringMe("f"), nil, "FPGA instance types")
 	cli.BoolFlag(burstSupport, cli.StringMe("b"), nil, "Burstable instance types")
 	cli.StringFlag(hypervisor, nil, nil, "Hypervisor: [xen or nitro]", nil)
-	cli.StringFlag(availabilityZone, nil, nil, "[DEPRECATED] use --availability-zones instead", nil)
 	cli.StringSliceFlag(availabilityZones, cli.StringMe("z"), nil, "Availability zones or zone ids to check EC2 capacity offered in specific AZs")
 	cli.BoolFlag(currentGeneration, nil, nil, "Current generation instance types (explicitly set this to false to not return current generation instance types)")
 	cli.IntMinMaxRangeFlags(networkInterfaces, nil, nil, "Number of network interfaces (ENIs) that can be attached to the instance")
@@ -175,15 +173,6 @@ Full docs can be found at github.com/aws/amazon-` + binName
 		os.Exit(1)
 	}
 	flags[region] = sess.Config.Region
-
-	if flags[availabilityZone] != nil {
-		log.Printf("You are using a deprecated flag --%s which will be removed in future versions, switch to --%s to avoid issues.\n", availabilityZone, availabilityZones)
-		if flags[availabilityZones] != nil {
-			flags[availabilityZones] = append(*cli.StringSliceMe(flags[availabilityZones]), *cli.StringMe(flags[availabilityZone]))
-		} else {
-			flags[availabilityZones] = []string{*cli.StringMe(flags[availabilityZone])}
-		}
-	}
 
 	instanceSelector := selector.New(sess)
 
