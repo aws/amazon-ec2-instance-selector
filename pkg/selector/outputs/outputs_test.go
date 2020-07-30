@@ -20,8 +20,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/aws/amazon-ec2-instance-selector/pkg/selector/outputs"
-	h "github.com/aws/amazon-ec2-instance-selector/pkg/test"
+	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/selector/outputs"
+	h "github.com/aws/amazon-ec2-instance-selector/v2/pkg/test"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/ghodss/yaml"
 	"github.com/hashicorp/hcl"

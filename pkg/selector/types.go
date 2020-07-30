@@ -17,7 +17,7 @@ import (
 	"encoding/json"
 	"regexp"
 
-	"github.com/aws/amazon-ec2-instance-selector/pkg/bytequantity"
+	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/bytequantity"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/ec2/ec2iface"
 )

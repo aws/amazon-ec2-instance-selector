@@ -207,8 +207,8 @@ package main
 import (
 	"fmt"
 
-	"github.com/aws/amazon-ec2-instance-selector/pkg/bytequantity"
-	"github.com/aws/amazon-ec2-instance-selector/pkg/selector"
+	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/bytequantity"
+	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/selector"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 )

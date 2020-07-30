@@ -19,9 +19,9 @@ import (
 	"os"
 	"strings"
 
-	commandline "github.com/aws/amazon-ec2-instance-selector/pkg/cli"
-	"github.com/aws/amazon-ec2-instance-selector/pkg/selector"
-	"github.com/aws/amazon-ec2-instance-selector/pkg/selector/outputs"
+	commandline "github.com/aws/amazon-ec2-instance-selector/v2/pkg/cli"
+	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/selector"
+	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/selector/outputs"
 	"github.com/aws/aws-sdk-go/aws/session"
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"

@@ -22,9 +22,9 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/aws/amazon-ec2-instance-selector/pkg/bytequantity"
-	"github.com/aws/amazon-ec2-instance-selector/pkg/selector"
-	h "github.com/aws/amazon-ec2-instance-selector/pkg/test"
+	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/bytequantity"
+	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/selector"
+	h "github.com/aws/amazon-ec2-instance-selector/v2/pkg/test"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"

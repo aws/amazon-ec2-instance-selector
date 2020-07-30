@@ -17,7 +17,7 @@ import (
 	"os"
 	"testing"
 
-	h "github.com/aws/amazon-ec2-instance-selector/pkg/test"
+	h "github.com/aws/amazon-ec2-instance-selector/v2/pkg/test"
 	"github.com/spf13/pflag"
 )
 
