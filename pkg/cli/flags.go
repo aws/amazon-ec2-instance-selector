@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/aws/amazon-ec2-instance-selector/pkg/bytequantity"
+	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/bytequantity"
 	"github.com/spf13/pflag"
 )
 

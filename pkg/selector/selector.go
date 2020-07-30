@@ -21,7 +21,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/aws/amazon-ec2-instance-selector/pkg/selector/outputs"
+	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/selector/outputs"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"

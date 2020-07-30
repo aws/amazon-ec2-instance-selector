@@ -12,7 +12,7 @@ GOPROXY ?= "https://proxy.golang.org,direct"
 MAKEFILE_PATH = $(dir $(realpath -s $(firstword $(MAKEFILE_LIST))))
 BUILD_DIR_PATH = ${MAKEFILE_PATH}/build
 SUPPORTED_PLATFORMS ?= "windows/amd64,darwin/amd64,linux/amd64,linux/arm64,linux/arm"
-SELECTOR_PKG_VERSION_VAR=github.com/aws/amazon-ec2-instance-selector/pkg/selector.versionID
+SELECTOR_PKG_VERSION_VAR=github.com/aws/amazon-ec2-instance-selector/v2/pkg/selector.versionID
 LATEST_RELEASE_TAG=$(shell git tag | tail -1)
 PREVIOUS_RELEASE_TAG=$(shell git tag | tail -2 | head -1)
 
