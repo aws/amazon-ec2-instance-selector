@@ -18,6 +18,9 @@
   <a href="https://codecov.io/gh/aws/amazon-ec2-instance-selector">
     <img src="https://img.shields.io/codecov/c/github/aws/amazon-ec2-instance-selector" alt="build-status">
   </a>
+  <a href="https://hub.docker.com/r/amazon/amazon-ec2-instance-selector">
+    <img src="https://img.shields.io/docker/pulls/amazon/amazon-ec2-instance-selector" alt="docker-pulls">
+  </a>
 </p>
 
 <div>
