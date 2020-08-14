@@ -22,8 +22,7 @@ repo-full-name:
 	@echo ${REPO_FULL_NAME}
 
 compile:
-	@echo ${MAKEFILE_PATH}
-	go build -a -ldflags "-X main.versionID=${VERSION} -X ${SELECTOR_PKG_VERSION_VAR}=${VERSION}" -tags="aeis${GOOS}" -o ${BUILD_DIR_PATH}/${BIN} ${MAKEFILE_PATH}/cmd/main.go
+	go build -a -ldflags "-s -w -X main.versionID=${VERSION} -X ${SELECTOR_PKG_VERSION_VAR}=${VERSION}" -tags="aeis${GOOS}" -o ${BUILD_DIR_PATH}/${BIN} ${MAKEFILE_PATH}/cmd/main.go
 
 clean:
 	rm -rf ${BUILD_DIR_PATH}/ && go clean -testcache ./...
@@ -110,5 +109,4 @@ release: build-binaries build-docker-images push-docker-images upload-resources-
 test: spellcheck shellcheck unit-test license-test go-report-card-test e2e-test output-validation-test readme-codeblock-test
 
 help:
-	@echo $(CURDIR)
 	@grep -E '^[a-zA-Z_-]+:.*$$' $(MAKEFILE_LIST) | sort
