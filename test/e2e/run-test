@@ -6,6 +6,7 @@ BUILD_DIR="${SCRIPTPATH}/../../build"
 TEST_FAILURES_LOG="${BUILD_DIR}/test-failures.log"
 
 AEIS="${BUILD_DIR}/ec2-instance-selector"
+GLOBAL_PARAMS="--max-results=40"
 
 ## Print to stderr
 function echoerr() {
@@ -59,7 +60,7 @@ function execute_test() {
     echo "=========================== Test: ${test_name} ==========================="
 
     for p in "${params[@]}"; do
-        if $AEIS ${p} | assert_contains_instance_types "${expected[*]}"; then  
+        if $AEIS ${p} ${GLOBAL_PARAMS} | assert_contains_instance_types "${expected[*]}"; then  
             echo "✅ ${test_name} \"$p\" passed!"
         else
             echo "❌ Failed ${test_name} \"$p\"" | tee "${TEST_FAILURES_LOG}"
