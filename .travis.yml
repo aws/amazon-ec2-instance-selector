@@ -31,11 +31,11 @@ jobs:
       script: make build-docker-images
       name: Build Docker Images
     - stage: Test
-      if: type = push AND env(DOCKERHUB_USERNAME) IS present
+      if: type = push AND env(AWS_ACCESS_KEY_ID) IS present
       script: make readme-codeblock-test
       name: README Codeblock Executions Test
     - stage: Test
-      if: type = push AND env(DOCKERHUB_USERNAME) IS present
+      if: type = push AND env(AWS_ACCESS_KEY_ID) IS present
       script: make output-validation-test
       name: CFN/Terraform Output Validation Tests
     - stage: Test
@@ -43,7 +43,7 @@ jobs:
       script: make license-test
       name: License Test
     - stage: Test
-      if: type = push AND env(GITHUB_TOKEN) IS present
+      if: type = push AND env(AWS_ACCESS_KEY_ID) IS present
       language: go
       go: "1.15.x"
       script: make e2e-test
