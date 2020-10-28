@@ -39,7 +39,7 @@ func main() {
 
 	// Create a Filter struct with criteria you would like to filter
 	// The full struct definition can be found here for all of the supported filters:
-	// https://github.com/aws/amazon-ec2-instance-selector/blob/master/pkg/selector/types.go
+	// https://github.com/aws/amazon-ec2-instance-selector/blob/main/pkg/selector/types.go
 	filters := selector.Filters{
 		VCpusRange:      &vcpusRange,
 		MemoryRange:     &memoryRange,

@@ -13,7 +13,7 @@
     <img src="https://goreportcard.com/badge/github.com/aws/amazon-ec2-instance-selector" alt="go-report-card">
   </a>
   <a href="https://travis-ci.org/aws/amazon-ec2-instance-selector">
-    <img src="https://travis-ci.org/aws/amazon-ec2-instance-selector.svg?branch=master" alt="build-status">
+    <img src="https://travis-ci.org/aws/amazon-ec2-instance-selector.svg?branch=main" alt="build-status">
   </a>
   <a href="https://codecov.io/gh/aws/amazon-ec2-instance-selector">
     <img src="https://img.shields.io/codecov/c/github/aws/amazon-ec2-instance-selector" alt="build-status">

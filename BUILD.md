@@ -42,7 +42,7 @@ The full test suite requires Docker to be installed. You can install docker from
 
 ### Run All Tests
 
-The full suite includes license-test, go-report-card, and more. See the full list in the [makefile](https://github.com/aws/amazon-ec2-instance-selector/blob/master/Makefile). NOTE: some tests require AWS Credentials to be configured on the system: 
+The full suite includes license-test, go-report-card, and more. See the full list in the [makefile](https://github.com/aws/amazon-ec2-instance-selector/blob/main/Makefile). NOTE: some tests require AWS Credentials to be configured on the system: 
 
 ```
 $ make test
