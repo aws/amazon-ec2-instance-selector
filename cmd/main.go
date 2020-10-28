@@ -94,6 +94,8 @@ var (
 func main() {
 
 	log.SetOutput(os.Stderr)
+	log.SetPrefix("NOTE: ")
+	log.SetFlags(log.Flags() &^ (log.Ldate | log.Ltime))
 
 	shortUsage := "A tool to filter EC2 Instance Types based on various resource criteria"
 	longUsage := binName + ` is a CLI tool to filter EC2 instance types based on resource criteria. 
@@ -232,7 +234,7 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	outputFlag := cli.StringMe(flags[output])
 	outputFn := getOutputFn(outputFlag, selector.InstanceTypesOutputFn(resultsOutputFn))
 
-	instanceTypes, err := instanceSelector.FilterWithOutput(filters, outputFn)
+	instanceTypes, itemsTruncated, err := instanceSelector.FilterWithOutput(filters, outputFn)
 	if err != nil {
 		fmt.Printf("An error occurred when filtering instance types: %v", err)
 		os.Exit(1)
@@ -244,6 +246,10 @@ Full docs can be found at github.com/aws/amazon-` + binName
 
 	for _, instanceType := range instanceTypes {
 		fmt.Println(instanceType)
+	}
+
+	if itemsTruncated > 0 {
+		log.Printf("%d entries were truncated, increase --%s to see more", itemsTruncated, maxResults)
 	}
 }
 
