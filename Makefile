@@ -13,8 +13,8 @@ MAKEFILE_PATH = $(dir $(realpath -s $(firstword $(MAKEFILE_LIST))))
 BUILD_DIR_PATH = ${MAKEFILE_PATH}/build
 SUPPORTED_PLATFORMS ?= "windows/amd64,darwin/amd64,linux/amd64,linux/arm64,linux/arm"
 SELECTOR_PKG_VERSION_VAR=github.com/aws/amazon-ec2-instance-selector/v2/pkg/selector.versionID
-LATEST_RELEASE_TAG=$(shell git tag | tail -1)
-PREVIOUS_RELEASE_TAG=$(shell git tag | tail -2 | head -1)
+LATEST_RELEASE_TAG=$(shell git describe --tags --abbrev=0)
+PREVIOUS_RELEASE_TAG=$(shell git describe --abbrev=0 --tags `git rev-list --tags --skip=1  --max-count=1`)
 
 $(shell mkdir -p ${BUILD_DIR_PATH} && touch ${BUILD_DIR_PATH}/_go.mod)
 
@@ -110,3 +110,30 @@ test: spellcheck shellcheck unit-test license-test go-report-card-test e2e-test 
 
 help:
 	@grep -E '^[a-zA-Z_-]+:.*$$' $(MAKEFILE_LIST) | sort
+
+## Targets intended to be run in preparation for a new release
+create-local-release-tag-major:
+	${MAKEFILE_PATH}/scripts/create-local-tag-for-release -m
+
+create-local-release-tag-minor:
+	${MAKEFILE_PATH}/scripts/create-local-tag-for-release -i
+
+create-local-release-tag-patch:
+	${MAKEFILE_PATH}/scripts/create-local-tag-for-release -p
+
+create-release-prep-pr:
+	${MAKEFILE_PATH}/scripts/prepare-for-release
+
+create-release-prep-pr-draft:
+	${MAKEFILE_PATH}/scripts/prepare-for-release -d
+
+release-prep-major: create-local-release-tag-major create-release-prep-pr
+
+release-prep-minor: create-local-release-tag-minor create-release-prep-pr
+
+release-prep-patch: create-local-release-tag-patch create-release-prep-pr
+
+release-prep-custom: # Run make NEW_VERSION=v1.2.3 release-prep-custom to prep for a custom release version
+ifdef NEW_VERSION
+	$(shell echo "${MAKEFILE_PATH}/scripts/create-local-tag-for-release -v $(NEW_VERSION) && echo && make create-release-prep-pr")
+endif
