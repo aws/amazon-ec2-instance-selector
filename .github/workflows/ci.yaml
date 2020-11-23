@@ -1,0 +1,73 @@
+name: EC2 Instance Selector CI and Release
+
+on: [push, pull_request, workflow_dispatch]
+
+env:
+  DEFAULT_GO_VERSION: ^1.15
+  IS_RELEASE: ${{ github.event_name == 'push' && contains(github.ref, 'refs/tags/') }}
+  IS_PUSH: ${{ github.event_name == 'push' }}
+  GITHUB_USERNAME: ${{ secrets.EC2_BOT_GITHUB_USERNAME }}
+  GITHUB_TOKEN: ${{ secrets.EC2_BOT_GITHUB_TOKEN }}
+  DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+  DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
+  DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+
+jobs:
+
+  buildAndTest:
+    name: Build and Test
+    runs-on: ubuntu-20.04
+    steps:
+    - name: Set up Go 1.x
+      uses: actions/setup-go@v2
+      with:
+        go-version: ${{ env.DEFAULT_GO_VERSION }}
+
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v2
+
+    - name: Unit Tests
+      run: make unit-test
+    
+    - name: Lints
+      run: make spellcheck shellcheck
+    
+    - name: Brew Sync Dry run
+      run: make homebrew-sync-dry-run
+
+    - name: License Test
+      if: ${{ env.IS_PUSH == true }}
+      run: make license-test
+
+    - name: Build Binaries
+      run: make build-binaries
+
+    - name: Build Docker Images
+      run: make build-docker-images
+
+  release:
+    name: Release
+    runs-on: ubuntu-20.04
+    needs: [buildAndTest]
+    steps:
+    - name: Set up Go 1.x
+      if: ${{ env.IS_RELEASE == true }}
+      uses: actions/setup-go@v2
+      with:
+        go-version: ${{ env.DEFAULT_GO_VERSION }}
+
+    - name: Check out code into the Go module directory
+      if: ${{ env.IS_RELEASE == true }}
+      uses: actions/checkout@v2
+    
+    - name: Release Assets
+      if: ${{ env.IS_RELEASE == true }}
+      run: make release
+    
+    - name: Sync Readme to Dockerhub
+      if: ${{ env.IS_RELEASE == true }}
+      run: make sync-readme-to-dockerhub
+    
+    - name: Sync to Homebrew
+      if: ${{ env.IS_RELEASE == true }}
+      run: make homebrew-sync
