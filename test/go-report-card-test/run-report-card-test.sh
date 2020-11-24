@@ -20,6 +20,6 @@ else
 fi
 
 
-docker run -it -v $SCRIPTPATH/../../:/app go-report-card-cli /go/bin/goreportcard-cli -v -t $THRESHOLD
+docker run -t -v $SCRIPTPATH/../../:/app go-report-card-cli /go/bin/goreportcard-cli -v -t $THRESHOLD
 
 exit $EXIT_CODE
