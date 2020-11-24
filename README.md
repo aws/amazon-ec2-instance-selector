@@ -15,13 +15,12 @@
   <a href="https://travis-ci.org/aws/amazon-ec2-instance-selector">
     <img src="https://travis-ci.org/aws/amazon-ec2-instance-selector.svg?branch=main" alt="build-status">
   </a>
-  <a href="https://codecov.io/gh/aws/amazon-ec2-instance-selector">
-    <img src="https://img.shields.io/codecov/c/github/aws/amazon-ec2-instance-selector" alt="build-status">
-  </a>
   <a href="https://hub.docker.com/r/amazon/amazon-ec2-instance-selector">
     <img src="https://img.shields.io/docker/pulls/amazon/amazon-ec2-instance-selector" alt="docker-pulls">
   </a>
 </p>
+
+![EC2 Instance Selector CI and Release](https://github.com/aws/amazon-ec2-instance-selector/workflows/EC2%20Instance%20Selector%20CI%20and%20Release/badge.svg)
 
 <div>
 <hr>
