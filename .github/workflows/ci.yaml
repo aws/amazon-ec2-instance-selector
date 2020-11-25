@@ -4,7 +4,6 @@ on: [push, pull_request, workflow_dispatch]
 
 env:
   DEFAULT_GO_VERSION: ^1.15
-  IS_RELEASE: ${{ github.event_name == 'push' && contains(github.ref, 'refs/tags/') }}
   IS_PUSH: ${{ github.event_name == 'push' }}
   GITHUB_USERNAME: ${{ secrets.EC2_BOT_GITHUB_USERNAME }}
   GITHUB_TOKEN: ${{ secrets.EC2_BOT_GITHUB_TOKEN }}
@@ -52,25 +51,21 @@ jobs:
     name: Release
     runs-on: ubuntu-20.04
     needs: [buildAndTest]
+    if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
     steps:
     - name: Set up Go 1.x
-      if: ${{ env.IS_RELEASE == true }}
       uses: actions/setup-go@v2
       with:
         go-version: ${{ env.DEFAULT_GO_VERSION }}
 
     - name: Check out code into the Go module directory
-      if: ${{ env.IS_RELEASE == true }}
       uses: actions/checkout@v2
     
     - name: Release Assets
-      if: ${{ env.IS_RELEASE == true }}
       run: make release
     
     - name: Sync Readme to Dockerhub
-      if: ${{ env.IS_RELEASE == true }}
       run: make sync-readme-to-dockerhub
     
     - name: Sync to Homebrew
-      if: ${{ env.IS_RELEASE == true }}
       run: make homebrew-sync
