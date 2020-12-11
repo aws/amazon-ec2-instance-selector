@@ -282,7 +282,7 @@ If you've run into a bug or have a new feature request, please open an [issue](h
 Check out the open source [Amazon EC2 Spot Instances Integrations Roadmap](https://github.com/aws/ec2-spot-instances-integrations-roadmap) to see what we're working on and give us feedback! 
 
 ##  Contributing
-Contributions are welcome! Please read our [guidelines](https://github.com/aws/amazon-ec2-instance-selector/blob/master/CONTRIBUTING.md) and our [Code of Conduct](https://github.com/aws/amazon-ec2-instance-selector/blob/master/CODE_OF_CONDUCT.md).
+Contributions are welcome! Please read our [guidelines](https://github.com/aws/amazon-ec2-instance-selector/blob/main/CONTRIBUTING.md) and our [Code of Conduct](https://github.com/aws/amazon-ec2-instance-selector/blob/main/CODE_OF_CONDUCT.md).
 
 ## License
 This project is licensed under the [Apache-2.0](LICENSE) License.
