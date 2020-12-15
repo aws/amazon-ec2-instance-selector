@@ -37,14 +37,14 @@ docker-run:
 	docker run ${IMG_W_TAG}
 
 docker-push:
-	@echo ${DOCKERHUB_TOKEN} | docker login -u ${DOCKERHUB_USERNAME} --password-stdin
+	@docker login -u ${DOCKERHUB_USERNAME} -p="${DOCKERHUB_TOKEN}"
 	docker push ${IMG_W_TAG}
 
 build-docker-images:
 	${MAKEFILE_PATH}/scripts/build-docker-images -p ${SUPPORTED_PLATFORMS} -r ${IMG} -v ${VERSION}
 
 push-docker-images:
-	@echo ${DOCKERHUB_TOKEN} | docker login -u ${DOCKERHUB_USERNAME} --password-stdin
+	@docker login -u ${DOCKERHUB_USERNAME} -p="${DOCKERHUB_TOKEN}"
 	${MAKEFILE_PATH}/scripts/push-docker-images -p ${SUPPORTED_PLATFORMS} -r ${IMG} -v ${VERSION} -m
 
 version:
