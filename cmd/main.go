@@ -23,6 +23,7 @@ import (
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/selector"
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/selector/outputs"
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/ec2"
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"gopkg.in/ini.v1"
@@ -42,6 +43,7 @@ const (
 	terraformHCL    = "terraform-hcl"
 	tableOutput     = "table"
 	tableWideOutput = "table-wide"
+	oneLine         = "one-line"
 )
 
 // Filter Flag Constants
@@ -110,6 +112,7 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	cliOutputTypes := []string{
 		tableOutput,
 		tableWideOutput,
+		oneLine,
 	}
 	resultsOutputFn := outputs.SimpleInstanceTypeOutput
 
@@ -267,6 +270,14 @@ func getOutputFn(outputFlag *string, currentFn selector.InstanceTypesOutputFn) s
 			return selector.InstanceTypesOutputFn(outputs.TableOutputWide)
 		case tableOutput:
 			return selector.InstanceTypesOutputFn(outputs.TableOutputShort)
+		case oneLine:
+			return selector.InstanceTypesOutputFn(func(instanceTypeInfoSlice []*ec2.InstanceTypeInfo) []string {
+				instanceTypeNames := []string{}
+				for _, instanceType := range instanceTypeInfoSlice {
+					instanceTypeNames = append(instanceTypeNames, *instanceType.InstanceType)
+				}
+				return []string{strings.Join(instanceTypeNames, ",")}
+			})
 		}
 	}
 	return outputFn
