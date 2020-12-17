@@ -42,6 +42,7 @@ const (
 	terraformHCL    = "terraform-hcl"
 	tableOutput     = "table"
 	tableWideOutput = "table-wide"
+	oneLine         = "one-line"
 )
 
 // Filter Flag Constants
@@ -110,6 +111,7 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	cliOutputTypes := []string{
 		tableOutput,
 		tableWideOutput,
+		oneLine,
 	}
 	resultsOutputFn := outputs.SimpleInstanceTypeOutput
 
@@ -267,6 +269,8 @@ func getOutputFn(outputFlag *string, currentFn selector.InstanceTypesOutputFn) s
 			return selector.InstanceTypesOutputFn(outputs.TableOutputWide)
 		case tableOutput:
 			return selector.InstanceTypesOutputFn(outputs.TableOutputShort)
+		case oneLine:
+			return selector.InstanceTypesOutputFn(outputs.OneLineOutput)
 		}
 	}
 	return outputFn
