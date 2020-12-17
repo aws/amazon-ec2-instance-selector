@@ -23,7 +23,6 @@ import (
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/selector"
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/selector/outputs"
 	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/ec2"
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"gopkg.in/ini.v1"
@@ -271,13 +270,7 @@ func getOutputFn(outputFlag *string, currentFn selector.InstanceTypesOutputFn) s
 		case tableOutput:
 			return selector.InstanceTypesOutputFn(outputs.TableOutputShort)
 		case oneLine:
-			return selector.InstanceTypesOutputFn(func(instanceTypeInfoSlice []*ec2.InstanceTypeInfo) []string {
-				instanceTypeNames := []string{}
-				for _, instanceType := range instanceTypeInfoSlice {
-					instanceTypeNames = append(instanceTypeNames, *instanceType.InstanceType)
-				}
-				return []string{strings.Join(instanceTypeNames, ",")}
-			})
+			return selector.InstanceTypesOutputFn(outputs.OneLineOutput)
 		}
 	}
 	return outputFn

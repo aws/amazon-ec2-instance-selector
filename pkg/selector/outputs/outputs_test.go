@@ -129,3 +129,16 @@ func TestTableOutput_MBtoGB(t *testing.T) {
 	outputStr = strings.Join(instanceTypeOut, "")
 	h.Assert(t, strings.Contains(outputStr, "15.000"), "table should include 15.000 GB of memory")
 }
+
+func TestOneLineOutput(t *testing.T) {
+	instanceTypes := getInstanceTypes(t, "t3_micro_and_p3_16xl.json")
+	instanceTypeOut := outputs.OneLineOutput(instanceTypes)
+	h.Assert(t, len(instanceTypeOut) == 1, "Should always return 1 line")
+	h.Assert(t, instanceTypeOut[0] == "t3.micro,p3.16xlarge", "Should return both instance types separated by a comma")
+
+	instanceTypeOut = outputs.OneLineOutput([]*ec2.InstanceTypeInfo{})
+	h.Assert(t, len(instanceTypeOut) == 0, "Should return 0 instance types when passed empty slice")
+
+	instanceTypeOut = outputs.OneLineOutput(nil)
+	h.Assert(t, len(instanceTypeOut) == 0, "Should return 0 instance types when passed nil")
+}
