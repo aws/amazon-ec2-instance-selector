@@ -4,7 +4,6 @@ on: [push, pull_request, workflow_dispatch]
 
 env:
   DEFAULT_GO_VERSION: ^1.15
-  IS_PUSH: ${{ github.event_name == 'push' }}
   GITHUB_USERNAME: ${{ secrets.EC2_BOT_GITHUB_USERNAME }}
   GITHUB_TOKEN: ${{ secrets.EC2_BOT_GITHUB_TOKEN }}
   DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -38,7 +37,7 @@ jobs:
       run: make homebrew-sync-dry-run
 
     - name: License Test
-      if: ${{ env.IS_PUSH == true }}
+      if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
       run: make license-test
 
     - name: Build Binaries
