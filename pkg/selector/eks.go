@@ -8,26 +8,26 @@ import (
 	"log"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 )
 
 const (
 	eksAMIRepoURL               = "https://github.com/awslabs/amazon-eks-ami"
-	eksFallbackLatestAMIVersion = "v20201211"
+	eksFallbackLatestAMIVersion = "v20210125"
 	eksInstanceTypesFile        = "eni-max-pods.txt"
 )
 
 // EKS is a Service type for a custom service filter transform
 type EKS struct {
-	TTLInSeconds       int64
-	instanceTypesCache []string
-	cacheUpdatedTime   int64
+	AMIRepoURL string
 }
 
 // Filters implements the Service interface contract for EKS
 func (e *EKS) Filters(version string) (Filters, error) {
+	if e.AMIRepoURL == "" {
+		e.AMIRepoURL = eksAMIRepoURL
+	}
 	filters := Filters{}
 
 	if version == "" {
@@ -52,18 +52,15 @@ func (e *EKS) Filters(version string) (Filters, error) {
 }
 
 func (e *EKS) getSupportedInstanceTypes(version string) ([]string, error) {
-	if time.Now().Unix()-e.cacheUpdatedTime <= e.TTLInSeconds {
-		return e.instanceTypesCache, nil
-	}
 	supportedInstanceTypes := []string{}
-	resp, err := http.Get(fmt.Sprintf("%s/archive/%s.zip", eksAMIRepoURL, version))
+	resp, err := http.Get(fmt.Sprintf("%s/archive/%s.zip", e.AMIRepoURL, version))
 	if err != nil {
 		return supportedInstanceTypes, err
 	}
 
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		return supportedInstanceTypes, err
+		return supportedInstanceTypes, fmt.Errorf("Unable to retrieve EKS supported instance types, got non-200 status code: %d", resp.StatusCode)
 	}
 
 	body, err := ioutil.ReadAll(resp.Body)
@@ -95,21 +92,17 @@ func (e *EKS) getSupportedInstanceTypes(version string) ([]string, error) {
 			}
 		}
 	}
-	if e.TTLInSeconds != 0 {
-		e.instanceTypesCache = supportedInstanceTypes
-		e.cacheUpdatedTime = time.Now().Unix()
-	}
 	return supportedInstanceTypes, nil
 }
 
-func (EKS) getLatestAMIVersion() (string, error) {
+func (e EKS) getLatestAMIVersion() (string, error) {
 	client := &http.Client{
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
 			return http.ErrUseLastResponse
 		},
 	}
 	// Get latest version
-	resp, err := client.Get(fmt.Sprintf("%s/releases/latest", eksAMIRepoURL))
+	resp, err := client.Get(fmt.Sprintf("%s/releases/latest", e.AMIRepoURL))
 	if err != nil {
 		return "", err
 	}

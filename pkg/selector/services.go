@@ -38,14 +38,15 @@ func (sr ServiceRegistry) Register(name string, service Service) {
 	if sr.services == nil {
 		sr.services = make(map[string]*Service)
 	}
+	if name == "" {
+		return
+	}
 	sr.services[name] = &service
 }
 
 // RegisterAWSServices registers the built-in AWS service filter transforms
 func (sr ServiceRegistry) RegisterAWSServices() {
-	sr.Register("eks", &EKS{
-		TTLInSeconds: 600,
-	})
+	sr.Register("eks", &EKS{})
 	sr.Register("emr", &EMR{})
 }
 
