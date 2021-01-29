@@ -34,7 +34,7 @@ func NewRegistry() ServiceRegistry {
 }
 
 // Register takes a service name and Service implementation that will be executed on an ExecuteTransforms call
-func (sr ServiceRegistry) Register(name string, service Service) {
+func (sr *ServiceRegistry) Register(name string, service Service) {
 	if sr.services == nil {
 		sr.services = make(map[string]*Service)
 	}
@@ -45,23 +45,23 @@ func (sr ServiceRegistry) Register(name string, service Service) {
 }
 
 // RegisterAWSServices registers the built-in AWS service filter transforms
-func (sr ServiceRegistry) RegisterAWSServices() {
+func (sr *ServiceRegistry) RegisterAWSServices() {
 	sr.Register("eks", &EKS{})
 	sr.Register("emr", &EMR{})
 }
 
 // ExecuteTransforms will execute the ServiceRegistry's registered service filter transforms
 // Filters.Service will be parsed as <service-name>-<version> and passed to Service.Filters
-func (sr ServiceRegistry) ExecuteTransforms(filters Filters) (Filters, error) {
-	if filters.Service == nil {
+func (sr *ServiceRegistry) ExecuteTransforms(filters Filters) (Filters, error) {
+	if filters.Service == nil || *filters.Service == "" {
 		return filters, nil
 	}
 	serviceAndVersion := strings.ToLower(*filters.Service)
 	versionParts := strings.Split(serviceAndVersion, "-")
 	serviceName := versionParts[0]
 	version := ""
-	if len(versionParts) == 2 {
-		version = versionParts[1]
+	if len(versionParts) >= 2 {
+		version = strings.Join(versionParts[1:], "-")
 	}
 	service, ok := sr.services[serviceName]
 	if !ok {

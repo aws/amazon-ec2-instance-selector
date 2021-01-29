@@ -104,7 +104,6 @@ func TestEKSDefaultService_FailLatestReleaseAndFailExactVersionLookup(t *testing
 
 func eksGithubReleaseHTTPServer(failLatestRelease bool, failExactRelease bool) *httptest.Server {
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println("Got Path: " + r.URL.Path)
 		if r.URL.Path == "/releases/latest" {
 			if failLatestRelease {
 				w.WriteHeader(404)
