@@ -1,10 +1,28 @@
+// Copyright Amazon.com Inc. or its affiliates. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License"). You may
+// not use this file except in compliance with the License. A copy of the
+// License is located at
+//
+//     http://aws.amazon.com/apache2.0/
+//
+// or in the "license" file accompanying this file. This file is distributed
+// on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+// express or implied. See the License for the specific language governing
+// permissions and limitations under the License.
+
 package selector
 
 import (
-	"strconv"
+	"fmt"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/blang/semver/v4"
+)
+
+const (
+	fallbackVersion = "5.20.0"
 )
 
 // EMR is a Service type for a custom service filter transform
@@ -13,7 +31,17 @@ type EMR struct{}
 // Filters implements the Service interface contract for EMR
 func (e EMR) Filters(version string) (Filters, error) {
 	filters := Filters{}
-	instanceTypes, err := e.getEMRInstanceTypes(version)
+	if version == "" {
+		version = fallbackVersion
+	}
+	semanticVersion, err := semver.Make(version)
+	if err != nil {
+		return filters, err
+	}
+	if err := semanticVersion.Validate(); err != nil {
+		return filters, fmt.Errorf("Invalid semantic version passed for EMR")
+	}
+	instanceTypes, err := e.getEMRInstanceTypes(semanticVersion)
 	if err != nil {
 		return filters, err
 	}
@@ -24,25 +52,18 @@ func (e EMR) Filters(version string) (Filters, error) {
 }
 
 // getEMRInstanceTypes returns a list of instance types that emr supports
-func (e EMR) getEMRInstanceTypes(version string) ([]string, error) {
+func (e EMR) getEMRInstanceTypes(version semver.Version) ([]string, error) {
 	instanceTypes := []string{}
-	if version == "" {
-		version = "5.20.0"
-	}
-	versionInt, err := strconv.Atoi(strings.ReplaceAll(version, ".", ""))
-	if err != nil {
-		return instanceTypes, err
-	}
 
 	for _, instanceType := range e.getAllEMRInstanceTypes() {
-		if versionInt >= 5250 {
+		if semver.MustParseRange(">=5.25.0")(version) {
 			instanceTypes = append(instanceTypes, instanceType)
-		} else if versionInt >= 5200 && versionInt < 5250 {
+		} else if semver.MustParseRange(">=5.20.0 <5.25.0")(version) {
 			if e.isOnlyEMR_5_25_0_plus(instanceType) {
 				continue
 			}
 			instanceTypes = append(instanceTypes, instanceType)
-		} else if versionInt >= 5150 && versionInt < 5200 {
+		} else if semver.MustParseRange(">=5.15.0 <5.20.0")(version) {
 			if instanceType == "c1.medium" {
 				continue
 			}
@@ -53,7 +74,7 @@ func (e EMR) getEMRInstanceTypes(version string) ([]string, error) {
 				continue
 			}
 			instanceTypes = append(instanceTypes, instanceType)
-		} else if versionInt >= 5130 && versionInt < 5150 {
+		} else if semver.MustParseRange(">=5.13.0 <5.15.0")(version) {
 			if e.isOnlyEMR_5_20_0_plus(instanceType) {
 				continue
 			}
@@ -61,7 +82,7 @@ func (e EMR) getEMRInstanceTypes(version string) ([]string, error) {
 				continue
 			}
 			instanceTypes = append(instanceTypes, instanceType)
-		} else if versionInt >= 590 && versionInt < 5130 {
+		} else if semver.MustParseRange(">=5.9.0 <5.13.0")(version) {
 			if e.isEMR_5_13_0_plus(instanceType) {
 				continue
 			}

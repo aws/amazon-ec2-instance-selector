@@ -94,7 +94,7 @@ func TestExecuteTransforms_ShortCircuitOnEmptyService(t *testing.T) {
 
 	transformedFilters, err := registry.ExecuteTransforms(filters)
 	h.Ok(t, err)
-	h.Assert(t, transformedFilters == filters, " Filters should no be modified")
+	h.Assert(t, transformedFilters == filters, " Filters should not be modified")
 }
 
 func TestExecuteTransforms_ValidVersionParsing(t *testing.T) {
