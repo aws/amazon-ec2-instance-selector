@@ -68,12 +68,14 @@ const (
 	networkPerformance     = "network-performance"
 	allowList              = "allow-list"
 	denyList               = "deny-list"
+	virtualizationType     = "virtualization-type"
 )
 
 // Aggregate Filter Flags
 const (
 	instanceTypeBase = "base-instance-type"
 	flexible         = "flexible"
+	service          = "service"
 )
 
 // Configuration Flag Constants
@@ -121,29 +123,31 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	cli.IntMinMaxRangeFlags(vcpus, cli.StringMe("c"), nil, "Number of vcpus available to the instance type.")
 	cli.ByteQuantityMinMaxRangeFlags(memory, cli.StringMe("m"), nil, "Amount of Memory available (Example: 4 GiB)")
 	cli.RatioFlag(vcpusToMemoryRatio, nil, nil, "The ratio of vcpus to GiBs of memory. (Example: 1:2)")
-	cli.StringFlag(cpuArchitecture, cli.StringMe("a"), nil, "CPU architecture [x86_64/amd64, i386, or arm64]", nil)
+	cli.StringOptionsFlag(cpuArchitecture, cli.StringMe("a"), nil, "CPU architecture [x86_64/amd64, i386, or arm64]", []string{"x86_64", "amd64", "i386", "arm64"})
 	cli.IntMinMaxRangeFlags(gpus, cli.StringMe("g"), nil, "Total Number of GPUs (Example: 4)")
 	cli.ByteQuantityMinMaxRangeFlags(gpuMemoryTotal, nil, nil, "Number of GPUs' total memory (Example: 4 GiB)")
-	cli.StringFlag(placementGroupStrategy, nil, nil, "Placement group strategy: [cluster, partition, spread]", nil)
-	cli.StringFlag(usageClass, cli.StringMe("u"), nil, "Usage class: [spot or on-demand]", nil)
-	cli.StringFlag(rootDeviceType, nil, nil, "Supported root device types: [ebs or instance-store]", nil)
+	cli.StringOptionsFlag(placementGroupStrategy, nil, nil, "Placement group strategy: [cluster, partition, spread]", []string{"cluster", "partition", "spread"})
+	cli.StringOptionsFlag(usageClass, cli.StringMe("u"), nil, "Usage class: [spot or on-demand]", []string{"spot", "on-demand"})
+	cli.StringOptionsFlag(rootDeviceType, nil, nil, "Supported root device types: [ebs or instance-store]", []string{"ebs", "instance-store"})
 	cli.BoolFlag(enaSupport, cli.StringMe("e"), nil, "Instance types where ENA is supported or required")
 	cli.BoolFlag(hibernationSupport, nil, nil, "Hibernation supported")
 	cli.BoolFlag(baremetal, nil, nil, "Bare Metal instance types (.metal instances)")
 	cli.BoolFlag(fpgaSupport, cli.StringMe("f"), nil, "FPGA instance types")
 	cli.BoolFlag(burstSupport, cli.StringMe("b"), nil, "Burstable instance types")
-	cli.StringFlag(hypervisor, nil, nil, "Hypervisor: [xen or nitro]", nil)
+	cli.StringOptionsFlag(hypervisor, nil, nil, "Hypervisor: [xen or nitro]", []string{"xen", "nitro"})
 	cli.StringSliceFlag(availabilityZones, cli.StringMe("z"), nil, "Availability zones or zone ids to check EC2 capacity offered in specific AZs")
 	cli.BoolFlag(currentGeneration, nil, nil, "Current generation instance types (explicitly set this to false to not return current generation instance types)")
 	cli.IntMinMaxRangeFlags(networkInterfaces, nil, nil, "Number of network interfaces (ENIs) that can be attached to the instance")
 	cli.IntMinMaxRangeFlags(networkPerformance, nil, nil, "Bandwidth in Gib/s of network performance (Example: 100)")
 	cli.RegexFlag(allowList, nil, nil, "List of allowed instance types to select from w/ regex syntax (Example: m[3-5]\\.*)")
 	cli.RegexFlag(denyList, nil, nil, "List of instance types which should be excluded w/ regex syntax (Example: m[1-2]\\.*)")
+	cli.StringOptionsFlag(virtualizationType, nil, nil, "Virtualization Type supported: [hvm or pv]", []string{"hvm", "paravirtual", "pv"})
 
 	// Suite Flags - higher level aggregate filters that return opinionated result
 
 	cli.SuiteStringFlag(instanceTypeBase, nil, nil, "Instance Type used to retrieve similarly spec'd instance types", nil)
 	cli.SuiteBoolFlag(flexible, nil, nil, "Retrieves a group of instance types spanning multiple generations based on opinionated defaults and user overridden resource filters")
+	cli.SuiteStringFlag(service, nil, nil, "Filter instance types based on service support (Example: eks, eks-20201211, or emr-5.20.0)", nil)
 
 	// Configuration Flags - These will be grouped at the bottom of the help flags
 
@@ -206,6 +210,8 @@ Full docs can be found at github.com/aws/amazon-` + binName
 		DenyList:               cli.RegexMe(flags[denyList]),
 		InstanceTypeBase:       cli.StringMe(flags[instanceTypeBase]),
 		Flexible:               cli.BoolMe(flags[flexible]),
+		Service:                cli.StringMe(flags[service]),
+		VirtualizationType:     cli.StringMe(flags[virtualizationType]),
 	}
 
 	if flags[verbose] != nil {

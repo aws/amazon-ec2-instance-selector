@@ -571,3 +571,23 @@ func TestFilter_X8664_AMD64(t *testing.T) {
 	h.Assert(t, len(results) == 1, "Should only return 1 instance type with x86_64/amd64 cpu architecture")
 	h.Assert(t, results[0] == "t3.micro", "Should return t3.micro, got %s instead", results[0])
 }
+
+func TestFilter_VirtType_PV(t *testing.T) {
+	ec2Mock := setupMock(t, describeInstanceTypesPages, "pv_instances.json")
+	itf := selector.Selector{
+		EC2: ec2Mock,
+	}
+	filters := selector.Filters{
+		VirtualizationType: aws.String("pv"),
+	}
+	results, err := itf.Filter(filters)
+	h.Ok(t, err)
+	h.Assert(t, len(results) > 0, "Should return at least 1 instance type when filtering with VirtualizationType: pv")
+
+	filters = selector.Filters{
+		VirtualizationType: aws.String("paravirtual"),
+	}
+	results, err = itf.Filter(filters)
+	h.Ok(t, err)
+	h.Assert(t, len(results) > 0, "Should return at least 1 instance type when filtering with VirtualizationType: paravirtual")
+}

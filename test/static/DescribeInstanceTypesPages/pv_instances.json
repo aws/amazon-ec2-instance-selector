@@ -1,0 +1,1591 @@
+{
+    "InstanceTypes": [
+        {
+            "AutoRecoverySupported": false,
+            "BareMetal": false,
+            "BurstablePerformanceSupported": false,
+            "CurrentGeneration": false,
+            "DedicatedHostsSupported": false,
+            "EbsInfo": {
+                "EbsOptimizedInfo": null,
+                "EbsOptimizedSupport": "unsupported",
+                "EncryptionSupport": "unsupported"
+            },
+            "FpgaInfo": null,
+            "FreeTierEligible": false,
+            "GpuInfo": null,
+            "HibernationSupported": false,
+            "Hypervisor": "xen",
+            "InferenceAcceleratorInfo": null,
+            "InstanceStorageInfo": {
+                "Disks": [
+                    {
+                        "Count": 1,
+                        "SizeInGB": 350,
+                        "Type": "hdd"
+                    }
+                ],
+                "TotalSizeInGB": 350
+            },
+            "InstanceStorageSupported": true,
+            "InstanceType": "c1.medium",
+            "MemoryInfo": {
+                "SizeInMiB": 1740
+            },
+            "NetworkInfo": {
+                "EfaSupported": false,
+                "EnaSupport": "unsupported",
+                "Ipv4AddressesPerInterface": 6,
+                "Ipv6AddressesPerInterface": 0,
+                "Ipv6Supported": false,
+                "MaximumNetworkInterfaces": 2,
+                "NetworkPerformance": "Moderate"
+            },
+            "PlacementGroupInfo": {
+                "SupportedStrategies": [
+                    "partition",
+                    "spread"
+                ]
+            },
+            "ProcessorInfo": {
+                "SupportedArchitectures": [
+                    "i386",
+                    "x86_64"
+                ],
+                "SustainedClockSpeedInGhz": null
+            },
+            "SupportedRootDeviceTypes": [
+                "ebs",
+                "instance-store"
+            ],
+            "SupportedUsageClasses": [
+                "on-demand",
+                "spot"
+            ],
+            "SupportedVirtualizationTypes": [
+                "hvm",
+                "paravirtual"
+            ],
+            "VCpuInfo": {
+                "DefaultCores": 2,
+                "DefaultThreadsPerCore": 1,
+                "DefaultVCpus": 2,
+                "ValidCores": [
+                    1,
+                    2
+                ],
+                "ValidThreadsPerCore": [
+                    1
+                ]
+            }
+        },
+        {
+            "AutoRecoverySupported": false,
+            "BareMetal": false,
+            "BurstablePerformanceSupported": false,
+            "CurrentGeneration": false,
+            "DedicatedHostsSupported": false,
+            "EbsInfo": {
+                "EbsOptimizedInfo": {
+                    "BaselineBandwidthInMbps": 1000,
+                    "BaselineIops": 8000,
+                    "BaselineThroughputInMBps": 125,
+                    "MaximumBandwidthInMbps": 1000,
+                    "MaximumIops": 8000,
+                    "MaximumThroughputInMBps": 125
+                },
+                "EbsOptimizedSupport": "supported",
+                "EncryptionSupport": "unsupported"
+            },
+            "FpgaInfo": null,
+            "FreeTierEligible": false,
+            "GpuInfo": null,
+            "HibernationSupported": false,
+            "Hypervisor": "xen",
+            "InferenceAcceleratorInfo": null,
+            "InstanceStorageInfo": {
+                "Disks": [
+                    {
+                        "Count": 4,
+                        "SizeInGB": 420,
+                        "Type": "hdd"
+                    }
+                ],
+                "TotalSizeInGB": 1680
+            },
+            "InstanceStorageSupported": true,
+            "InstanceType": "c1.xlarge",
+            "MemoryInfo": {
+                "SizeInMiB": 7168
+            },
+            "NetworkInfo": {
+                "EfaSupported": false,
+                "EnaSupport": "unsupported",
+                "Ipv4AddressesPerInterface": 15,
+                "Ipv6AddressesPerInterface": 0,
+                "Ipv6Supported": false,
+                "MaximumNetworkInterfaces": 4,
+                "NetworkPerformance": "High"
+            },
+            "PlacementGroupInfo": {
+                "SupportedStrategies": [
+                    "partition",
+                    "spread"
+                ]
+            },
+            "ProcessorInfo": {
+                "SupportedArchitectures": [
+                    "x86_64"
+                ],
+                "SustainedClockSpeedInGhz": null
+            },
+            "SupportedRootDeviceTypes": [
+                "ebs",
+                "instance-store"
+            ],
+            "SupportedUsageClasses": [
+                "on-demand",
+                "spot"
+            ],
+            "SupportedVirtualizationTypes": [
+                "hvm",
+                "paravirtual"
+            ],
+            "VCpuInfo": {
+                "DefaultCores": 8,
+                "DefaultThreadsPerCore": 1,
+                "DefaultVCpus": 8,
+                "ValidCores": [
+                    1,
+                    2,
+                    3,
+                    4,
+                    5,
+                    6,
+                    7,
+                    8
+                ],
+                "ValidThreadsPerCore": [
+                    1
+                ]
+            }
+        },
+        {
+            "AutoRecoverySupported": true,
+            "BareMetal": false,
+            "BurstablePerformanceSupported": false,
+            "CurrentGeneration": false,
+            "DedicatedHostsSupported": true,
+            "EbsInfo": {
+                "EbsOptimizedInfo": {
+                    "BaselineBandwidthInMbps": 1000,
+                    "BaselineIops": 8000,
+                    "BaselineThroughputInMBps": 125,
+                    "MaximumBandwidthInMbps": 1000,
+                    "MaximumIops": 8000,
+                    "MaximumThroughputInMBps": 125
+                },
+                "EbsOptimizedSupport": "supported",
+                "EncryptionSupport": "supported"
+            },
+            "FpgaInfo": null,
+            "FreeTierEligible": false,
+            "GpuInfo": null,
+            "HibernationSupported": true,
+            "Hypervisor": "xen",
+            "InferenceAcceleratorInfo": null,
+            "InstanceStorageInfo": {
+                "Disks": [
+                    {
+                        "Count": 2,
+                        "SizeInGB": 80,
+                        "Type": "ssd"
+                    }
+                ],
+                "TotalSizeInGB": 160
+            },
+            "InstanceStorageSupported": true,
+            "InstanceType": "c3.2xlarge",
+            "MemoryInfo": {
+                "SizeInMiB": 15360
+            },
+            "NetworkInfo": {
+                "EfaSupported": false,
+                "EnaSupport": "unsupported",
+                "Ipv4AddressesPerInterface": 15,
+                "Ipv6AddressesPerInterface": 15,
+                "Ipv6Supported": true,
+                "MaximumNetworkInterfaces": 4,
+                "NetworkPerformance": "High"
+            },
+            "PlacementGroupInfo": {
+                "SupportedStrategies": [
+                    "cluster",
+                    "partition",
+                    "spread"
+                ]
+            },
+            "ProcessorInfo": {
+                "SupportedArchitectures": [
+                    "x86_64"
+                ],
+                "SustainedClockSpeedInGhz": 2.8
+            },
+            "SupportedRootDeviceTypes": [
+                "ebs",
+                "instance-store"
+            ],
+            "SupportedUsageClasses": [
+                "on-demand",
+                "spot"
+            ],
+            "SupportedVirtualizationTypes": [
+                "paravirtual",
+                "hvm"
+            ],
+            "VCpuInfo": {
+                "DefaultCores": 4,
+                "DefaultThreadsPerCore": 2,
+                "DefaultVCpus": 8,
+                "ValidCores": [
+                    1,
+                    2,
+                    3,
+                    4
+                ],
+                "ValidThreadsPerCore": [
+                    1,
+                    2
+                ]
+            }
+        },
+        {
+            "AutoRecoverySupported": true,
+            "BareMetal": false,
+            "BurstablePerformanceSupported": false,
+            "CurrentGeneration": false,
+            "DedicatedHostsSupported": true,
+            "EbsInfo": {
+                "EbsOptimizedInfo": {
+                    "BaselineBandwidthInMbps": 2000,
+                    "BaselineIops": 16000,
+                    "BaselineThroughputInMBps": 250,
+                    "MaximumBandwidthInMbps": 2000,
+                    "MaximumIops": 16000,
+                    "MaximumThroughputInMBps": 250
+                },
+                "EbsOptimizedSupport": "supported",
+                "EncryptionSupport": "supported"
+            },
+            "FpgaInfo": null,
+            "FreeTierEligible": false,
+            "GpuInfo": null,
+            "HibernationSupported": true,
+            "Hypervisor": "xen",
+            "InferenceAcceleratorInfo": null,
+            "InstanceStorageInfo": {
+                "Disks": [
+                    {
+                        "Count": 2,
+                        "SizeInGB": 160,
+                        "Type": "ssd"
+                    }
+                ],
+                "TotalSizeInGB": 320
+            },
+            "InstanceStorageSupported": true,
+            "InstanceType": "c3.4xlarge",
+            "MemoryInfo": {
+                "SizeInMiB": 30720
+            },
+            "NetworkInfo": {
+                "EfaSupported": false,
+                "EnaSupport": "unsupported",
+                "Ipv4AddressesPerInterface": 30,
+                "Ipv6AddressesPerInterface": 30,
+                "Ipv6Supported": true,
+                "MaximumNetworkInterfaces": 8,
+                "NetworkPerformance": "High"
+            },
+            "PlacementGroupInfo": {
+                "SupportedStrategies": [
+                    "cluster",
+                    "partition",
+                    "spread"
+                ]
+            },
+            "ProcessorInfo": {
+                "SupportedArchitectures": [
+                    "x86_64"
+                ],
+                "SustainedClockSpeedInGhz": 2.8
+            },
+            "SupportedRootDeviceTypes": [
+                "ebs",
+                "instance-store"
+            ],
+            "SupportedUsageClasses": [
+                "on-demand",
+                "spot"
+            ],
+            "SupportedVirtualizationTypes": [
+                "paravirtual",
+                "hvm"
+            ],
+            "VCpuInfo": {
+                "DefaultCores": 8,
+                "DefaultThreadsPerCore": 2,
+                "DefaultVCpus": 16,
+                "ValidCores": [
+                    1,
+                    2,
+                    3,
+                    4,
+                    5,
+                    6,
+                    7,
+                    8
+                ],
+                "ValidThreadsPerCore": [
+                    1,
+                    2
+                ]
+            }
+        },
+        {
+            "AutoRecoverySupported": true,
+            "BareMetal": false,
+            "BurstablePerformanceSupported": false,
+            "CurrentGeneration": false,
+            "DedicatedHostsSupported": true,
+            "EbsInfo": {
+                "EbsOptimizedInfo": null,
+                "EbsOptimizedSupport": "unsupported",
+                "EncryptionSupport": "supported"
+            },
+            "FpgaInfo": null,
+            "FreeTierEligible": false,
+            "GpuInfo": null,
+            "HibernationSupported": true,
+            "Hypervisor": "xen",
+            "InferenceAcceleratorInfo": null,
+            "InstanceStorageInfo": {
+                "Disks": [
+                    {
+                        "Count": 2,
+                        "SizeInGB": 320,
+                        "Type": "ssd"
+                    }
+                ],
+                "TotalSizeInGB": 640
+            },
+            "InstanceStorageSupported": true,
+            "InstanceType": "c3.8xlarge",
+            "MemoryInfo": {
+                "SizeInMiB": 61440
+            },
+            "NetworkInfo": {
+                "EfaSupported": false,
+                "EnaSupport": "unsupported",
+                "Ipv4AddressesPerInterface": 30,
+                "Ipv6AddressesPerInterface": 30,
+                "Ipv6Supported": true,
+                "MaximumNetworkInterfaces": 8,
+                "NetworkPerformance": "10 Gigabit"
+            },
+            "PlacementGroupInfo": {
+                "SupportedStrategies": [
+                    "cluster",
+                    "partition",
+                    "spread"
+                ]
+            },
+            "ProcessorInfo": {
+                "SupportedArchitectures": [
+                    "x86_64"
+                ],
+                "SustainedClockSpeedInGhz": 2.8
+            },
+            "SupportedRootDeviceTypes": [
+                "ebs",
+                "instance-store"
+            ],
+            "SupportedUsageClasses": [
+                "on-demand",
+                "spot"
+            ],
+            "SupportedVirtualizationTypes": [
+                "paravirtual",
+                "hvm"
+            ],
+            "VCpuInfo": {
+                "DefaultCores": 16,
+                "DefaultThreadsPerCore": 2,
+                "DefaultVCpus": 32,
+                "ValidCores": [
+                    2,
+                    4,
+                    6,
+                    8,
+                    10,
+                    12,
+                    14,
+                    16
+                ],
+                "ValidThreadsPerCore": [
+                    1,
+                    2
+                ]
+            }
+        },
+        {
+            "AutoRecoverySupported": true,
+            "BareMetal": false,
+            "BurstablePerformanceSupported": false,
+            "CurrentGeneration": false,
+            "DedicatedHostsSupported": true,
+            "EbsInfo": {
+                "EbsOptimizedInfo": null,
+                "EbsOptimizedSupport": "unsupported",
+                "EncryptionSupport": "supported"
+            },
+            "FpgaInfo": null,
+            "FreeTierEligible": false,
+            "GpuInfo": null,
+            "HibernationSupported": true,
+            "Hypervisor": "xen",
+            "InferenceAcceleratorInfo": null,
+            "InstanceStorageInfo": {
+                "Disks": [
+                    {
+                        "Count": 2,
+                        "SizeInGB": 16,
+                        "Type": "ssd"
+                    }
+                ],
+                "TotalSizeInGB": 32
+            },
+            "InstanceStorageSupported": true,
+            "InstanceType": "c3.large",
+            "MemoryInfo": {
+                "SizeInMiB": 3840
+            },
+            "NetworkInfo": {
+                "EfaSupported": false,
+                "EnaSupport": "unsupported",
+                "Ipv4AddressesPerInterface": 10,
+                "Ipv6AddressesPerInterface": 10,
+                "Ipv6Supported": true,
+                "MaximumNetworkInterfaces": 3,
+                "NetworkPerformance": "Moderate"
+            },
+            "PlacementGroupInfo": {
+                "SupportedStrategies": [
+                    "cluster",
+                    "partition",
+                    "spread"
+                ]
+            },
+            "ProcessorInfo": {
+                "SupportedArchitectures": [
+                    "i386",
+                    "x86_64"
+                ],
+                "SustainedClockSpeedInGhz": 2.8
+            },
+            "SupportedRootDeviceTypes": [
+                "ebs",
+                "instance-store"
+            ],
+            "SupportedUsageClasses": [
+                "on-demand",
+                "spot"
+            ],
+            "SupportedVirtualizationTypes": [
+                "paravirtual",
+                "hvm"
+            ],
+            "VCpuInfo": {
+                "DefaultCores": 1,
+                "DefaultThreadsPerCore": 2,
+                "DefaultVCpus": 2,
+                "ValidCores": [
+                    1
+                ],
+                "ValidThreadsPerCore": [
+                    1,
+                    2
+                ]
+            }
+        },
+        {
+            "AutoRecoverySupported": true,
+            "BareMetal": false,
+            "BurstablePerformanceSupported": false,
+            "CurrentGeneration": false,
+            "DedicatedHostsSupported": true,
+            "EbsInfo": {
+                "EbsOptimizedInfo": {
+                    "BaselineBandwidthInMbps": 500,
+                    "BaselineIops": 4000,
+                    "BaselineThroughputInMBps": 62.5,
+                    "MaximumBandwidthInMbps": 500,
+                    "MaximumIops": 4000,
+                    "MaximumThroughputInMBps": 62.5
+                },
+                "EbsOptimizedSupport": "supported",
+                "EncryptionSupport": "supported"
+            },
+            "FpgaInfo": null,
+            "FreeTierEligible": false,
+            "GpuInfo": null,
+            "HibernationSupported": true,
+            "Hypervisor": "xen",
+            "InferenceAcceleratorInfo": null,
+            "InstanceStorageInfo": {
+                "Disks": [
+                    {
+                        "Count": 2,
+                        "SizeInGB": 40,
+                        "Type": "ssd"
+                    }
+                ],
+                "TotalSizeInGB": 80
+            },
+            "InstanceStorageSupported": true,
+            "InstanceType": "c3.xlarge",
+            "MemoryInfo": {
+                "SizeInMiB": 7680
+            },
+            "NetworkInfo": {
+                "EfaSupported": false,
+                "EnaSupport": "unsupported",
+                "Ipv4AddressesPerInterface": 15,
+                "Ipv6AddressesPerInterface": 15,
+                "Ipv6Supported": true,
+                "MaximumNetworkInterfaces": 4,
+                "NetworkPerformance": "Moderate"
+            },
+            "PlacementGroupInfo": {
+                "SupportedStrategies": [
+                    "cluster",
+                    "partition",
+                    "spread"
+                ]
+            },
+            "ProcessorInfo": {
+                "SupportedArchitectures": [
+                    "x86_64"
+                ],
+                "SustainedClockSpeedInGhz": 2.8
+            },
+            "SupportedRootDeviceTypes": [
+                "ebs",
+                "instance-store"
+            ],
+            "SupportedUsageClasses": [
+                "on-demand",
+                "spot"
+            ],
+            "SupportedVirtualizationTypes": [
+                "hvm",
+                "paravirtual"
+            ],
+            "VCpuInfo": {
+                "DefaultCores": 2,
+                "DefaultThreadsPerCore": 2,
+                "DefaultVCpus": 4,
+                "ValidCores": [
+                    1,
+                    2
+                ],
+                "ValidThreadsPerCore": [
+                    1,
+                    2
+                ]
+            }
+        },
+        {
+            "AutoRecoverySupported": false,
+            "BareMetal": false,
+            "BurstablePerformanceSupported": false,
+            "CurrentGeneration": false,
+            "DedicatedHostsSupported": false,
+            "EbsInfo": {
+                "EbsOptimizedInfo": {
+                    "BaselineBandwidthInMbps": 500,
+                    "BaselineIops": 4000,
+                    "BaselineThroughputInMBps": 62.5,
+                    "MaximumBandwidthInMbps": 500,
+                    "MaximumIops": 4000,
+                    "MaximumThroughputInMBps": 62.5
+                },
+                "EbsOptimizedSupport": "supported",
+                "EncryptionSupport": "unsupported"
+            },
+            "FpgaInfo": null,
+            "FreeTierEligible": false,
+            "GpuInfo": null,
+            "HibernationSupported": false,
+            "Hypervisor": "xen",
+            "InferenceAcceleratorInfo": null,
+            "InstanceStorageInfo": {
+                "Disks": [
+                    {
+                        "Count": 2,
+                        "SizeInGB": 420,
+                        "Type": "hdd"
+                    }
+                ],
+                "TotalSizeInGB": 840
+            },
+            "InstanceStorageSupported": true,
+            "InstanceType": "m1.large",
+            "MemoryInfo": {
+                "SizeInMiB": 7680
+            },
+            "NetworkInfo": {
+                "EfaSupported": false,
+                "EnaSupport": "unsupported",
+                "Ipv4AddressesPerInterface": 10,
+                "Ipv6AddressesPerInterface": 0,
+                "Ipv6Supported": false,
+                "MaximumNetworkInterfaces": 3,
+                "NetworkPerformance": "Moderate"
+            },
+            "PlacementGroupInfo": {
+                "SupportedStrategies": [
+                    "partition",
+                    "spread"
+                ]
+            },
+            "ProcessorInfo": {
+                "SupportedArchitectures": [
+                    "x86_64"
+                ],
+                "SustainedClockSpeedInGhz": null
+            },
+            "SupportedRootDeviceTypes": [
+                "ebs",
+                "instance-store"
+            ],
+            "SupportedUsageClasses": [
+                "on-demand",
+                "spot"
+            ],
+            "SupportedVirtualizationTypes": [
+                "hvm",
+                "paravirtual"
+            ],
+            "VCpuInfo": {
+                "DefaultCores": 2,
+                "DefaultThreadsPerCore": 1,
+                "DefaultVCpus": 2,
+                "ValidCores": [
+                    1,
+                    2
+                ],
+                "ValidThreadsPerCore": [
+                    1
+                ]
+            }
+        },
+        {
+            "AutoRecoverySupported": false,
+            "BareMetal": false,
+            "BurstablePerformanceSupported": false,
+            "CurrentGeneration": false,
+            "DedicatedHostsSupported": false,
+            "EbsInfo": {
+                "EbsOptimizedInfo": null,
+                "EbsOptimizedSupport": "unsupported",
+                "EncryptionSupport": "unsupported"
+            },
+            "FpgaInfo": null,
+            "FreeTierEligible": false,
+            "GpuInfo": null,
+            "HibernationSupported": false,
+            "Hypervisor": "xen",
+            "InferenceAcceleratorInfo": null,
+            "InstanceStorageInfo": {
+                "Disks": [
+                    {
+                        "Count": 1,
+                        "SizeInGB": 410,
+                        "Type": "hdd"
+                    }
+                ],
+                "TotalSizeInGB": 410
+            },
+            "InstanceStorageSupported": true,
+            "InstanceType": "m1.medium",
+            "MemoryInfo": {
+                "SizeInMiB": 3788
+            },
+            "NetworkInfo": {
+                "EfaSupported": false,
+                "EnaSupport": "unsupported",
+                "Ipv4AddressesPerInterface": 6,
+                "Ipv6AddressesPerInterface": 0,
+                "Ipv6Supported": false,
+                "MaximumNetworkInterfaces": 2,
+                "NetworkPerformance": "Moderate"
+            },
+            "PlacementGroupInfo": {
+                "SupportedStrategies": [
+                    "partition",
+                    "spread"
+                ]
+            },
+            "ProcessorInfo": {
+                "SupportedArchitectures": [
+                    "i386",
+                    "x86_64"
+                ],
+                "SustainedClockSpeedInGhz": null
+            },
+            "SupportedRootDeviceTypes": [
+                "ebs",
+                "instance-store"
+            ],
+            "SupportedUsageClasses": [
+                "on-demand",
+                "spot"
+            ],
+            "SupportedVirtualizationTypes": [
+                "hvm",
+                "paravirtual"
+            ],
+            "VCpuInfo": {
+                "DefaultCores": 1,
+                "DefaultThreadsPerCore": 1,
+                "DefaultVCpus": 1,
+                "ValidCores": [
+                    1
+                ],
+                "ValidThreadsPerCore": [
+                    1
+                ]
+            }
+        },
+        {
+            "AutoRecoverySupported": false,
+            "BareMetal": false,
+            "BurstablePerformanceSupported": false,
+            "CurrentGeneration": false,
+            "DedicatedHostsSupported": false,
+            "EbsInfo": {
+                "EbsOptimizedInfo": null,
+                "EbsOptimizedSupport": "unsupported",
+                "EncryptionSupport": "unsupported"
+            },
+            "FpgaInfo": null,
+            "FreeTierEligible": false,
+            "GpuInfo": null,
+            "HibernationSupported": false,
+            "Hypervisor": "xen",
+            "InferenceAcceleratorInfo": null,
+            "InstanceStorageInfo": {
+                "Disks": [
+                    {
+                        "Count": 1,
+                        "SizeInGB": 160,
+                        "Type": "hdd"
+                    }
+                ],
+                "TotalSizeInGB": 160
+            },
+            "InstanceStorageSupported": true,
+            "InstanceType": "m1.small",
+            "MemoryInfo": {
+                "SizeInMiB": 1740
+            },
+            "NetworkInfo": {
+                "EfaSupported": false,
+                "EnaSupport": "unsupported",
+                "Ipv4AddressesPerInterface": 4,
+                "Ipv6AddressesPerInterface": 0,
+                "Ipv6Supported": false,
+                "MaximumNetworkInterfaces": 2,
+                "NetworkPerformance": "Low"
+            },
+            "PlacementGroupInfo": {
+                "SupportedStrategies": [
+                    "partition",
+                    "spread"
+                ]
+            },
+            "ProcessorInfo": {
+                "SupportedArchitectures": [
+                    "i386",
+                    "x86_64"
+                ],
+                "SustainedClockSpeedInGhz": null
+            },
+            "SupportedRootDeviceTypes": [
+                "ebs",
+                "instance-store"
+            ],
+            "SupportedUsageClasses": [
+                "on-demand",
+                "spot"
+            ],
+            "SupportedVirtualizationTypes": [
+                "hvm",
+                "paravirtual"
+            ],
+            "VCpuInfo": {
+                "DefaultCores": 1,
+                "DefaultThreadsPerCore": 1,
+                "DefaultVCpus": 1,
+                "ValidCores": [
+                    1
+                ],
+                "ValidThreadsPerCore": [
+                    1
+                ]
+            }
+        },
+        {
+            "AutoRecoverySupported": false,
+            "BareMetal": false,
+            "BurstablePerformanceSupported": false,
+            "CurrentGeneration": false,
+            "DedicatedHostsSupported": false,
+            "EbsInfo": {
+                "EbsOptimizedInfo": {
+                    "BaselineBandwidthInMbps": 1000,
+                    "BaselineIops": 8000,
+                    "BaselineThroughputInMBps": 125,
+                    "MaximumBandwidthInMbps": 1000,
+                    "MaximumIops": 8000,
+                    "MaximumThroughputInMBps": 125
+                },
+                "EbsOptimizedSupport": "supported",
+                "EncryptionSupport": "unsupported"
+            },
+            "FpgaInfo": null,
+            "FreeTierEligible": false,
+            "GpuInfo": null,
+            "HibernationSupported": false,
+            "Hypervisor": "xen",
+            "InferenceAcceleratorInfo": null,
+            "InstanceStorageInfo": {
+                "Disks": [
+                    {
+                        "Count": 4,
+                        "SizeInGB": 420,
+                        "Type": "hdd"
+                    }
+                ],
+                "TotalSizeInGB": 1680
+            },
+            "InstanceStorageSupported": true,
+            "InstanceType": "m1.xlarge",
+            "MemoryInfo": {
+                "SizeInMiB": 15360
+            },
+            "NetworkInfo": {
+                "EfaSupported": false,
+                "EnaSupport": "unsupported",
+                "Ipv4AddressesPerInterface": 15,
+                "Ipv6AddressesPerInterface": 0,
+                "Ipv6Supported": false,
+                "MaximumNetworkInterfaces": 4,
+                "NetworkPerformance": "High"
+            },
+            "PlacementGroupInfo": {
+                "SupportedStrategies": [
+                    "partition",
+                    "spread"
+                ]
+            },
+            "ProcessorInfo": {
+                "SupportedArchitectures": [
+                    "x86_64"
+                ],
+                "SustainedClockSpeedInGhz": null
+            },
+            "SupportedRootDeviceTypes": [
+                "ebs",
+                "instance-store"
+            ],
+            "SupportedUsageClasses": [
+                "on-demand",
+                "spot"
+            ],
+            "SupportedVirtualizationTypes": [
+                "hvm",
+                "paravirtual"
+            ],
+            "VCpuInfo": {
+                "DefaultCores": 4,
+                "DefaultThreadsPerCore": 1,
+                "DefaultVCpus": 4,
+                "ValidCores": [
+                    1,
+                    2,
+                    3,
+                    4
+                ],
+                "ValidThreadsPerCore": [
+                    1
+                ]
+            }
+        },
+        {
+            "AutoRecoverySupported": false,
+            "BareMetal": false,
+            "BurstablePerformanceSupported": false,
+            "CurrentGeneration": false,
+            "DedicatedHostsSupported": false,
+            "EbsInfo": {
+                "EbsOptimizedInfo": {
+                    "BaselineBandwidthInMbps": 500,
+                    "BaselineIops": 4000,
+                    "BaselineThroughputInMBps": 62.5,
+                    "MaximumBandwidthInMbps": 500,
+                    "MaximumIops": 4000,
+                    "MaximumThroughputInMBps": 62.5
+                },
+                "EbsOptimizedSupport": "supported",
+                "EncryptionSupport": "unsupported"
+            },
+            "FpgaInfo": null,
+            "FreeTierEligible": false,
+            "GpuInfo": null,
+            "HibernationSupported": false,
+            "Hypervisor": "xen",
+            "InferenceAcceleratorInfo": null,
+            "InstanceStorageInfo": {
+                "Disks": [
+                    {
+                        "Count": 1,
+                        "SizeInGB": 850,
+                        "Type": "hdd"
+                    }
+                ],
+                "TotalSizeInGB": 850
+            },
+            "InstanceStorageSupported": true,
+            "InstanceType": "m2.2xlarge",
+            "MemoryInfo": {
+                "SizeInMiB": 35020
+            },
+            "NetworkInfo": {
+                "EfaSupported": false,
+                "EnaSupport": "unsupported",
+                "Ipv4AddressesPerInterface": 30,
+                "Ipv6AddressesPerInterface": 0,
+                "Ipv6Supported": false,
+                "MaximumNetworkInterfaces": 4,
+                "NetworkPerformance": "Moderate"
+            },
+            "PlacementGroupInfo": {
+                "SupportedStrategies": [
+                    "partition",
+                    "spread"
+                ]
+            },
+            "ProcessorInfo": {
+                "SupportedArchitectures": [
+                    "x86_64"
+                ],
+                "SustainedClockSpeedInGhz": null
+            },
+            "SupportedRootDeviceTypes": [
+                "ebs",
+                "instance-store"
+            ],
+            "SupportedUsageClasses": [
+                "on-demand",
+                "spot"
+            ],
+            "SupportedVirtualizationTypes": [
+                "hvm",
+                "paravirtual"
+            ],
+            "VCpuInfo": {
+                "DefaultCores": 4,
+                "DefaultThreadsPerCore": 1,
+                "DefaultVCpus": 4,
+                "ValidCores": [
+                    1,
+                    2,
+                    3,
+                    4
+                ],
+                "ValidThreadsPerCore": [
+                    1
+                ]
+            }
+        },
+        {
+            "AutoRecoverySupported": false,
+            "BareMetal": false,
+            "BurstablePerformanceSupported": false,
+            "CurrentGeneration": false,
+            "DedicatedHostsSupported": false,
+            "EbsInfo": {
+                "EbsOptimizedInfo": {
+                    "BaselineBandwidthInMbps": 1000,
+                    "BaselineIops": 8000,
+                    "BaselineThroughputInMBps": 125,
+                    "MaximumBandwidthInMbps": 1000,
+                    "MaximumIops": 8000,
+                    "MaximumThroughputInMBps": 125
+                },
+                "EbsOptimizedSupport": "supported",
+                "EncryptionSupport": "unsupported"
+            },
+            "FpgaInfo": null,
+            "FreeTierEligible": false,
+            "GpuInfo": null,
+            "HibernationSupported": false,
+            "Hypervisor": "xen",
+            "InferenceAcceleratorInfo": null,
+            "InstanceStorageInfo": {
+                "Disks": [
+                    {
+                        "Count": 2,
+                        "SizeInGB": 840,
+                        "Type": "hdd"
+                    }
+                ],
+                "TotalSizeInGB": 1680
+            },
+            "InstanceStorageSupported": true,
+            "InstanceType": "m2.4xlarge",
+            "MemoryInfo": {
+                "SizeInMiB": 70041
+            },
+            "NetworkInfo": {
+                "EfaSupported": false,
+                "EnaSupport": "unsupported",
+                "Ipv4AddressesPerInterface": 30,
+                "Ipv6AddressesPerInterface": 0,
+                "Ipv6Supported": false,
+                "MaximumNetworkInterfaces": 8,
+                "NetworkPerformance": "High"
+            },
+            "PlacementGroupInfo": {
+                "SupportedStrategies": [
+                    "partition",
+                    "spread"
+                ]
+            },
+            "ProcessorInfo": {
+                "SupportedArchitectures": [
+                    "x86_64"
+                ],
+                "SustainedClockSpeedInGhz": null
+            },
+            "SupportedRootDeviceTypes": [
+                "ebs",
+                "instance-store"
+            ],
+            "SupportedUsageClasses": [
+                "on-demand",
+                "spot"
+            ],
+            "SupportedVirtualizationTypes": [
+                "paravirtual",
+                "hvm"
+            ],
+            "VCpuInfo": {
+                "DefaultCores": 8,
+                "DefaultThreadsPerCore": 1,
+                "DefaultVCpus": 8,
+                "ValidCores": [
+                    1,
+                    2,
+                    3,
+                    4,
+                    5,
+                    6,
+                    7,
+                    8
+                ],
+                "ValidThreadsPerCore": [
+                    1
+                ]
+            }
+        },
+        {
+            "AutoRecoverySupported": false,
+            "BareMetal": false,
+            "BurstablePerformanceSupported": false,
+            "CurrentGeneration": false,
+            "DedicatedHostsSupported": false,
+            "EbsInfo": {
+                "EbsOptimizedInfo": null,
+                "EbsOptimizedSupport": "unsupported",
+                "EncryptionSupport": "unsupported"
+            },
+            "FpgaInfo": null,
+            "FreeTierEligible": false,
+            "GpuInfo": null,
+            "HibernationSupported": false,
+            "Hypervisor": "xen",
+            "InferenceAcceleratorInfo": null,
+            "InstanceStorageInfo": {
+                "Disks": [
+                    {
+                        "Count": 1,
+                        "SizeInGB": 420,
+                        "Type": "hdd"
+                    }
+                ],
+                "TotalSizeInGB": 420
+            },
+            "InstanceStorageSupported": true,
+            "InstanceType": "m2.xlarge",
+            "MemoryInfo": {
+                "SizeInMiB": 17510
+            },
+            "NetworkInfo": {
+                "EfaSupported": false,
+                "EnaSupport": "unsupported",
+                "Ipv4AddressesPerInterface": 15,
+                "Ipv6AddressesPerInterface": 0,
+                "Ipv6Supported": false,
+                "MaximumNetworkInterfaces": 4,
+                "NetworkPerformance": "Moderate"
+            },
+            "PlacementGroupInfo": {
+                "SupportedStrategies": [
+                    "partition",
+                    "spread"
+                ]
+            },
+            "ProcessorInfo": {
+                "SupportedArchitectures": [
+                    "x86_64"
+                ],
+                "SustainedClockSpeedInGhz": null
+            },
+            "SupportedRootDeviceTypes": [
+                "ebs",
+                "instance-store"
+            ],
+            "SupportedUsageClasses": [
+                "on-demand",
+                "spot"
+            ],
+            "SupportedVirtualizationTypes": [
+                "hvm",
+                "paravirtual"
+            ],
+            "VCpuInfo": {
+                "DefaultCores": 2,
+                "DefaultThreadsPerCore": 1,
+                "DefaultVCpus": 2,
+                "ValidCores": [
+                    1,
+                    2
+                ],
+                "ValidThreadsPerCore": [
+                    1
+                ]
+            }
+        },
+        {
+            "AutoRecoverySupported": true,
+            "BareMetal": false,
+            "BurstablePerformanceSupported": false,
+            "CurrentGeneration": false,
+            "DedicatedHostsSupported": true,
+            "EbsInfo": {
+                "EbsOptimizedInfo": {
+                    "BaselineBandwidthInMbps": 1000,
+                    "BaselineIops": 8000,
+                    "BaselineThroughputInMBps": 125,
+                    "MaximumBandwidthInMbps": 1000,
+                    "MaximumIops": 8000,
+                    "MaximumThroughputInMBps": 125
+                },
+                "EbsOptimizedSupport": "supported",
+                "EncryptionSupport": "supported"
+            },
+            "FpgaInfo": null,
+            "FreeTierEligible": false,
+            "GpuInfo": null,
+            "HibernationSupported": true,
+            "Hypervisor": "xen",
+            "InferenceAcceleratorInfo": null,
+            "InstanceStorageInfo": {
+                "Disks": [
+                    {
+                        "Count": 2,
+                        "SizeInGB": 80,
+                        "Type": "ssd"
+                    }
+                ],
+                "TotalSizeInGB": 160
+            },
+            "InstanceStorageSupported": true,
+            "InstanceType": "m3.2xlarge",
+            "MemoryInfo": {
+                "SizeInMiB": 30720
+            },
+            "NetworkInfo": {
+                "EfaSupported": false,
+                "EnaSupport": "unsupported",
+                "Ipv4AddressesPerInterface": 30,
+                "Ipv6AddressesPerInterface": 0,
+                "Ipv6Supported": false,
+                "MaximumNetworkInterfaces": 4,
+                "NetworkPerformance": "High"
+            },
+            "PlacementGroupInfo": {
+                "SupportedStrategies": [
+                    "partition",
+                    "spread"
+                ]
+            },
+            "ProcessorInfo": {
+                "SupportedArchitectures": [
+                    "x86_64"
+                ],
+                "SustainedClockSpeedInGhz": 2.5
+            },
+            "SupportedRootDeviceTypes": [
+                "ebs",
+                "instance-store"
+            ],
+            "SupportedUsageClasses": [
+                "on-demand",
+                "spot"
+            ],
+            "SupportedVirtualizationTypes": [
+                "paravirtual",
+                "hvm"
+            ],
+            "VCpuInfo": {
+                "DefaultCores": 4,
+                "DefaultThreadsPerCore": 2,
+                "DefaultVCpus": 8,
+                "ValidCores": [
+                    1,
+                    2,
+                    3,
+                    4
+                ],
+                "ValidThreadsPerCore": [
+                    1,
+                    2
+                ]
+            }
+        },
+        {
+            "AutoRecoverySupported": true,
+            "BareMetal": false,
+            "BurstablePerformanceSupported": false,
+            "CurrentGeneration": false,
+            "DedicatedHostsSupported": true,
+            "EbsInfo": {
+                "EbsOptimizedInfo": null,
+                "EbsOptimizedSupport": "unsupported",
+                "EncryptionSupport": "supported"
+            },
+            "FpgaInfo": null,
+            "FreeTierEligible": false,
+            "GpuInfo": null,
+            "HibernationSupported": true,
+            "Hypervisor": "xen",
+            "InferenceAcceleratorInfo": null,
+            "InstanceStorageInfo": {
+                "Disks": [
+                    {
+                        "Count": 1,
+                        "SizeInGB": 32,
+                        "Type": "ssd"
+                    }
+                ],
+                "TotalSizeInGB": 32
+            },
+            "InstanceStorageSupported": true,
+            "InstanceType": "m3.large",
+            "MemoryInfo": {
+                "SizeInMiB": 7680
+            },
+            "NetworkInfo": {
+                "EfaSupported": false,
+                "EnaSupport": "unsupported",
+                "Ipv4AddressesPerInterface": 10,
+                "Ipv6AddressesPerInterface": 0,
+                "Ipv6Supported": false,
+                "MaximumNetworkInterfaces": 3,
+                "NetworkPerformance": "Moderate"
+            },
+            "PlacementGroupInfo": {
+                "SupportedStrategies": [
+                    "partition",
+                    "spread"
+                ]
+            },
+            "ProcessorInfo": {
+                "SupportedArchitectures": [
+                    "x86_64"
+                ],
+                "SustainedClockSpeedInGhz": 2.5
+            },
+            "SupportedRootDeviceTypes": [
+                "ebs",
+                "instance-store"
+            ],
+            "SupportedUsageClasses": [
+                "on-demand",
+                "spot"
+            ],
+            "SupportedVirtualizationTypes": [
+                "hvm",
+                "paravirtual"
+            ],
+            "VCpuInfo": {
+                "DefaultCores": 2,
+                "DefaultThreadsPerCore": 1,
+                "DefaultVCpus": 2,
+                "ValidCores": [
+                    1,
+                    2
+                ],
+                "ValidThreadsPerCore": [
+                    1
+                ]
+            }
+        },
+        {
+            "AutoRecoverySupported": true,
+            "BareMetal": false,
+            "BurstablePerformanceSupported": false,
+            "CurrentGeneration": false,
+            "DedicatedHostsSupported": true,
+            "EbsInfo": {
+                "EbsOptimizedInfo": null,
+                "EbsOptimizedSupport": "unsupported",
+                "EncryptionSupport": "supported"
+            },
+            "FpgaInfo": null,
+            "FreeTierEligible": false,
+            "GpuInfo": null,
+            "HibernationSupported": true,
+            "Hypervisor": "xen",
+            "InferenceAcceleratorInfo": null,
+            "InstanceStorageInfo": {
+                "Disks": [
+                    {
+                        "Count": 1,
+                        "SizeInGB": 4,
+                        "Type": "ssd"
+                    }
+                ],
+                "TotalSizeInGB": 4
+            },
+            "InstanceStorageSupported": true,
+            "InstanceType": "m3.medium",
+            "MemoryInfo": {
+                "SizeInMiB": 3840
+            },
+            "NetworkInfo": {
+                "EfaSupported": false,
+                "EnaSupport": "unsupported",
+                "Ipv4AddressesPerInterface": 6,
+                "Ipv6AddressesPerInterface": 0,
+                "Ipv6Supported": false,
+                "MaximumNetworkInterfaces": 2,
+                "NetworkPerformance": "Moderate"
+            },
+            "PlacementGroupInfo": {
+                "SupportedStrategies": [
+                    "partition",
+                    "spread"
+                ]
+            },
+            "ProcessorInfo": {
+                "SupportedArchitectures": [
+                    "x86_64"
+                ],
+                "SustainedClockSpeedInGhz": 2.5
+            },
+            "SupportedRootDeviceTypes": [
+                "ebs",
+                "instance-store"
+            ],
+            "SupportedUsageClasses": [
+                "on-demand",
+                "spot"
+            ],
+            "SupportedVirtualizationTypes": [
+                "hvm",
+                "paravirtual"
+            ],
+            "VCpuInfo": {
+                "DefaultCores": 1,
+                "DefaultThreadsPerCore": 1,
+                "DefaultVCpus": 1,
+                "ValidCores": [
+                    1
+                ],
+                "ValidThreadsPerCore": [
+                    1
+                ]
+            }
+        },
+        {
+            "AutoRecoverySupported": true,
+            "BareMetal": false,
+            "BurstablePerformanceSupported": false,
+            "CurrentGeneration": false,
+            "DedicatedHostsSupported": true,
+            "EbsInfo": {
+                "EbsOptimizedInfo": {
+                    "BaselineBandwidthInMbps": 500,
+                    "BaselineIops": 4000,
+                    "BaselineThroughputInMBps": 62.5,
+                    "MaximumBandwidthInMbps": 500,
+                    "MaximumIops": 4000,
+                    "MaximumThroughputInMBps": 62.5
+                },
+                "EbsOptimizedSupport": "supported",
+                "EncryptionSupport": "supported"
+            },
+            "FpgaInfo": null,
+            "FreeTierEligible": false,
+            "GpuInfo": null,
+            "HibernationSupported": true,
+            "Hypervisor": "xen",
+            "InferenceAcceleratorInfo": null,
+            "InstanceStorageInfo": {
+                "Disks": [
+                    {
+                        "Count": 2,
+                        "SizeInGB": 40,
+                        "Type": "ssd"
+                    }
+                ],
+                "TotalSizeInGB": 80
+            },
+            "InstanceStorageSupported": true,
+            "InstanceType": "m3.xlarge",
+            "MemoryInfo": {
+                "SizeInMiB": 15360
+            },
+            "NetworkInfo": {
+                "EfaSupported": false,
+                "EnaSupport": "unsupported",
+                "Ipv4AddressesPerInterface": 15,
+                "Ipv6AddressesPerInterface": 0,
+                "Ipv6Supported": false,
+                "MaximumNetworkInterfaces": 4,
+                "NetworkPerformance": "High"
+            },
+            "PlacementGroupInfo": {
+                "SupportedStrategies": [
+                    "partition",
+                    "spread"
+                ]
+            },
+            "ProcessorInfo": {
+                "SupportedArchitectures": [
+                    "x86_64"
+                ],
+                "SustainedClockSpeedInGhz": 2.5
+            },
+            "SupportedRootDeviceTypes": [
+                "ebs",
+                "instance-store"
+            ],
+            "SupportedUsageClasses": [
+                "on-demand",
+                "spot"
+            ],
+            "SupportedVirtualizationTypes": [
+                "hvm",
+                "paravirtual"
+            ],
+            "VCpuInfo": {
+                "DefaultCores": 4,
+                "DefaultThreadsPerCore": 1,
+                "DefaultVCpus": 4,
+                "ValidCores": [
+                    1,
+                    2,
+                    3,
+                    4
+                ],
+                "ValidThreadsPerCore": [
+                    1
+                ]
+            }
+        },
+        {
+            "AutoRecoverySupported": false,
+            "BareMetal": false,
+            "BurstablePerformanceSupported": false,
+            "CurrentGeneration": false,
+            "DedicatedHostsSupported": false,
+            "EbsInfo": {
+                "EbsOptimizedInfo": null,
+                "EbsOptimizedSupport": "unsupported",
+                "EncryptionSupport": "unsupported"
+            },
+            "FpgaInfo": null,
+            "FreeTierEligible": true,
+            "GpuInfo": null,
+            "HibernationSupported": false,
+            "Hypervisor": "xen",
+            "InferenceAcceleratorInfo": null,
+            "InstanceStorageInfo": null,
+            "InstanceStorageSupported": false,
+            "InstanceType": "t1.micro",
+            "MemoryInfo": {
+                "SizeInMiB": 627
+            },
+            "NetworkInfo": {
+                "EfaSupported": false,
+                "EnaSupport": "unsupported",
+                "Ipv4AddressesPerInterface": 2,
+                "Ipv6AddressesPerInterface": 0,
+                "Ipv6Supported": false,
+                "MaximumNetworkInterfaces": 2,
+                "NetworkPerformance": "Very Low"
+            },
+            "PlacementGroupInfo": {
+                "SupportedStrategies": [
+                    "partition",
+                    "spread"
+                ]
+            },
+            "ProcessorInfo": {
+                "SupportedArchitectures": [
+                    "i386",
+                    "x86_64"
+                ],
+                "SustainedClockSpeedInGhz": null
+            },
+            "SupportedRootDeviceTypes": [
+                "ebs"
+            ],
+            "SupportedUsageClasses": [
+                "on-demand",
+                "spot"
+            ],
+            "SupportedVirtualizationTypes": [
+                "paravirtual",
+                "hvm"
+            ],
+            "VCpuInfo": {
+                "DefaultCores": 1,
+                "DefaultThreadsPerCore": 1,
+                "DefaultVCpus": 1,
+                "ValidCores": [
+                    1
+                ],
+                "ValidThreadsPerCore": [
+                    1
+                ]
+            }
+        }
+    ]
+}

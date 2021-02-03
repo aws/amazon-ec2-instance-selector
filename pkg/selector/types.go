@@ -38,7 +38,8 @@ func (fn InstanceTypesOutputFn) Output(instanceTypes []*ec2.InstanceTypeInfo) []
 
 // Selector is used to filter instance type resource specs
 type Selector struct {
-	EC2 ec2iface.EC2API
+	EC2             ec2iface.EC2API
+	ServiceRegistry ServiceRegistry
 }
 
 // IntRangeFilter holds an upper and lower bound int
@@ -179,4 +180,14 @@ type Filters struct {
 	// Flexible finds an opinionated set of general (c, m, r, t, a, etc.) instance types that match a criteria specified
 	// or defaults to 4 vcpus
 	Flexible *bool
+
+	// Service filters instance types based on a service's supported list of instance types
+	// Example: eks or emr
+	Service *string
+
+	// InstanceTypes filters instance types and only allows instance types in this slice
+	InstanceTypes *[]string
+
+	// VirtualizationType is used to return instance types that match either hvm or pv virtualization types
+	VirtualizationType *string
 }

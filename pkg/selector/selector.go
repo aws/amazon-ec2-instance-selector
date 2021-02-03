@@ -62,18 +62,26 @@ const (
 	networkPerformance     = "networkPerformance"
 	allowList              = "allowList"
 	denyList               = "denyList"
+	instanceTypes          = "instanceTypes"
+	virtualizationType     = "virtualizationType"
 
 	cpuArchitectureAMD64 = "amd64"
 	cpuArchitectureX8664 = "x86_64"
+
+	virtualizationTypeParaVirtual = "paravirtual"
+	virtualizationTypePV          = "pv"
 )
 
 // New creates an instance of Selector provided an aws session
 func New(sess *session.Session) *Selector {
+	serviceRegistry := NewRegistry()
+	serviceRegistry.RegisterAWSServices()
 	userAgentTag := fmt.Sprintf("%s-v%s", sdkName, versionID)
 	userAgentHandler := request.MakeAddToUserAgentFreeFormHandler(userAgentTag)
 	sess.Handlers.Build.PushBack(userAgentHandler)
 	return &Selector{
-		EC2: ec2.New(sess),
+		EC2:             ec2.New(sess),
+		ServiceRegistry: serviceRegistry,
 	}
 }
 
@@ -124,6 +132,7 @@ func (itf Selector) AggregateFilterTransform(filters Filters) (Filters, error) {
 	transforms := []FiltersTransform{
 		TransformFn(itf.TransformBaseInstanceType),
 		TransformFn(itf.TransformFlexible),
+		TransformFn(itf.TransformForService),
 	}
 	var err error
 	for _, transform := range transforms {
@@ -146,6 +155,9 @@ func (itf Selector) rawFilter(filters Filters) ([]*ec2.InstanceTypeInfo, error) 
 
 	if filters.CPUArchitecture != nil && *filters.CPUArchitecture == cpuArchitectureAMD64 {
 		*filters.CPUArchitecture = cpuArchitectureX8664
+	}
+	if filters.VirtualizationType != nil && *filters.VirtualizationType == virtualizationTypePV {
+		*filters.VirtualizationType = virtualizationTypeParaVirtual
 	}
 
 	if filters.AvailabilityZones != nil {
@@ -190,6 +202,8 @@ func (itf Selector) rawFilter(filters Filters) ([]*ec2.InstanceTypeInfo, error) 
 				currentGeneration:      {filters.CurrentGeneration, instanceTypeInfo.CurrentGeneration},
 				networkInterfaces:      {filters.NetworkInterfaces, instanceTypeInfo.NetworkInfo.MaximumNetworkInterfaces},
 				networkPerformance:     {filters.NetworkPerformance, getNetworkPerformance(instanceTypeInfo.NetworkInfo.NetworkPerformance)},
+				instanceTypes:          {filters.InstanceTypes, instanceTypeInfo.InstanceType},
+				virtualizationType:     {filters.VirtualizationType, instanceTypeInfo.SupportedVirtualizationTypes},
 			}
 
 			if isInDenyList(filters.DenyList, instanceTypeName) || !isInAllowList(filters.AllowList, instanceTypeName) {
@@ -319,6 +333,22 @@ func (itf Selector) executeFilters(filterToInstanceSpecMapping map[string]filter
 			switch iSpec := instanceSpec.(type) {
 			case *float64:
 				if !isSupportedWithFloat64(iSpec, filter) {
+					return false, nil
+				}
+			default:
+				return false, fmt.Errorf(invalidInstanceSpecTypeMsg)
+			}
+		case *[]string:
+			switch iSpec := instanceSpec.(type) {
+			case *string:
+				filterOfPtrs := []*string{}
+				for _, f := range *filter {
+					// this allows us to copy a static pointer to f into filterOfPtrs
+					// since the pointer to f is updated on each loop iteration
+					temp := f
+					filterOfPtrs = append(filterOfPtrs, &temp)
+				}
+				if !isSupportedFromStrings(filterOfPtrs, iSpec) {
 					return false, nil
 				}
 			default:
