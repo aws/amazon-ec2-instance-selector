@@ -1,0 +1,413 @@
+{
+  "product": {
+    "productFamily": "Compute Instance",
+    "attributes": {
+      "enhancedNetworkingSupported": "Yes",
+      "intelTurboAvailable": "Yes",
+      "memory": "8 GiB",
+      "dedicatedEbsThroughput": "Up to 2120 Mbps",
+      "vcpu": "2",
+      "capacitystatus": "Used",
+      "locationType": "AWS Region",
+      "storage": "EBS only",
+      "instanceFamily": "General purpose",
+      "operatingSystem": "Linux",
+      "intelAvx2Available": "Yes",
+      "physicalProcessor": "Intel Xeon Platinum 8175 (Skylake)",
+      "clockSpeed": "3.1 GHz",
+      "ecu": "10",
+      "networkPerformance": "Up to 10 Gigabit",
+      "servicename": "Amazon Elastic Compute Cloud",
+      "instanceType": "m5.large",
+      "tenancy": "Shared",
+      "usagetype": "BoxUsage:m5.large",
+      "normalizationSizeFactor": "4",
+      "intelAvxAvailable": "Yes",
+      "processorFeatures": "Intel AVX; Intel AVX2; Intel AVX512; Intel Turbo",
+      "servicecode": "AmazonEC2",
+      "licenseModel": "No License required",
+      "currentGeneration": "Yes",
+      "preInstalledSw": "NA",
+      "location": "US East (N. Virginia)",
+      "processorArchitecture": "64-bit",
+      "operation": "RunInstances"
+    },
+    "sku": "6C86BEPQVG73ZGGR"
+  },
+  "serviceCode": "AmazonEC2",
+  "terms": {
+    "OnDemand": {
+      "6C86BEPQVG73ZGGR.JRTCKXETXF": {
+        "priceDimensions": {
+          "6C86BEPQVG73ZGGR.JRTCKXETXF.6YS6EN2CT7": {
+            "unit": "Hrs",
+            "endRange": "Inf",
+            "description": "$0.096 per On Demand Linux m5.large Instance Hour",
+            "appliesTo": [],
+            "rateCode": "6C86BEPQVG73ZGGR.JRTCKXETXF.6YS6EN2CT7",
+            "beginRange": "0",
+            "pricePerUnit": {
+              "USD": "0.0960000000"
+            }
+          }
+        },
+        "sku": "6C86BEPQVG73ZGGR",
+        "effectiveDate": "2021-02-01T00:00:00Z",
+        "offerTermCode": "JRTCKXETXF",
+        "termAttributes": {}
+      }
+    },
+    "Reserved": {
+      "6C86BEPQVG73ZGGR.4NA7Y494T4": {
+        "priceDimensions": {
+          "6C86BEPQVG73ZGGR.4NA7Y494T4.6YS6EN2CT7": {
+            "unit": "Hrs",
+            "endRange": "Inf",
+            "description": "Linux/UNIX (Amazon VPC), m5.large reserved instance applied",
+            "appliesTo": [],
+            "rateCode": "6C86BEPQVG73ZGGR.4NA7Y494T4.6YS6EN2CT7",
+            "beginRange": "0",
+            "pricePerUnit": {
+              "USD": "0.0600000000"
+            }
+          }
+        },
+        "sku": "6C86BEPQVG73ZGGR",
+        "effectiveDate": "2020-04-01T00:00:00Z",
+        "offerTermCode": "4NA7Y494T4",
+        "termAttributes": {
+          "LeaseContractLength": "1yr",
+          "OfferingClass": "standard",
+          "PurchaseOption": "No Upfront"
+        }
+      },
+      "6C86BEPQVG73ZGGR.CUZHX8X6JH": {
+        "priceDimensions": {
+          "6C86BEPQVG73ZGGR.CUZHX8X6JH.2TG2D8R56U": {
+            "unit": "Quantity",
+            "description": "Upfront Fee",
+            "appliesTo": [],
+            "rateCode": "6C86BEPQVG73ZGGR.CUZHX8X6JH.2TG2D8R56U",
+            "pricePerUnit": {
+              "USD": "294"
+            }
+          },
+          "6C86BEPQVG73ZGGR.CUZHX8X6JH.6YS6EN2CT7": {
+            "unit": "Hrs",
+            "endRange": "Inf",
+            "description": "Linux/UNIX (Amazon VPC), m5.large reserved instance applied",
+            "appliesTo": [],
+            "rateCode": "6C86BEPQVG73ZGGR.CUZHX8X6JH.6YS6EN2CT7",
+            "beginRange": "0",
+            "pricePerUnit": {
+              "USD": "0.0340000000"
+            }
+          }
+        },
+        "sku": "6C86BEPQVG73ZGGR",
+        "effectiveDate": "2017-10-31T23:59:59Z",
+        "offerTermCode": "CUZHX8X6JH",
+        "termAttributes": {
+          "LeaseContractLength": "1yr",
+          "OfferingClass": "convertible",
+          "PurchaseOption": "Partial Upfront"
+        }
+      },
+      "6C86BEPQVG73ZGGR.7NE97W5U4E": {
+        "priceDimensions": {
+          "6C86BEPQVG73ZGGR.7NE97W5U4E.6YS6EN2CT7": {
+            "unit": "Hrs",
+            "endRange": "Inf",
+            "description": "Linux/UNIX (Amazon VPC), m5.large reserved instance applied",
+            "appliesTo": [],
+            "rateCode": "6C86BEPQVG73ZGGR.7NE97W5U4E.6YS6EN2CT7",
+            "beginRange": "0",
+            "pricePerUnit": {
+              "USD": "0.0710000000"
+            }
+          }
+        },
+        "sku": "6C86BEPQVG73ZGGR",
+        "effectiveDate": "2017-10-31T23:59:59Z",
+        "offerTermCode": "7NE97W5U4E",
+        "termAttributes": {
+          "LeaseContractLength": "1yr",
+          "OfferingClass": "convertible",
+          "PurchaseOption": "No Upfront"
+        }
+      },
+      "6C86BEPQVG73ZGGR.38NPMPTW36": {
+        "priceDimensions": {
+          "6C86BEPQVG73ZGGR.38NPMPTW36.2TG2D8R56U": {
+            "unit": "Quantity",
+            "description": "Upfront Fee",
+            "appliesTo": [],
+            "rateCode": "6C86BEPQVG73ZGGR.38NPMPTW36.2TG2D8R56U",
+            "pricePerUnit": {
+              "USD": "505"
+            }
+          },
+          "6C86BEPQVG73ZGGR.38NPMPTW36.6YS6EN2CT7": {
+            "unit": "Hrs",
+            "endRange": "Inf",
+            "description": "Linux/UNIX (Amazon VPC), m5.large reserved instance applied",
+            "appliesTo": [],
+            "rateCode": "6C86BEPQVG73ZGGR.38NPMPTW36.6YS6EN2CT7",
+            "beginRange": "0",
+            "pricePerUnit": {
+              "USD": "0.0190000000"
+            }
+          }
+        },
+        "sku": "6C86BEPQVG73ZGGR",
+        "effectiveDate": "2020-04-01T00:00:00Z",
+        "offerTermCode": "38NPMPTW36",
+        "termAttributes": {
+          "LeaseContractLength": "3yr",
+          "OfferingClass": "standard",
+          "PurchaseOption": "Partial Upfront"
+        }
+      },
+      "6C86BEPQVG73ZGGR.R5XV2EPZQZ": {
+        "priceDimensions": {
+          "6C86BEPQVG73ZGGR.R5XV2EPZQZ.2TG2D8R56U": {
+            "unit": "Quantity",
+            "description": "Upfront Fee",
+            "appliesTo": [],
+            "rateCode": "6C86BEPQVG73ZGGR.R5XV2EPZQZ.2TG2D8R56U",
+            "pricePerUnit": {
+              "USD": "592"
+            }
+          },
+          "6C86BEPQVG73ZGGR.R5XV2EPZQZ.6YS6EN2CT7": {
+            "unit": "Hrs",
+            "endRange": "Inf",
+            "description": "Linux/UNIX (Amazon VPC), m5.large reserved instance applied",
+            "appliesTo": [],
+            "rateCode": "6C86BEPQVG73ZGGR.R5XV2EPZQZ.6YS6EN2CT7",
+            "beginRange": "0",
+            "pricePerUnit": {
+              "USD": "0.0230000000"
+            }
+          }
+        },
+        "sku": "6C86BEPQVG73ZGGR",
+        "effectiveDate": "2017-10-31T23:59:59Z",
+        "offerTermCode": "R5XV2EPZQZ",
+        "termAttributes": {
+          "LeaseContractLength": "3yr",
+          "OfferingClass": "convertible",
+          "PurchaseOption": "Partial Upfront"
+        }
+      },
+      "6C86BEPQVG73ZGGR.6QCMYABX3D": {
+        "priceDimensions": {
+          "6C86BEPQVG73ZGGR.6QCMYABX3D.2TG2D8R56U": {
+            "unit": "Quantity",
+            "description": "Upfront Fee",
+            "appliesTo": [],
+            "rateCode": "6C86BEPQVG73ZGGR.6QCMYABX3D.2TG2D8R56U",
+            "pricePerUnit": {
+              "USD": "494"
+            }
+          },
+          "6C86BEPQVG73ZGGR.6QCMYABX3D.6YS6EN2CT7": {
+            "unit": "Hrs",
+            "endRange": "Inf",
+            "description": "USD 0.0 per Linux/UNIX (Amazon VPC), m5.large reserved instance applied",
+            "appliesTo": [],
+            "rateCode": "6C86BEPQVG73ZGGR.6QCMYABX3D.6YS6EN2CT7",
+            "beginRange": "0",
+            "pricePerUnit": {
+              "USD": "0.0000000000"
+            }
+          }
+        },
+        "sku": "6C86BEPQVG73ZGGR",
+        "effectiveDate": "2020-04-01T00:00:00Z",
+        "offerTermCode": "6QCMYABX3D",
+        "termAttributes": {
+          "LeaseContractLength": "1yr",
+          "OfferingClass": "standard",
+          "PurchaseOption": "All Upfront"
+        }
+      },
+      "6C86BEPQVG73ZGGR.NQ3QZPMQV9": {
+        "priceDimensions": {
+          "6C86BEPQVG73ZGGR.NQ3QZPMQV9.2TG2D8R56U": {
+            "unit": "Quantity",
+            "description": "Upfront Fee",
+            "appliesTo": [],
+            "rateCode": "6C86BEPQVG73ZGGR.NQ3QZPMQV9.2TG2D8R56U",
+            "pricePerUnit": {
+              "USD": "949"
+            }
+          },
+          "6C86BEPQVG73ZGGR.NQ3QZPMQV9.6YS6EN2CT7": {
+            "unit": "Hrs",
+            "endRange": "Inf",
+            "description": "USD 0.0 per Linux/UNIX (Amazon VPC), m5.large reserved instance applied",
+            "appliesTo": [],
+            "rateCode": "6C86BEPQVG73ZGGR.NQ3QZPMQV9.6YS6EN2CT7",
+            "beginRange": "0",
+            "pricePerUnit": {
+              "USD": "0.0000000000"
+            }
+          }
+        },
+        "sku": "6C86BEPQVG73ZGGR",
+        "effectiveDate": "2020-04-01T00:00:00Z",
+        "offerTermCode": "NQ3QZPMQV9",
+        "termAttributes": {
+          "LeaseContractLength": "3yr",
+          "OfferingClass": "standard",
+          "PurchaseOption": "All Upfront"
+        }
+      },
+      "6C86BEPQVG73ZGGR.Z2E3P23VKM": {
+        "priceDimensions": {
+          "6C86BEPQVG73ZGGR.Z2E3P23VKM.6YS6EN2CT7": {
+            "unit": "Hrs",
+            "endRange": "Inf",
+            "description": "Linux/UNIX (Amazon VPC), m5.large reserved instance applied",
+            "appliesTo": [],
+            "rateCode": "6C86BEPQVG73ZGGR.Z2E3P23VKM.6YS6EN2CT7",
+            "beginRange": "0",
+            "pricePerUnit": {
+              "USD": "0.0490000000"
+            }
+          }
+        },
+        "sku": "6C86BEPQVG73ZGGR",
+        "effectiveDate": "2017-10-31T23:59:59Z",
+        "offerTermCode": "Z2E3P23VKM",
+        "termAttributes": {
+          "LeaseContractLength": "3yr",
+          "OfferingClass": "convertible",
+          "PurchaseOption": "No Upfront"
+        }
+      },
+      "6C86BEPQVG73ZGGR.MZU6U2429S": {
+        "priceDimensions": {
+          "6C86BEPQVG73ZGGR.MZU6U2429S.6YS6EN2CT7": {
+            "unit": "Hrs",
+            "endRange": "Inf",
+            "description": "Linux/UNIX (Amazon VPC), m5.large reserved instance applied",
+            "appliesTo": [],
+            "rateCode": "6C86BEPQVG73ZGGR.MZU6U2429S.6YS6EN2CT7",
+            "beginRange": "0",
+            "pricePerUnit": {
+              "USD": "0.0000000000"
+            }
+          },
+          "6C86BEPQVG73ZGGR.MZU6U2429S.2TG2D8R56U": {
+            "unit": "Quantity",
+            "description": "Upfront Fee",
+            "appliesTo": [],
+            "rateCode": "6C86BEPQVG73ZGGR.MZU6U2429S.2TG2D8R56U",
+            "pricePerUnit": {
+              "USD": "1161"
+            }
+          }
+        },
+        "sku": "6C86BEPQVG73ZGGR",
+        "effectiveDate": "2017-10-31T23:59:59Z",
+        "offerTermCode": "MZU6U2429S",
+        "termAttributes": {
+          "LeaseContractLength": "3yr",
+          "OfferingClass": "convertible",
+          "PurchaseOption": "All Upfront"
+        }
+      },
+      "6C86BEPQVG73ZGGR.BPH4J8HBKS": {
+        "priceDimensions": {
+          "6C86BEPQVG73ZGGR.BPH4J8HBKS.6YS6EN2CT7": {
+            "unit": "Hrs",
+            "endRange": "Inf",
+            "description": "Linux/UNIX (Amazon VPC), m5.large reserved instance applied",
+            "appliesTo": [],
+            "rateCode": "6C86BEPQVG73ZGGR.BPH4J8HBKS.6YS6EN2CT7",
+            "beginRange": "0",
+            "pricePerUnit": {
+              "USD": "0.0410000000"
+            }
+          }
+        },
+        "sku": "6C86BEPQVG73ZGGR",
+        "effectiveDate": "2020-04-01T00:00:00Z",
+        "offerTermCode": "BPH4J8HBKS",
+        "termAttributes": {
+          "LeaseContractLength": "3yr",
+          "OfferingClass": "standard",
+          "PurchaseOption": "No Upfront"
+        }
+      },
+      "6C86BEPQVG73ZGGR.HU7G6KETJZ": {
+        "priceDimensions": {
+          "6C86BEPQVG73ZGGR.HU7G6KETJZ.2TG2D8R56U": {
+            "unit": "Quantity",
+            "description": "Upfront Fee",
+            "appliesTo": [],
+            "rateCode": "6C86BEPQVG73ZGGR.HU7G6KETJZ.2TG2D8R56U",
+            "pricePerUnit": {
+              "USD": "252"
+            }
+          },
+          "6C86BEPQVG73ZGGR.HU7G6KETJZ.6YS6EN2CT7": {
+            "unit": "Hrs",
+            "endRange": "Inf",
+            "description": "Linux/UNIX (Amazon VPC), m5.large reserved instance applied",
+            "appliesTo": [],
+            "rateCode": "6C86BEPQVG73ZGGR.HU7G6KETJZ.6YS6EN2CT7",
+            "beginRange": "0",
+            "pricePerUnit": {
+              "USD": "0.0290000000"
+            }
+          }
+        },
+        "sku": "6C86BEPQVG73ZGGR",
+        "effectiveDate": "2020-04-01T00:00:00Z",
+        "offerTermCode": "HU7G6KETJZ",
+        "termAttributes": {
+          "LeaseContractLength": "1yr",
+          "OfferingClass": "standard",
+          "PurchaseOption": "Partial Upfront"
+        }
+      },
+      "6C86BEPQVG73ZGGR.VJWZNREJX2": {
+        "priceDimensions": {
+          "6C86BEPQVG73ZGGR.VJWZNREJX2.2TG2D8R56U": {
+            "unit": "Quantity",
+            "description": "Upfront Fee",
+            "appliesTo": [],
+            "rateCode": "6C86BEPQVG73ZGGR.VJWZNREJX2.2TG2D8R56U",
+            "pricePerUnit": {
+              "USD": "577"
+            }
+          },
+          "6C86BEPQVG73ZGGR.VJWZNREJX2.6YS6EN2CT7": {
+            "unit": "Hrs",
+            "endRange": "Inf",
+            "description": "Linux/UNIX (Amazon VPC), m5.large reserved instance applied",
+            "appliesTo": [],
+            "rateCode": "6C86BEPQVG73ZGGR.VJWZNREJX2.6YS6EN2CT7",
+            "beginRange": "0",
+            "pricePerUnit": {
+              "USD": "0.0000000000"
+            }
+          }
+        },
+        "sku": "6C86BEPQVG73ZGGR",
+        "effectiveDate": "2017-10-31T23:59:59Z",
+        "offerTermCode": "VJWZNREJX2",
+        "termAttributes": {
+          "LeaseContractLength": "1yr",
+          "OfferingClass": "convertible",
+          "PurchaseOption": "All Upfront"
+        }
+      }
+    }
+  },
+  "version": "20210205204500",
+  "publicationDate": "2021-02-05T20:45:00Z"
+}

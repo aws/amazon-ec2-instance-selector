@@ -18,27 +18,29 @@ import (
 	"regexp"
 
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/bytequantity"
-	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/ec2pricing"
+	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/instancetypes"
 	"github.com/aws/aws-sdk-go/service/ec2/ec2iface"
 )
 
 // InstanceTypesOutput can be implemented to provide custom output to instance type results
 type InstanceTypesOutput interface {
-	Output([]*ec2.InstanceTypeInfo) []string
+	Output([]instancetypes.Details) []string
 }
 
 // InstanceTypesOutputFn is the func type definition for InstanceTypesOuput
-type InstanceTypesOutputFn func([]*ec2.InstanceTypeInfo) []string
+type InstanceTypesOutputFn func([]instancetypes.Details) []string
 
 // Output implements InstanceTypesOutput interface on InstanceTypesOutputFn
 // This allows any InstanceTypesOutputFn to be passed into funcs accepting InstanceTypesOutput interface
-func (fn InstanceTypesOutputFn) Output(instanceTypes []*ec2.InstanceTypeInfo) []string {
+func (fn InstanceTypesOutputFn) Output(instanceTypes []instancetypes.Details) []string {
 	return fn(instanceTypes)
 }
 
 // Selector is used to filter instance type resource specs
 type Selector struct {
 	EC2             ec2iface.EC2API
+	EC2Pricing      ec2pricing.EC2PricingIface
 	ServiceRegistry ServiceRegistry
 }
 
@@ -61,6 +63,13 @@ type Uint64RangeFilter struct {
 type ByteQuantityRangeFilter struct {
 	UpperBound bytequantity.ByteQuantity
 	LowerBound bytequantity.ByteQuantity
+}
+
+// Float64RangeFilter holds an upper and lower bound float64
+// The lower and upper bound are used to range filter resource specs
+type Float64RangeFilter struct {
+	UpperBound float64
+	LowerBound float64
 }
 
 // filterPair holds a tuple of the passed in filter value and the instance resource spec value
@@ -190,4 +199,7 @@ type Filters struct {
 
 	// VirtualizationType is used to return instance types that match either hvm or pv virtualization types
 	VirtualizationType *string
+
+	// PricePerHour is used to return instance types that are equal to or cheaper than the specified price
+	PricePerHour *Float64RangeFilter
 }

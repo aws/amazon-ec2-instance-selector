@@ -20,6 +20,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/instancetypes"
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/selector/outputs"
 	h "github.com/aws/amazon-ec2-instance-selector/v2/pkg/test"
 	"github.com/aws/aws-sdk-go/service/ec2"
@@ -32,14 +33,19 @@ const (
 	mockFilesPath         = "../../../test/static"
 )
 
-func getInstanceTypes(t *testing.T, file string) []*ec2.InstanceTypeInfo {
+func getInstanceTypes(t *testing.T, file string) []instancetypes.Details {
 	mockFilename := fmt.Sprintf("%s/%s/%s", mockFilesPath, describeInstanceTypes, file)
 	mockFile, err := ioutil.ReadFile(mockFilename)
 	h.Assert(t, err == nil, "Error reading mock file "+string(mockFilename))
 	dito := ec2.DescribeInstanceTypesOutput{}
 	err = json.Unmarshal(mockFile, &dito)
 	h.Assert(t, err == nil, "Error parsing mock json file contents"+mockFilename)
-	return dito.InstanceTypes
+	instanceTypesDetails := []instancetypes.Details{}
+	for _, it := range dito.InstanceTypes {
+		odPrice := float64(0.53)
+		instanceTypesDetails = append(instanceTypesDetails, instancetypes.Details{InstanceTypeInfo: *it, OndemandPricePerHour: &odPrice})
+	}
+	return instanceTypesDetails
 }
 
 func TestSimpleInstanceTypeOutput(t *testing.T) {
@@ -48,7 +54,7 @@ func TestSimpleInstanceTypeOutput(t *testing.T) {
 	h.Assert(t, len(instanceTypeOut) == len(instanceTypes), "Should return the same number of instance types as the data passed in")
 	h.Assert(t, instanceTypeOut[0] == "t3.micro", "Should only return t3.micro")
 
-	instanceTypeOut = outputs.SimpleInstanceTypeOutput([]*ec2.InstanceTypeInfo{})
+	instanceTypeOut = outputs.SimpleInstanceTypeOutput([]instancetypes.Details{})
 	h.Assert(t, len(instanceTypeOut) == 0, "Should return 0 instance types when passed empty slice")
 
 	instanceTypeOut = outputs.SimpleInstanceTypeOutput(nil)
@@ -64,7 +70,7 @@ func TestVerboseInstanceTypeOutput(t *testing.T) {
 	h.Assert(t, len(instanceTypeOut) == len(instanceTypes), "Should return the same number of instance types as the data passed in")
 	h.Assert(t, instanceTypeOut[0] == string(outputExpectation), "Should only return t3.micro")
 
-	instanceTypeOut = outputs.VerboseInstanceTypeOutput([]*ec2.InstanceTypeInfo{})
+	instanceTypeOut = outputs.VerboseInstanceTypeOutput([]instancetypes.Details{})
 	h.Assert(t, len(instanceTypeOut) == 0, "Should return 0 instance types when passed empty slice")
 
 	instanceTypeOut = outputs.VerboseInstanceTypeOutput(nil)
@@ -122,12 +128,12 @@ func TestTableOutput_MBtoGB(t *testing.T) {
 	instanceTypes := getInstanceTypes(t, "g2_2xlarge.json")
 	instanceTypeOut := outputs.TableOutputWide(instanceTypes)
 	outputStr := strings.Join(instanceTypeOut, "")
-	h.Assert(t, strings.Contains(outputStr, "15.000"), "table should include 15.000 GB of memory")
-	h.Assert(t, strings.Contains(outputStr, "4.00"), "wide table should include 4.00 GB of gpu memory")
+	h.Assert(t, strings.Contains(outputStr, "15"), "table should include 15 GB of memory")
+	h.Assert(t, strings.Contains(outputStr, "4"), "wide table should include 4 GB of gpu memory")
 
 	instanceTypeOut = outputs.TableOutputShort(instanceTypes)
 	outputStr = strings.Join(instanceTypeOut, "")
-	h.Assert(t, strings.Contains(outputStr, "15.000"), "table should include 15.000 GB of memory")
+	h.Assert(t, strings.Contains(outputStr, "15"), "table should include 15 GB of memory")
 }
 
 func TestOneLineOutput(t *testing.T) {
@@ -136,7 +142,7 @@ func TestOneLineOutput(t *testing.T) {
 	h.Assert(t, len(instanceTypeOut) == 1, "Should always return 1 line")
 	h.Assert(t, instanceTypeOut[0] == "t3.micro,p3.16xlarge", "Should return both instance types separated by a comma")
 
-	instanceTypeOut = outputs.OneLineOutput([]*ec2.InstanceTypeInfo{})
+	instanceTypeOut = outputs.OneLineOutput([]instancetypes.Details{})
 	h.Assert(t, len(instanceTypeOut) == 0, "Should return 0 instance types when passed empty slice")
 
 	instanceTypeOut = outputs.OneLineOutput(nil)

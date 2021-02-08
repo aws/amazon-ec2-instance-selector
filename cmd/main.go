@@ -69,6 +69,7 @@ const (
 	allowList              = "allow-list"
 	denyList               = "deny-list"
 	virtualizationType     = "virtualization-type"
+	pricePerHour           = "price-per-hour"
 )
 
 // Aggregate Filter Flags
@@ -142,6 +143,7 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	cli.RegexFlag(allowList, nil, nil, "List of allowed instance types to select from w/ regex syntax (Example: m[3-5]\\.*)")
 	cli.RegexFlag(denyList, nil, nil, "List of instance types which should be excluded w/ regex syntax (Example: m[1-2]\\.*)")
 	cli.StringOptionsFlag(virtualizationType, nil, nil, "Virtualization Type supported: [hvm or pv]", []string{"hvm", "paravirtual", "pv"})
+	cli.Float64MinMaxRangeFlags(pricePerHour, nil, nil, "Price/hour in USD (Example: 0.09)")
 
 	// Suite Flags - higher level aggregate filters that return opinionated result
 
@@ -183,6 +185,13 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	flags[region] = sess.Config.Region
 
 	instanceSelector := selector.New(sess)
+	if _, ok := flags[pricePerHour]; ok {
+		if flags[usageClass] == nil || *flags[usageClass].(*string) == "on-demand" {
+			instanceSelector.EC2Pricing.HydrateOndemandCache()
+		} else {
+			instanceSelector.EC2Pricing.HydrateSpotCache(30)
+		}
+	}
 
 	filters := selector.Filters{
 		VCpusRange:             cli.IntRangeMe(flags[vcpus]),
@@ -212,6 +221,7 @@ Full docs can be found at github.com/aws/amazon-` + binName
 		Flexible:               cli.BoolMe(flags[flexible]),
 		Service:                cli.StringMe(flags[service]),
 		VirtualizationType:     cli.StringMe(flags[virtualizationType]),
+		PricePerHour:           cli.Float64RangeMe(flags[pricePerHour]),
 	}
 
 	if flags[verbose] != nil {
