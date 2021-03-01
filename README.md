@@ -12,9 +12,6 @@
   <a href="https://goreportcard.com/report/github.com/aws/amazon-ec2-instance-selector">
     <img src="https://goreportcard.com/badge/github.com/aws/amazon-ec2-instance-selector" alt="go-report-card">
   </a>
-  <a href="https://travis-ci.org/aws/amazon-ec2-instance-selector">
-    <img src="https://travis-ci.org/aws/amazon-ec2-instance-selector.svg?branch=main" alt="build-status">
-  </a>
   <a href="https://hub.docker.com/r/amazon/amazon-ec2-instance-selector">
     <img src="https://img.shields.io/docker/pulls/amazon/amazon-ec2-instance-selector" alt="docker-pulls">
   </a>
