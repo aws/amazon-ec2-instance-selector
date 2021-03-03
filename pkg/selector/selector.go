@@ -21,6 +21,8 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/ec2pricing"
+	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/instancetypes"
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/selector/outputs"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/request"
@@ -70,17 +72,20 @@ const (
 
 	virtualizationTypeParaVirtual = "paravirtual"
 	virtualizationTypePV          = "pv"
+
+	pricePerHour = "pricePerHour"
 )
 
 // New creates an instance of Selector provided an aws session
 func New(sess *session.Session) *Selector {
 	serviceRegistry := NewRegistry()
 	serviceRegistry.RegisterAWSServices()
-	userAgentTag := fmt.Sprintf("%s-v%s", sdkName, versionID)
+	userAgentTag := fmt.Sprintf("%s-%s", sdkName, versionID)
 	userAgentHandler := request.MakeAddToUserAgentFreeFormHandler(userAgentTag)
 	sess.Handlers.Build.PushBack(userAgentHandler)
 	return &Selector{
 		EC2:             ec2.New(sess),
+		EC2Pricing:      ec2pricing.New(sess),
 		ServiceRegistry: serviceRegistry,
 	}
 }
@@ -95,7 +100,7 @@ func (itf Selector) Filter(filters Filters) ([]string, error) {
 
 // FilterVerbose accepts a Filters struct which is used to select the available instance types
 // matching the criteria within Filters and returns a list instanceTypeInfo
-func (itf Selector) FilterVerbose(filters Filters) ([]*ec2.InstanceTypeInfo, error) {
+func (itf Selector) FilterVerbose(filters Filters) ([]instancetypes.Details, error) {
 	instanceTypeInfoSlice, err := itf.rawFilter(filters)
 	if err != nil {
 		return nil, err
@@ -116,7 +121,7 @@ func (itf Selector) FilterWithOutput(filters Filters, outputFn InstanceTypesOutp
 	return output, numOfItemsTruncated, nil
 }
 
-func (itf Selector) truncateResults(maxResults *int, instanceTypeInfoSlice []*ec2.InstanceTypeInfo) ([]*ec2.InstanceTypeInfo, int) {
+func (itf Selector) truncateResults(maxResults *int, instanceTypeInfoSlice []instancetypes.Details) ([]instancetypes.Details, int) {
 	if maxResults == nil {
 		return instanceTypeInfoSlice, 0
 	}
@@ -146,7 +151,7 @@ func (itf Selector) AggregateFilterTransform(filters Filters) (Filters, error) {
 
 // rawFilter accepts a Filters struct which is used to select the available instance types
 // matching the criteria within Filters and returns the detailed specs of matching instance types
-func (itf Selector) rawFilter(filters Filters) ([]*ec2.InstanceTypeInfo, error) {
+func (itf Selector) rawFilter(filters Filters) ([]instancetypes.Details, error) {
 	filters, err := itf.AggregateFilterTransform(filters)
 	if err != nil {
 		return nil, err
@@ -171,15 +176,35 @@ func (itf Selector) rawFilter(filters Filters) ([]*ec2.InstanceTypeInfo, error) 
 	}
 
 	instanceTypesInput := &ec2.DescribeInstanceTypesInput{}
-	instanceTypeCandidates := map[string]*ec2.InstanceTypeInfo{}
+	instanceTypeCandidates := map[string]*instancetypes.Details{}
 	// innerErr will hold any error while processing DescribeInstanceTypes pages
 	var innerErr error
 
 	err = itf.EC2.DescribeInstanceTypesPages(instanceTypesInput, func(page *ec2.DescribeInstanceTypesOutput, lastPage bool) bool {
 		for _, instanceTypeInfo := range page.InstanceTypes {
 			instanceTypeName := *instanceTypeInfo.InstanceType
-			instanceTypeCandidates[instanceTypeName] = instanceTypeInfo
+			instanceTypeCandidates[instanceTypeName] = &instancetypes.Details{InstanceTypeInfo: *instanceTypeInfo}
 			isFpga := instanceTypeInfo.FpgaInfo != nil
+			instanceTypeHourlyPrice := float64(0.0)
+			if filters.PricePerHour != nil {
+				if filters.UsageClass != nil && *filters.UsageClass == "spot" {
+					azs := []string{}
+					if filters.AvailabilityZones != nil {
+						azs = *filters.AvailabilityZones
+					}
+					instanceTypeHourlyPrice, err = itf.EC2Pricing.GetSpotInstanceTypeNDayAvgCost(instanceTypeName, azs, 30)
+					if err != nil {
+						fmt.Printf("Could not retrieve 30 day avg spot price for instance type %s\n", instanceTypeName)
+					}
+					instanceTypeCandidates[instanceTypeName].SpotPrice = &instanceTypeHourlyPrice
+				} else {
+					instanceTypeHourlyPrice, err = itf.EC2Pricing.GetOndemandInstanceTypeCost(instanceTypeName)
+					if err != nil {
+						fmt.Printf("Could not retrieve hourly price for instance type %s\n", instanceTypeName)
+					}
+					instanceTypeCandidates[instanceTypeName].OndemandPricePerHour = &instanceTypeHourlyPrice
+				}
+			}
 
 			// filterToInstanceSpecMappingPairs is a map of filter name [key] to filter pair [value].
 			// A filter pair includes user input filter value and instance spec value retrieved from DescribeInstanceTypes
@@ -204,6 +229,7 @@ func (itf Selector) rawFilter(filters Filters) ([]*ec2.InstanceTypeInfo, error) 
 				networkPerformance:     {filters.NetworkPerformance, getNetworkPerformance(instanceTypeInfo.NetworkInfo.NetworkPerformance)},
 				instanceTypes:          {filters.InstanceTypes, instanceTypeInfo.InstanceType},
 				virtualizationType:     {filters.VirtualizationType, instanceTypeInfo.SupportedVirtualizationTypes},
+				pricePerHour:           {filters.PricePerHour, &instanceTypeHourlyPrice},
 			}
 
 			if isInDenyList(filters.DenyList, instanceTypeName) || !isInAllowList(filters.AllowList, instanceTypeName) {
@@ -234,15 +260,15 @@ func (itf Selector) rawFilter(filters Filters) ([]*ec2.InstanceTypeInfo, error) 
 		return nil, innerErr
 	}
 
-	instanceTypeInfoSlice := []*ec2.InstanceTypeInfo{}
+	instanceTypeInfoSlice := []instancetypes.Details{}
 	for _, instanceTypeInfo := range instanceTypeCandidates {
-		instanceTypeInfoSlice = append(instanceTypeInfoSlice, instanceTypeInfo)
+		instanceTypeInfoSlice = append(instanceTypeInfoSlice, *instanceTypeInfo)
 	}
 	return sortInstanceTypeInfo(instanceTypeInfoSlice), nil
 }
 
 // sortInstanceTypeInfo will sort based on instance type info alpha-numerically
-func sortInstanceTypeInfo(instanceTypeInfoSlice []*ec2.InstanceTypeInfo) []*ec2.InstanceTypeInfo {
+func sortInstanceTypeInfo(instanceTypeInfoSlice []instancetypes.Details) []instancetypes.Details {
 	sort.Slice(instanceTypeInfoSlice, func(i, j int) bool {
 		iInstanceInfo := instanceTypeInfoSlice[i]
 		jInstanceInfo := instanceTypeInfoSlice[j]
@@ -298,6 +324,15 @@ func (itf Selector) executeFilters(filterToInstanceSpecMapping map[string]filter
 				}
 			case *int:
 				if !isSupportedWithRangeInt(iSpec, filter) {
+					return false, nil
+				}
+			default:
+				return false, fmt.Errorf(invalidInstanceSpecTypeMsg)
+			}
+		case *Float64RangeFilter:
+			switch iSpec := instanceSpec.(type) {
+			case *float64:
+				if !isSupportedWithRangeFloat64(iSpec, filter) {
 					return false, nil
 				}
 			default:

@@ -79,25 +79,36 @@ $ export AWS_REGION="us-east-1"
 ```
 $ ec2-instance-selector --memory 4 --vcpus 2 --cpu-architecture x86_64 -r us-east-1
 c5.large
+c5a.large
+c5ad.large
 c5d.large
 t2.medium
 t3.medium
 t3a.medium
 ```
 
-**Find instance types that support 100GB/s networking**
+**Find instance types that support 100GB/s networking that can be purchased as spot instances**
 ```
-$ ec2-instance-selector --network-performance 100 -r us-east-1
+$ ec2-instance-selector --network-performance 100 --usage-class spot -r us-east-1
 c5n.18xlarge
 c5n.metal
+c6gn.16xlarge
+g4dn.metal
 i3en.24xlarge
 i3en.metal
 inf1.24xlarge
 m5dn.24xlarge
+m5dn.metal
 m5n.24xlarge
+m5n.metal
+m5zn.12xlarge
+m5zn.metal
 p3dn.24xlarge
+p4d.24xlarge
 r5dn.24xlarge
+r5dn.metal
 r5n.24xlarge
+r5n.metal
 ```
 
 **Short Table Output**
@@ -105,24 +116,27 @@ r5n.24xlarge
 $ ec2-instance-selector --memory 4 --vcpus 2 --cpu-architecture x86_64 -r us-east-1 -o table
 Instance Type        VCPUs        Mem (GiB)
 -------------        -----        ---------
-c5.large             2            4.000
-c5d.large            2            4.000
-t2.medium            2            4.000
-t3.medium            2            4.000
-t3a.medium           2            4.000
+c5.large             2            4
+c5a.large            2            4
+c5ad.large           2            4
+c5d.large            2            4
+t2.medium            2            4
+t3.medium            2            4
+t3a.medium           2            4
 ```
 
 **Wide Table Output**
 ```
 $ ec2-instance-selector --memory 4 --vcpus 2 --cpu-architecture x86_64 -r us-east-1 -o table-wide
-Instance Type  VCPUs   Mem (GiB)  Hypervisor  Current Gen  Hibernation Support  CPU Arch      Network Performance  ENIs    GPUs    
--------------  -----   ---------  ----------  -----------  -------------------  --------      -------------------  ----    ----    
-c5.large       2       4.000      nitro       true         true                 x86_64        Up to 10 Gigabit     3       0       
-c5a.large      2       4.000      nitro       true         false                x86_64        Up to 10 Gigabit     3       0       
-c5d.large      2       4.000      nitro       true         false                x86_64        Up to 10 Gigabit     3       0       
-t2.medium      2       4.000      xen         true         true                 i386, x86_64  Low to Moderate      3       0       
-t3.medium      2       4.000      nitro       true         false                x86_64        Up to 5 Gigabit      3       0       
-t3a.medium     2       4.000      nitro       true         false                x86_64        Up to 5 Gigabit      3       0     
+Instance Type  VCPUs   Mem (GiB)  Hypervisor  Current Gen  Hibernation Support  CPU Arch      Network Performance  ENIs    GPUs    GPU Mem (GiB)  GPU Info  On-Demand Price/Hr
+-------------  -----   ---------  ----------  -----------  -------------------  --------      -------------------  ----    ----    -------------  --------  ------------------
+c5.large       2       4          nitro       true         true                 x86_64        Up to 10 Gigabit     3       0       0                        -No Price Filter Specified-
+c5a.large      2       4          nitro       true         false                x86_64        Up to 10 Gigabit     3       0       0                        -No Price Filter Specified-
+c5ad.large     2       4          nitro       true         false                x86_64        Up to 10 Gigabit     3       0       0                        -No Price Filter Specified-
+c5d.large      2       4          nitro       true         false                x86_64        Up to 10 Gigabit     3       0       0                        -No Price Filter Specified-
+t2.medium      2       4          xen         true         true                 i386, x86_64  Low to Moderate      3       0       0                        -No Price Filter Specified-
+t3.medium      2       4          nitro       true         true                 x86_64        Up to 5 Gigabit      3       0       0                        -No Price Filter Specified-
+t3a.medium     2       4          nitro       true         true                 x86_64        Up to 5 Gigabit      3       0       0                        -No Price Filter Specified-  
 ```
 
 **All CLI Options**
@@ -171,23 +185,28 @@ Filter Flags:
       --network-performance-max int       Maximum Bandwidth in Gib/s of network performance (Example: 100) If --network-performance-min is not specified, the lower bound will be 0
       --network-performance-min int       Minimum Bandwidth in Gib/s of network performance (Example: 100) If --network-performance-max is not specified, the upper bound will be infinity
       --placement-group-strategy string   Placement group strategy: [cluster, partition, spread]
+      --price-per-hour float              Price/hour in USD (Example: 0.09) (sets --price-per-hour-min and -max to the same value)
+      --price-per-hour-max float          Maximum Price/hour in USD (Example: 0.09) If --price-per-hour-min is not specified, the lower bound will be 0
+      --price-per-hour-min float          Minimum Price/hour in USD (Example: 0.09) If --price-per-hour-max is not specified, the upper bound will be infinity
       --root-device-type string           Supported root device types: [ebs or instance-store]
   -u, --usage-class string                Usage class: [spot or on-demand]
   -c, --vcpus int                         Number of vcpus available to the instance type. (sets --vcpus-min and -max to the same value)
       --vcpus-max int                     Maximum Number of vcpus available to the instance type. If --vcpus-min is not specified, the lower bound will be 0
       --vcpus-min int                     Minimum Number of vcpus available to the instance type. If --vcpus-max is not specified, the upper bound will be infinity
       --vcpus-to-memory-ratio string      The ratio of vcpus to GiBs of memory. (Example: 1:2)
+      --virtualization-type string        Virtualization Type supported: [hvm or pv]
 
 
 Suite Flags:
       --base-instance-type string   Instance Type used to retrieve similarly spec'd instance types
       --flexible                    Retrieves a group of instance types spanning multiple generations based on opinionated defaults and user overridden resource filters
+      --service string              Filter instance types based on service support (Example: eks, eks-20201211, or emr-5.20.0)
 
 
 Global Flags:
   -h, --help              Help
       --max-results int   The maximum number of instance types that match your criteria to return (default 20)
-  -o, --output string     Specify the output format (table, table-wide)
+  -o, --output string     Specify the output format (table, table-wide, one-line)
       --profile string    AWS CLI profile to use for credentials and config
   -r, --region string     AWS Region to use for API requests (NOTE: if not passed in, uses AWS SDK default precedence)
   -v, --verbose           Verbose - will print out full instance specs
@@ -267,7 +286,7 @@ func main() {
 $ git clone https://github.com/aws/amazon-ec2-instance-selector.git
 $ cd amazon-ec2-instance-selector/
 $ go run cmd/examples/example1.go
-[c1.medium c3.large c4.large c5.large c5d.large t2.medium t3.medium t3.micro t3.small t3a.medium t3a.micro t3a.small]
+[c4.large c5.large c5a.large c5d.large t2.medium t3.medium t3.small t3a.medium t3a.small]
 ```
 
 ## Building

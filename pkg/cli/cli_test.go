@@ -159,7 +159,7 @@ func TestParseFlags_IntRange(t *testing.T) {
 	h.Ok(t, err)
 	flagMinOutput = flags[flagMinArg].(*int)
 	flagMaxOutput = flags[flagMaxArg].(*int)
-	h.Assert(t, *flagMinOutput == 10 && *flagMaxOutput == 500, "Flag %s max should have been parsed from cmdline and min set to 0", flagArg)
+	h.Assert(t, *flagMinOutput == 10 && *flagMaxOutput == 500, "Flag %s min and max should have been parsed from cmdline", flagArg)
 }
 
 func TestParseFlags_IntRangeErr(t *testing.T) {
@@ -220,6 +220,53 @@ func TestParseFlags_ByteQuantityRange(t *testing.T) {
 	flagType := reflect.TypeOf(flags[flagName])
 	bqRangeFilterType := reflect.TypeOf(&selector.ByteQuantityRangeFilter{})
 	h.Assert(t, flagType == bqRangeFilterType, "%s should be of type %v, instead got %v", flagArg, bqRangeFilterType, flagType)
+}
+
+func TestParseFlags_Float64Range(t *testing.T) {
+	flagName := "test-flag"
+	flagMinArg := fmt.Sprintf("%s-%s", flagName, "min")
+	flagMaxArg := fmt.Sprintf("%s-%s", flagName, "max")
+	flagArg := fmt.Sprintf("--%s", flagName)
+
+	// Root set Min and Max to the same val
+	cli := getTestCLI()
+	cli.Float64MinMaxRangeFlags(flagName, nil, nil, "Test")
+	os.Args = []string{"ec2-instance-selector", flagArg, "5.1"}
+	flags, err := cli.ParseFlags()
+	h.Ok(t, err)
+	flagMinOutput := flags[flagMinArg].(*float64)
+	flagMaxOutput := flags[flagMaxArg].(*float64)
+	h.Assert(t, *flagMinOutput == 5.1 && *flagMaxOutput == 5.1, "Flag %s min and max should have been parsed to the same number", flagArg)
+
+	// Min is set to a val and max is set to maxInt
+	cli = getTestCLI()
+	cli.Float64MinMaxRangeFlags(flagName, nil, nil, "Test")
+	os.Args = []string{"ec2-instance-selector", "--" + flagMinArg, "5.1"}
+	flags, err = cli.ParseFlags()
+	h.Ok(t, err)
+	flagMinOutput = flags[flagMinArg].(*float64)
+	flagMaxOutput = flags[flagMaxArg].(*float64)
+	h.Assert(t, *flagMinOutput == 5.1 && *flagMaxOutput == math.MaxFloat64, "Flag %s min should have been parsed from cmdline and max set to math.MaxFloat64", flagArg)
+
+	// Max is set to a val and min is set to 0
+	cli = getTestCLI()
+	cli.Float64MinMaxRangeFlags(flagName, nil, nil, "Test")
+	os.Args = []string{"ec2-instance-selector", "--" + flagMaxArg, "5.1"}
+	flags, err = cli.ParseFlags()
+	h.Ok(t, err)
+	flagMinOutput = flags[flagMinArg].(*float64)
+	flagMaxOutput = flags[flagMaxArg].(*float64)
+	h.Assert(t, *flagMinOutput == 0.0 && *flagMaxOutput == 5.1, "Flag %s max should have been parsed from cmdline and min set to 0.0", flagArg)
+
+	// Min and Max are set to separate values
+	cli = getTestCLI()
+	cli.Float64MinMaxRangeFlags(flagName, nil, nil, "Test")
+	os.Args = []string{"ec2-instance-selector", "--" + flagMinArg, "10.1", "--" + flagMaxArg, "500.1"}
+	flags, err = cli.ParseFlags()
+	h.Ok(t, err)
+	flagMinOutput = flags[flagMinArg].(*float64)
+	flagMaxOutput = flags[flagMaxArg].(*float64)
+	h.Assert(t, *flagMinOutput == 10.1 && *flagMaxOutput == 500.1, "Flag %s min and max should have been parsed from cmdline", flagArg)
 }
 
 func TestParseAndValidateFlags_ByteQuantityRange(t *testing.T) {

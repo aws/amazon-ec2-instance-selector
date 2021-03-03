@@ -91,6 +91,17 @@ func isSupportedWithRangeUint64(instanceTypeValue *int64, target *Uint64RangeFil
 	return uint64(*instanceTypeValue) >= target.LowerBound && uint64(*instanceTypeValue) <= target.UpperBound
 }
 
+func isSupportedWithRangeFloat64(instanceTypeValue *float64, target *Float64RangeFilter) bool {
+	if target == nil {
+		return true
+	} else if instanceTypeValue == nil && target.LowerBound == 0.0 && target.UpperBound == 0.0 {
+		return true
+	} else if instanceTypeValue == nil {
+		return false
+	}
+	return float64(*instanceTypeValue) >= target.LowerBound && float64(*instanceTypeValue) <= target.UpperBound
+}
+
 func isSupportedWithBool(instanceTypeValue *bool, target *bool) bool {
 	if target == nil {
 		return true

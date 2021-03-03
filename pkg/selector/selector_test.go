@@ -591,3 +591,106 @@ func TestFilter_VirtType_PV(t *testing.T) {
 	h.Ok(t, err)
 	h.Assert(t, len(results) > 0, "Should return at least 1 instance type when filtering with VirtualizationType: paravirtual")
 }
+
+type ec2PricingMock struct {
+	GetOndemandInstanceTypeCostResp    float64
+	GetOndemandInstanceTypeCostErr     error
+	GetSpotInstanceTypeNDayAvgCostResp float64
+	GetSpotInstanceTypeNDayAvgCostErr  error
+	HydrateOndemandCacheErr            error
+	HydrateSpotCacheErr                error
+}
+
+func (p *ec2PricingMock) GetOndemandInstanceTypeCost(instanceType string) (float64, error) {
+	return p.GetOndemandInstanceTypeCostResp, p.GetOndemandInstanceTypeCostErr
+}
+
+func (p *ec2PricingMock) GetSpotInstanceTypeNDayAvgCost(instanceType string, availabilityZones []string, days int) (float64, error) {
+	return p.GetSpotInstanceTypeNDayAvgCostResp, p.GetSpotInstanceTypeNDayAvgCostErr
+}
+
+func (p *ec2PricingMock) HydrateOndemandCache() error {
+	return p.HydrateOndemandCacheErr
+}
+
+func (p *ec2PricingMock) HydrateSpotCache(days int) error {
+	return p.HydrateSpotCacheErr
+}
+
+func TestFilter_PricePerHour(t *testing.T) {
+	ec2Mock := setupMock(t, describeInstanceTypesPages, "t3_micro.json")
+	itf := selector.Selector{
+		EC2: ec2Mock,
+		EC2Pricing: &ec2PricingMock{
+			GetOndemandInstanceTypeCostResp: 0.0104,
+		},
+	}
+	filters := selector.Filters{
+		PricePerHour: &selector.Float64RangeFilter{
+			LowerBound: 0.0104,
+			UpperBound: 0.0104,
+		},
+	}
+	results, err := itf.Filter(filters)
+	h.Ok(t, err)
+	h.Assert(t, len(results) == 1, "Should return 1 instance type")
+}
+
+func TestFilter_PricePerHour_NoResults(t *testing.T) {
+	ec2Mock := setupMock(t, describeInstanceTypesPages, "t3_micro.json")
+	itf := selector.Selector{
+		EC2: ec2Mock,
+		EC2Pricing: &ec2PricingMock{
+			GetOndemandInstanceTypeCostResp: 0.0104,
+		},
+	}
+	filters := selector.Filters{
+		PricePerHour: &selector.Float64RangeFilter{
+			LowerBound: 0.0105,
+			UpperBound: 0.0105,
+		},
+	}
+	results, err := itf.Filter(filters)
+	h.Ok(t, err)
+	h.Assert(t, len(results) == 0, "Should return 0 instance types")
+}
+
+func TestFilter_PricePerHour_OD(t *testing.T) {
+	ec2Mock := setupMock(t, describeInstanceTypesPages, "t3_micro.json")
+	itf := selector.Selector{
+		EC2: ec2Mock,
+		EC2Pricing: &ec2PricingMock{
+			GetOndemandInstanceTypeCostResp: 0.0104,
+		},
+	}
+	filters := selector.Filters{
+		PricePerHour: &selector.Float64RangeFilter{
+			LowerBound: 0.0104,
+			UpperBound: 0.0104,
+		},
+		UsageClass: aws.String("on-demand"),
+	}
+	results, err := itf.Filter(filters)
+	h.Ok(t, err)
+	h.Assert(t, len(results) == 1, "Should return 1 instance type")
+}
+
+func TestFilter_PricePerHour_Spot(t *testing.T) {
+	ec2Mock := setupMock(t, describeInstanceTypesPages, "t3_micro.json")
+	itf := selector.Selector{
+		EC2: ec2Mock,
+		EC2Pricing: &ec2PricingMock{
+			GetSpotInstanceTypeNDayAvgCostResp: 0.0104,
+		},
+	}
+	filters := selector.Filters{
+		PricePerHour: &selector.Float64RangeFilter{
+			LowerBound: 0.0104,
+			UpperBound: 0.0104,
+		},
+		UsageClass: aws.String("spot"),
+	}
+	results, err := itf.Filter(filters)
+	h.Ok(t, err)
+	h.Assert(t, len(results) == 1, "Should return 1 instance type")
+}
