@@ -100,7 +100,7 @@ func (p *EC2Pricing) GetSpotInstanceTypeNDayAvgCost(instanceType string, availab
 		}
 	}
 
-	aggregateZoneSum := float64(0)
+	aggregateZonePriceSum := float64(0)
 	numOfZones := 0
 	for zone, priceEntries := range zoneToPriceEntries {
 		if len(availabilityZones) != 0 {
@@ -109,10 +109,10 @@ func (p *EC2Pricing) GetSpotInstanceTypeNDayAvgCost(instanceType string, availab
 			}
 		}
 		numOfZones++
-		aggregateZoneSum += p.calculateSpotAggregate(priceEntries)
+		aggregateZonePriceSum += p.calculateSpotAggregate(priceEntries)
 	}
 
-	return (aggregateZoneSum / float64(numOfZones)), nil
+	return (aggregateZonePriceSum / float64(numOfZones)), nil
 }
 
 func (p *EC2Pricing) calculateSpotAggregate(spotPriceEntries []spotPricingEntry) float64 {
