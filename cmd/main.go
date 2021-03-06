@@ -18,6 +18,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"sync"
 
 	commandline "github.com/aws/amazon-ec2-instance-selector/v2/pkg/cli"
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/selector"
@@ -185,11 +186,29 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	flags[region] = sess.Config.Region
 
 	instanceSelector := selector.New(sess)
-	if _, ok := flags[pricePerHour]; ok {
-		if flags[usageClass] == nil || *flags[usageClass].(*string) == "on-demand" {
-			instanceSelector.EC2Pricing.HydrateOndemandCache()
+	outputFlag := cli.StringMe(flags[output])
+	if outputFlag != nil && *outputFlag == tableWideOutput {
+		// If output type is `table-wide`, simply print both prices for better comparison,
+		//   even if the actual filter is applied on any one of those based on usage class
+
+		// Save time by hydrating in parallel
+		wg := &sync.WaitGroup{}
+		wg.Add(2)
+		go func(waitGroup *sync.WaitGroup) {
+			defer waitGroup.Done()
+			_ = instanceSelector.EC2Pricing.HydrateOndemandCache()
+		}(wg)
+		go func(waitGroup *sync.WaitGroup) {
+			defer waitGroup.Done()
+			_ = instanceSelector.EC2Pricing.HydrateSpotCache(30)
+		}(wg)
+		wg.Wait()
+	} else if flags[pricePerHour] != nil {
+		// Else, if price filters are applied, only hydrate the respective cache as we don't have to print the prices
+		if flags[usageClass] == nil || *cli.StringMe(flags[usageClass]) == "on-demand" {
+			_ = instanceSelector.EC2Pricing.HydrateOndemandCache()
 		} else {
-			instanceSelector.EC2Pricing.HydrateSpotCache(30)
+			_ = instanceSelector.EC2Pricing.HydrateSpotCache(30)
 		}
 	}
 
@@ -249,7 +268,6 @@ Full docs can be found at github.com/aws/amazon-` + binName
 		}
 	}
 
-	outputFlag := cli.StringMe(flags[output])
 	outputFn := getOutputFn(outputFlag, selector.InstanceTypesOutputFn(resultsOutputFn))
 
 	instanceTypes, itemsTruncated, err := instanceSelector.FilterWithOutput(filters, outputFn)

@@ -156,7 +156,7 @@ func (itf Selector) rawFilter(filters Filters) ([]instancetypes.Details, error) 
 	if err != nil {
 		return nil, err
 	}
-	var locations []string
+	var locations, aZones []string
 
 	if filters.CPUArchitecture != nil && *filters.CPUArchitecture == cpuArchitectureAMD64 {
 		*filters.CPUArchitecture = cpuArchitectureX8664
@@ -164,8 +164,8 @@ func (itf Selector) rawFilter(filters Filters) ([]instancetypes.Details, error) 
 	if filters.VirtualizationType != nil && *filters.VirtualizationType == virtualizationTypePV {
 		*filters.VirtualizationType = virtualizationTypeParaVirtual
 	}
-
 	if filters.AvailabilityZones != nil {
+		aZones = *filters.AvailabilityZones
 		locations = *filters.AvailabilityZones
 	} else if filters.Region != nil {
 		locations = []string{*filters.Region}
@@ -185,24 +185,34 @@ func (itf Selector) rawFilter(filters Filters) ([]instancetypes.Details, error) 
 			instanceTypeName := *instanceTypeInfo.InstanceType
 			instanceTypeCandidates[instanceTypeName] = &instancetypes.Details{InstanceTypeInfo: *instanceTypeInfo}
 			isFpga := instanceTypeInfo.FpgaInfo != nil
-			instanceTypeHourlyPrice := float64(0.0)
-			if filters.PricePerHour != nil {
-				if filters.UsageClass != nil && *filters.UsageClass == "spot" {
-					azs := []string{}
-					if filters.AvailabilityZones != nil {
-						azs = *filters.AvailabilityZones
-					}
-					instanceTypeHourlyPrice, err = itf.EC2Pricing.GetSpotInstanceTypeNDayAvgCost(instanceTypeName, azs, 30)
-					if err != nil {
-						fmt.Printf("Could not retrieve 30 day avg spot price for instance type %s\n", instanceTypeName)
-					}
-					instanceTypeCandidates[instanceTypeName].SpotPrice = &instanceTypeHourlyPrice
+			var instanceTypeHourlyPriceForFilter float64 // Price used to filter based on usage class
+			var instanceTypeHourlyPriceOnDemand, instanceTypeHourlyPriceSpot *float64
+			// If prices are fetched, populate the fields irrespective of the price filters
+			if itf.EC2Pricing.LastOnDemandCachedUTC() != nil {
+				price, err := itf.EC2Pricing.GetOndemandInstanceTypeCost(instanceTypeName)
+				if err != nil {
+					fmt.Printf("Could not retrieve instantaneous hourly on-demand price for instance type %s\n", instanceTypeName)
 				} else {
-					instanceTypeHourlyPrice, err = itf.EC2Pricing.GetOndemandInstanceTypeCost(instanceTypeName)
-					if err != nil {
-						fmt.Printf("Could not retrieve hourly price for instance type %s\n", instanceTypeName)
-					}
-					instanceTypeCandidates[instanceTypeName].OndemandPricePerHour = &instanceTypeHourlyPrice
+					instanceTypeHourlyPriceOnDemand = &price
+					instanceTypeCandidates[instanceTypeName].OndemandPricePerHour = instanceTypeHourlyPriceOnDemand
+				}
+			}
+			if itf.EC2Pricing.LastSpotCachedUTC() != nil {
+				price, err := itf.EC2Pricing.GetSpotInstanceTypeNDayAvgCost(instanceTypeName, aZones, 30)
+				if err != nil {
+					fmt.Printf("Could not retrieve 30 day avg hourly spot price for instance type %s\n", instanceTypeName)
+				} else {
+					instanceTypeHourlyPriceSpot = &price
+					instanceTypeCandidates[instanceTypeName].SpotPrice = instanceTypeHourlyPriceSpot
+				}
+			}
+			if filters.PricePerHour != nil {
+				// If price filter is present, prices should be already fetched
+				// If prices are not fetched, filter should fail and the corresponding error is already printed
+				if filters.UsageClass != nil && *filters.UsageClass == "spot" && instanceTypeHourlyPriceSpot != nil {
+					instanceTypeHourlyPriceForFilter = *instanceTypeHourlyPriceSpot
+				} else if instanceTypeHourlyPriceOnDemand != nil {
+					instanceTypeHourlyPriceForFilter = *instanceTypeHourlyPriceOnDemand
 				}
 			}
 
@@ -229,7 +239,7 @@ func (itf Selector) rawFilter(filters Filters) ([]instancetypes.Details, error) 
 				networkPerformance:     {filters.NetworkPerformance, getNetworkPerformance(instanceTypeInfo.NetworkInfo.NetworkPerformance)},
 				instanceTypes:          {filters.InstanceTypes, instanceTypeInfo.InstanceType},
 				virtualizationType:     {filters.VirtualizationType, instanceTypeInfo.SupportedVirtualizationTypes},
-				pricePerHour:           {filters.PricePerHour, &instanceTypeHourlyPrice},
+				pricePerHour:           {filters.PricePerHour, &instanceTypeHourlyPriceForFilter},
 			}
 
 			if isInDenyList(filters.DenyList, instanceTypeName) || !isInAllowList(filters.AllowList, instanceTypeName) {

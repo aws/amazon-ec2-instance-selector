@@ -12,5 +12,6 @@ require (
 	github.com/smartystreets/goconvey v1.6.4 // indirect
 	github.com/spf13/cobra v0.0.7
 	github.com/spf13/pflag v1.0.3
+	go.uber.org/multierr v1.1.0
 	gopkg.in/ini.v1 v1.57.0
 )
