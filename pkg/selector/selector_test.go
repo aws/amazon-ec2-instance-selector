@@ -21,6 +21,7 @@ import (
 	"regexp"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/bytequantity"
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/selector"
@@ -599,6 +600,8 @@ type ec2PricingMock struct {
 	GetSpotInstanceTypeNDayAvgCostErr  error
 	HydrateOndemandCacheErr            error
 	HydrateSpotCacheErr                error
+	lastOnDemandCachedUTC              *time.Time
+	lastSpotCachedUTC                  *time.Time
 }
 
 func (p *ec2PricingMock) GetOndemandInstanceTypeCost(instanceType string) (float64, error) {
@@ -615,6 +618,14 @@ func (p *ec2PricingMock) HydrateOndemandCache() error {
 
 func (p *ec2PricingMock) HydrateSpotCache(days int) error {
 	return p.HydrateSpotCacheErr
+}
+
+func (p *ec2PricingMock) LastOnDemandCachedUTC() *time.Time {
+	return p.lastOnDemandCachedUTC
+}
+
+func (p *ec2PricingMock) LastSpotCachedUTC() *time.Time {
+	return p.lastSpotCachedUTC
 }
 
 func TestFilter_PricePerHour(t *testing.T) {
