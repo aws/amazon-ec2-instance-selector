@@ -1,12 +1,12 @@
 # Build the manager binary
-FROM golang:1.16 as builder
+FROM public.ecr.aws/bitnami/golang:1.16 as builder
 
 ## GOLANG env
-ARG GOPROXY="https://proxy.golang.org|direct"
-ARG GO111MODULE="on"
-ARG CGO_ENABLED=0
-ARG GOOS=linux 
-ARG GOARCH=amd64 
+ENV GOPROXY="https://proxy.golang.org|direct"
+ENV GO111MODULE="on"
+ENV CGO_ENABLED=0
+ENV GOOS=linux 
+ENV GOARCH=amd64 
 
 # Copy go.mod and download dependencies
 WORKDIR /amazon-ec2-instance-selector

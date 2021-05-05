@@ -13,4 +13,4 @@ SUPPORTED_PLATFORMS="$OS/$ARCH" make -f $SCRIPTPATH/../../Makefile build-binarie
 
 SUPPORTED_PLATFORMS="$OS/$ARCH" make -s -f $SCRIPTPATH/../../Makefile build-binaries
 docker build --build-arg=GOPROXY=direct -t $LICENSE_TEST_TAG $SCRIPTPATH/
-docker run -it -e GITHUB_TOKEN --rm -v $SCRIPTPATH/:/test -v $BUILD_BIN/:/aeis-bin $LICENSE_TEST_TAG golicense /test/license-config.hcl /aeis-bin/$BINARY_NAME
+docker run -i -e GITHUB_TOKEN --rm -v $SCRIPTPATH/:/test -v $BUILD_BIN/:/aeis-bin $LICENSE_TEST_TAG golicense /test/license-config.hcl /aeis-bin/$BINARY_NAME
