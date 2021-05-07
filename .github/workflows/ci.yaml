@@ -37,7 +37,6 @@ jobs:
       run: make homebrew-sync-dry-run
 
     - name: License Test
-      if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
       run: make license-test
 
     - name: Build Binaries
