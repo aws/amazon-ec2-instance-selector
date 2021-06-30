@@ -4,10 +4,6 @@ on: [push, pull_request, workflow_dispatch]
 
 env:
   DEFAULT_GO_VERSION: ^1.16
-  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-  AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
-  AWS_REGION: ${{ secrets.AWS_REGION }}
   GITHUB_USERNAME: ${{ secrets.EC2_BOT_GITHUB_USERNAME }}
   GITHUB_TOKEN: ${{ secrets.EC2_BOT_GITHUB_TOKEN }}
   DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -43,20 +39,20 @@ jobs:
     - name: License Test
       run: make license-test
 
-    - name: E2E Tests
-      run: make e2e-test
-
-    - name: ReadMe Tests
-      run: make readme-codeblock-test
-
-    - name: Output Validation Tests
-      run: make output-validation-test
-
     - name: Build Binaries
       run: make build-binaries
 
     - name: Build Docker Images
       run: make build-docker-images
+
+    - name: Integration Tests
+      if: github.event_name == 'push'
+      run: make integ-test
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+        AWS_REGION: ${{ secrets.AWS_REGION }}
 
   release:
     name: Release
