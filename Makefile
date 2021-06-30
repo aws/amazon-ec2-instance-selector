@@ -93,6 +93,7 @@ sync-readme-to-dockerhub:
 unit-test:
 	go test -bench=. ${MAKEFILE_PATH}/...  -v -coverprofile=coverage.out -covermode=atomic -outputdir=${BUILD_DIR_PATH}
 
+## requires aws credentials
 e2e-test: build
 	${MAKEFILE_PATH}/test/e2e/run-test
 
