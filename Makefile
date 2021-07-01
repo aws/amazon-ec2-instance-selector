@@ -93,8 +93,12 @@ sync-readme-to-dockerhub:
 unit-test:
 	go test -bench=. ${MAKEFILE_PATH}/...  -v -coverprofile=coverage.out -covermode=atomic -outputdir=${BUILD_DIR_PATH}
 
+## requires aws credentials
 e2e-test: build
 	${MAKEFILE_PATH}/test/e2e/run-test
+
+## requires aws credentials
+integ-test: e2e-test output-validation-test readme-codeblock-test
 
 homebrew-sync-dry-run:
 	${MAKEFILE_PATH}/scripts/sync-to-aws-homebrew-tap -d -b ${BIN} -r ${REPO_FULL_NAME} -p ${SUPPORTED_PLATFORMS} -v ${LATEST_RELEASE_TAG}

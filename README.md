@@ -3,7 +3,7 @@
 <h4>A CLI tool and go library which recommends instance types based on resource criteria like vcpus and memory.</h4>
 
 <p>
-  <a href="https://golang.org/doc/go1.15">
+  <a href="https://golang.org/doc/go1.16">
     <img src="https://img.shields.io/github/go-mod/go-version/aws/amazon-ec2-instance-selector?color=blueviolet" alt="go-version">
   </a>
   <a href="https://opensource.org/licenses/Apache-2.0">
