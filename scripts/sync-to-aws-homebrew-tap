@@ -163,7 +163,7 @@ for os_arch in "${PLATFORMS[@]}"; do
 
     if [[ "${os}" == "darwin" && "${arch}" == "amd64" ]]; then
       MAC_HASH=$(hash_file "${asset_file_path}")
-    if [[ "${os}" == "darwin" && "${arch}" == "arm64" ]]; then
+    elif [[ "${os}" == "darwin" && "${arch}" == "arm64" ]]; then
       MAC_ARM64_HASH=$(hash_file "${asset_file_path}")
     elif [[ "${os}" == "linux" && "${arch}" == "amd64" ]]; then
       LINUX_HASH=$(hash_file "${asset_file_path}")
