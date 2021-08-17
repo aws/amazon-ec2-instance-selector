@@ -10,10 +10,10 @@ PLATFORM=$OS-$ARCH
 SUPPORTED_PLATFORMS="$OS/$ARCH" make -f $SCRIPTPATH/../../Makefile build-binaries
 
 ## CFN Validation
-CFN_LINT_VERSION="v0.30.1"
-curl -Lo $BUILD_DIR/cfn-lint https://github.com/aws-cloudformation/cfn-python-lint/archive/$CFN_LINT_VERSION.tar.gz
+CFN_LINT_VERSION="v0.53.0"
+curl -Lo $BUILD_DIR/cfn-lint https://github.com/aws-cloudformation/cfn-lint/archive/$CFN_LINT_VERSION.tar.gz
 tar -xf $BUILD_DIR/cfn-lint -C $BUILD_DIR
-docker build -t cfn-lint $BUILD_DIR/cfn-python-lint-$(echo $CFN_LINT_VERSION | sed 's/v//g')/
+docker build -t cfn-lint $BUILD_DIR/cfn-lint-$(echo $CFN_LINT_VERSION | sed 's/v//g')/
 
 function fail(){
     echo "❌ Failed Test"
