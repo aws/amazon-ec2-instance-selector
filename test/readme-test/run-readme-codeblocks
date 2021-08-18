@@ -13,7 +13,7 @@ trap exit_and_fail INT ERR
 docker build --target=builder --build-arg="GOPROXY=direct" -t codeblocks -f $SCRIPTPATH/../../Dockerfile $SCRIPTPATH/../../
 docker build -t rundoc -f $SCRIPTPATH/rundoc-Dockerfile $SCRIPTPATH/
 function rd() {
-   docker run -it --rm -v $SCRIPTPATH/../../:/aeis rundoc rundoc "$@"
+   docker run -i --rm -v $SCRIPTPATH/../../:/aeis rundoc rundoc "$@"
 }
 
 rundoc_output=$(rd list-blocks /aeis/README.md)
@@ -35,7 +35,7 @@ for i in "${!example_files[@]}"; do
       example_file="${example_files[$i]}"
       example_bin=$(echo $example_file | cut -d'.' -f1)
       mkdir -p $BUILD_DIR/examples
-      docker run -it -e GOOS=$OS -e GOARCH=amd64 -v $BUILD_DIR:/amazon-ec2-instance-selector/build --rm codeblocks go build -o build/examples/$example_bin $example_file
+      docker run -i -e GOOS=$OS -e GOARCH=amd64 -v $BUILD_DIR:/amazon-ec2-instance-selector/build --rm codeblocks go build -o build/examples/$example_bin $example_file
       $BUILD_DIR/examples/$example_bin
       echo "✅ $example_file Executed Successfully!"
    fi
