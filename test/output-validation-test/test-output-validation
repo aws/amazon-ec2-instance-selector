@@ -29,8 +29,8 @@ docker run --rm -v $BUILD_DIR:/data cfn-lint /data/cfn.yaml
 echo "✅ Passed CFN YAML and JSON Validation"
 
 ## Terraform Validation
-$BUILD_DIR/bin/ec2-instance-selector-$PLATFORM -o terraform-hcl > $BUILD_DIR/terraform.hcl
-docker run -it --rm -v $BUILD_DIR:/data hashicorp/terraform:light init -backend=false /data/
-docker run -it --rm -v $BUILD_DIR:/data hashicorp/terraform:light validate -json /data/
+$BUILD_DIR/bin/ec2-instance-selector-$PLATFORM -o terraform-hcl > $BUILD_DIR/terraform.tf
+docker run -it --rm -v $BUILD_DIR:/data -w /data hashicorp/terraform:light init -backend=false 
+docker run -it --rm -v $BUILD_DIR:/data -w /data hashicorp/terraform:light validate -json
 
 echo "✅ Passed Terraform HCL Validation"
