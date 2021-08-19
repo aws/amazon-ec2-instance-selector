@@ -1,5 +1,5 @@
 # Build the manager binary
-FROM public.ecr.aws/bitnami/golang:1.16 as builder
+FROM public.ecr.aws/bitnami/golang:1.17 as builder
 
 ## GOLANG env
 ARG GOPROXY="https://proxy.golang.org|direct"
