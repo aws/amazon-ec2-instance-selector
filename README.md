@@ -165,6 +165,7 @@ Filter Flags:
   -a, --cpu-architecture string           CPU architecture [x86_64/amd64, i386, or arm64]
       --current-generation                Current generation instance types (explicitly set this to false to not return current generation instance types)
       --deny-list string                  List of instance types which should be excluded w/ regex syntax (Example: m[1-2]\.*)
+      --efa-support                       Instance types that support Elastic Fabric Adapters (EFA)
   -e, --ena-support                       Instance types where ENA is supported or required
   -f, --fpga-support                      FPGA instance types
       --gpu-memory-total string           Number of GPUs' total memory (Example: 4 GiB) (sets --gpu-memory-total-min and -max to the same value)

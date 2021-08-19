@@ -57,6 +57,7 @@ const (
 	usageClass             = "usage-class"
 	rootDeviceType         = "root-device-type"
 	enaSupport             = "ena-support"
+	efaSupport             = "efa-support"
 	hibernationSupport     = "hibernation-support"
 	baremetal              = "baremetal"
 	fpgaSupport            = "fpga-support"
@@ -131,6 +132,7 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	cli.StringOptionsFlag(usageClass, cli.StringMe("u"), nil, "Usage class: [spot or on-demand]", []string{"spot", "on-demand"})
 	cli.StringOptionsFlag(rootDeviceType, nil, nil, "Supported root device types: [ebs or instance-store]", []string{"ebs", "instance-store"})
 	cli.BoolFlag(enaSupport, cli.StringMe("e"), nil, "Instance types where ENA is supported or required")
+	cli.BoolFlag(efaSupport, nil, nil, "Instance types that support Elastic Fabric Adapters (EFA)")
 	cli.BoolFlag(hibernationSupport, nil, nil, "Hibernation supported")
 	cli.BoolFlag(baremetal, nil, nil, "Bare Metal instance types (.metal instances)")
 	cli.BoolFlag(fpgaSupport, cli.StringMe("f"), nil, "FPGA instance types")
@@ -204,6 +206,7 @@ Full docs can be found at github.com/aws/amazon-` + binName
 		UsageClass:             cli.StringMe(flags[usageClass]),
 		RootDeviceType:         cli.StringMe(flags[rootDeviceType]),
 		EnaSupport:             cli.BoolMe(flags[enaSupport]),
+		EfaSupport:             cli.BoolMe(flags[efaSupport]),
 		HibernationSupported:   cli.BoolMe(flags[hibernationSupport]),
 		Hypervisor:             cli.StringMe(flags[hypervisor]),
 		BareMetal:              cli.BoolMe(flags[baremetal]),
