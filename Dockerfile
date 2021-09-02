@@ -1,18 +1,18 @@
-# Build the manager binary
 FROM public.ecr.aws/bitnami/golang:1.17 as builder
 
 ## GOLANG env
 ARG GOPROXY="https://proxy.golang.org|direct"
 ARG GO111MODULE="on"
-ARG CGO_ENABLED=0
-ARG GOOS=linux 
-ARG GOARCH=amd64 
 
 # Copy go.mod and download dependencies
 WORKDIR /amazon-ec2-instance-selector
 COPY go.mod .
 COPY go.sum .
 RUN go mod download
+
+ARG CGO_ENABLED=0
+ARG GOOS=linux 
+ARG GOARCH=amd64 
 
 # Build
 COPY . .
