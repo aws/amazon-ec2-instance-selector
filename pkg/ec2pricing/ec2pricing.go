@@ -27,13 +27,13 @@ const (
 
 // EC2Pricing is the public struct to interface with AWS pricing APIs
 type EC2Pricing struct {
-	PricingClient         pricingiface.PricingAPI
-	EC2Client             ec2iface.EC2API
-	AWSSession            *session.Session
-	onDemandCache         map[string]float64
-	spotCache             map[string]map[string][]spotPricingEntry
-	lastOnDemandCachedUTC *time.Time // Updated on successful cache write
-	lastSpotCachedUTC     *time.Time // Updated on successful cache write
+	PricingClient        pricingiface.PricingAPI
+	EC2Client            ec2iface.EC2API
+	AWSSession           *session.Session
+	onDemandCache        map[string]float64
+	spotCache            map[string]map[string][]spotPricingEntry
+	lastOnDemandCacheUTC *time.Time // Updated on successful cache write
+	lastSpotCacheUTC     *time.Time // Updated on successful cache write
 }
 
 // EC2PricingIface is the EC2Pricing interface mainly used to mock out ec2pricing during testing
@@ -44,8 +44,8 @@ type EC2PricingIface interface {
 	// In simple words, make sure they don't write the same variable/file/row etc. which they don't (they have different cache maps)
 	HydrateOndemandCache() error
 	HydrateSpotCache(days int) error
-	LastOnDemandCachedUTC() *time.Time
-	LastSpotCachedUTC() *time.Time
+	LastOnDemandCacheUTC() *time.Time
+	LastSpotCacheUTC() *time.Time
 }
 
 type spotPricingEntry struct {
@@ -56,24 +56,24 @@ type spotPricingEntry struct {
 // New creates an instance of instance-selector EC2Pricing
 func New(sess *session.Session) *EC2Pricing {
 	return &EC2Pricing{
-		PricingClient:         pricing.New(sess),
-		EC2Client:             ec2.New(sess),
-		AWSSession:            sess,
-		lastOnDemandCachedUTC: nil,
-		lastSpotCachedUTC:     nil,
+		PricingClient:        pricing.New(sess),
+		EC2Client:            ec2.New(sess),
+		AWSSession:           sess,
+		lastOnDemandCacheUTC: nil,
+		lastSpotCacheUTC:     nil,
 	}
 }
 
-// LastOnDemandCachedUTC returns the UTC timestamp when the onDemandCache was last refreshed
+// LastOnDemandCacheUTC returns the UTC timestamp when the onDemandCache was last refreshed
 // Returns nil if the onDemandCache has not been initialized
-func (p *EC2Pricing) LastOnDemandCachedUTC() *time.Time {
-	return p.lastOnDemandCachedUTC
+func (p *EC2Pricing) LastOnDemandCacheUTC() *time.Time {
+	return p.lastOnDemandCacheUTC
 }
 
-// LastSpotCachedUTC returns the UTC timestamp when the spotCache was last refreshed
+// LastSpotCacheUTC returns the UTC timestamp when the spotCache was last refreshed
 // Returns nil if the spotCache has not been initialized
-func (p *EC2Pricing) LastSpotCachedUTC() *time.Time {
-	return p.lastSpotCachedUTC
+func (p *EC2Pricing) LastSpotCacheUTC() *time.Time {
+	return p.lastSpotCacheUTC
 }
 
 // GetSpotInstanceTypeNDayAvgCost retrieves the spot price history for a given AZ from the past N days and averages the price
@@ -247,7 +247,7 @@ func (p *EC2Pricing) HydrateSpotCache(days int) error {
 	}
 	cTime := time.Now().UTC()
 	p.spotCache = newCache
-	p.lastSpotCachedUTC = &cTime
+	p.lastSpotCacheUTC = &cTime
 	return processingErr
 }
 
@@ -288,7 +288,7 @@ func (p *EC2Pricing) HydrateOndemandCache() error {
 	}
 	cTime := time.Now().UTC()
 	p.onDemandCache = newOnDemandCache
-	p.lastOnDemandCachedUTC = &cTime
+	p.lastOnDemandCacheUTC = &cTime
 	return processingErr
 }
 
