@@ -189,7 +189,7 @@ func (itf Selector) rawFilter(filters Filters) ([]instancetypes.Details, error) 
 			var instanceTypeHourlyPriceForFilter float64 // Price used to filter based on usage class
 			var instanceTypeHourlyPriceOnDemand, instanceTypeHourlyPriceSpot *float64
 			// If prices are fetched, populate the fields irrespective of the price filters
-			if itf.EC2Pricing.LastOnDemandCachedUTC() != nil {
+			if itf.EC2Pricing.LastOnDemandCacheUTC() != nil {
 				price, err := itf.EC2Pricing.GetOndemandInstanceTypeCost(instanceTypeName)
 				if err != nil {
 					fmt.Printf("Could not retrieve instantaneous hourly on-demand price for instance type %s\n", instanceTypeName)
@@ -198,7 +198,7 @@ func (itf Selector) rawFilter(filters Filters) ([]instancetypes.Details, error) 
 					instanceTypeCandidates[instanceTypeName].OndemandPricePerHour = instanceTypeHourlyPriceOnDemand
 				}
 			}
-			if itf.EC2Pricing.LastSpotCachedUTC() != nil {
+			if itf.EC2Pricing.LastSpotCacheUTC() != nil {
 				price, err := itf.EC2Pricing.GetSpotInstanceTypeNDayAvgCost(instanceTypeName, availabilityZones, 30)
 				if err != nil {
 					fmt.Printf("Could not retrieve 30 day avg hourly spot price for instance type %s\n", instanceTypeName)
