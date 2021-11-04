@@ -190,11 +190,11 @@ func (p *EC2Pricing) GetOndemandInstanceTypeCost(instanceType string) (float64, 
 		var errParse error
 		for _, priceDoc := range pricingOutput.PriceList {
 			_, pricePerUnitInUSD, errParse = parseOndemandUnitPrice(priceDoc)
-		}
-		if errParse != nil {
-			processingErr = multierr.Append(processingErr, errParse)
-			// keep going through pages if we can't parse the pricing doc
-			return true
+			if errParse != nil {
+				processingErr = multierr.Append(processingErr, errParse)
+				// keep going through pages if we can't parse the pricing doc
+				return true
+			}
 		}
 		return false
 	})
