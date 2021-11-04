@@ -2,15 +2,14 @@ package ec2pricing
 
 import (
 	"fmt"
-	"github.com/aws/aws-sdk-go/aws/endpoints"
-	"github.com/aws/aws-sdk-go/service/lightsail"
-	"github.com/aws/aws-sdk-go/service/lightsail/lightsailiface"
-	"go.uber.org/multierr"
 	"math"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/aws/aws-sdk-go/aws/endpoints"
+	"go.uber.org/multierr"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -30,7 +29,6 @@ const (
 type EC2Pricing struct {
 	PricingClient         pricingiface.PricingAPI
 	EC2Client             ec2iface.EC2API
-	LightsailClient       lightsailiface.LightsailAPI
 	AWSSession            *session.Session
 	onDemandCache         map[string]float64
 	spotCache             map[string]map[string][]spotPricingEntry
@@ -60,7 +58,6 @@ func New(sess *session.Session) *EC2Pricing {
 	return &EC2Pricing{
 		PricingClient:         pricing.New(sess),
 		EC2Client:             ec2.New(sess),
-		LightsailClient:       lightsail.New(sess),
 		AWSSession:            sess,
 		lastOnDemandCachedUTC: nil,
 		lastSpotCachedUTC:     nil,
