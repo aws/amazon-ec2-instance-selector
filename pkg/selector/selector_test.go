@@ -600,8 +600,8 @@ type ec2PricingMock struct {
 	GetSpotInstanceTypeNDayAvgCostErr  error
 	HydrateOndemandCacheErr            error
 	HydrateSpotCacheErr                error
-	lastOnDemandCachedUTC              *time.Time
-	lastSpotCachedUTC                  *time.Time
+	lastOnDemandCacheUTC               *time.Time
+	lastSpotCacheUTC                   *time.Time
 }
 
 func (p *ec2PricingMock) GetOndemandInstanceTypeCost(instanceType string) (float64, error) {
@@ -620,12 +620,12 @@ func (p *ec2PricingMock) HydrateSpotCache(days int) error {
 	return p.HydrateSpotCacheErr
 }
 
-func (p *ec2PricingMock) LastOnDemandCachedUTC() *time.Time {
-	return p.lastOnDemandCachedUTC
+func (p *ec2PricingMock) LastOnDemandCacheUTC() *time.Time {
+	return p.lastOnDemandCacheUTC
 }
 
-func (p *ec2PricingMock) LastSpotCachedUTC() *time.Time {
-	return p.lastSpotCachedUTC
+func (p *ec2PricingMock) LastSpotCacheUTC() *time.Time {
+	return p.lastSpotCacheUTC
 }
 
 func TestFilter_PricePerHour(t *testing.T) {
