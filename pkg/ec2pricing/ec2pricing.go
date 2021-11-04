@@ -186,8 +186,6 @@ func (p *EC2Pricing) GetOndemandInstanceTypeCost(instanceType string) (float64, 
 
 	pricePerUnitInUSD := float64(-1)
 	var processingErr error
-	// FIXME Only works for us-east-1 and ap-south-1
-	// https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/using-pelong.html#pe-endpoint
 	errAPI := p.PricingClient.GetProductsPages(&productInput, func(pricingOutput *pricing.GetProductsOutput, nextPage bool) bool {
 		var errParse error
 		for _, priceDoc := range pricingOutput.PriceList {
