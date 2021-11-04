@@ -58,6 +58,7 @@ const (
 	burstable              = "burstable"
 	fpga                   = "fpga"
 	enaSupport             = "enaSupport"
+	efaSupport             = "efaSupport"
 	vcpusToMemoryRatio     = "vcpusToMemoryRatio"
 	currentGeneration      = "currentGeneration"
 	networkInterfaces      = "networkInterfaces"
@@ -233,6 +234,7 @@ func (itf Selector) rawFilter(filters Filters) ([]instancetypes.Details, error) 
 				burstable:              {filters.Burstable, instanceTypeInfo.BurstablePerformanceSupported},
 				fpga:                   {filters.Fpga, &isFpga},
 				enaSupport:             {filters.EnaSupport, supportSyntaxToBool(instanceTypeInfo.NetworkInfo.EnaSupport)},
+				efaSupport:             {filters.EfaSupport, instanceTypeInfo.NetworkInfo.EfaSupported},
 				vcpusToMemoryRatio:     {filters.VCpusToMemoryRatio, calculateVCpusToMemoryRatio(instanceTypeInfo.VCpuInfo.DefaultVCpus, instanceTypeInfo.MemoryInfo.SizeInMiB)},
 				currentGeneration:      {filters.CurrentGeneration, instanceTypeInfo.CurrentGeneration},
 				networkInterfaces:      {filters.NetworkInterfaces, instanceTypeInfo.NetworkInfo.MaximumNetworkInterfaces},

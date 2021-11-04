@@ -125,6 +125,7 @@ mkdir -p "${DOWNLOAD_DIR}" "${SYNC_DIR}" "${BREW_CONFIG_DIR}"
 
 BASE_ASSET_URL="https://github.com/${REPO}/releases/download/${VERSION}/${BINARY_BASE}"
 MAC_HASH=""
+MAC_ARM64_HASH=""
 LINUX_HASH=""
 LINUX_ARM64_HASH=""
 
@@ -160,8 +161,10 @@ for os_arch in "${PLATFORMS[@]}"; do
       fi
     fi
 
-    if [[ "${os}" == "darwin" ]]; then
+    if [[ "${os}" == "darwin" && "${arch}" == "amd64" ]]; then
       MAC_HASH=$(hash_file "${asset_file_path}")
+    elif [[ "${os}" == "darwin" && "${arch}" == "arm64" ]]; then
+      MAC_ARM64_HASH=$(hash_file "${asset_file_path}")
     elif [[ "${os}" == "linux" && "${arch}" == "amd64" ]]; then
       LINUX_HASH=$(hash_file "${asset_file_path}")
     elif [[ "${os}" == "linux" && "${arch}" == "arm64" ]]; then
@@ -178,6 +181,7 @@ cat << EOM > "${BREW_CONFIG_DIR}/${BINARY_BASE}.json"
     "bottle": {
         "root_url": "${BASE_ASSET_URL}",
         "sha256": {
+            "arm64_big_sur": "${MAC_ARM64_HASH}",
             "sierra": "${MAC_HASH}",
             "linux": "${LINUX_HASH}",
             "linux_arm": "${LINUX_ARM64_HASH}"
@@ -187,7 +191,7 @@ cat << EOM > "${BREW_CONFIG_DIR}/${BINARY_BASE}.json"
 EOM
 
 if [[ "${DRY_RUN}" -eq 0 ]]; then 
-  if [[ -z "${MAC_HASH}" ]] && [[ -z "${LINUX_HASH}" ]] && [[ -z "${LINUX_ARM64_HASH}" ]]; then 
+  if [[ -z "${MAC_HASH}" ]] && [[ -z "${MAC_ARM64_HASH}" ]] && [[ -z "${LINUX_HASH}" ]] && [[ -z "${LINUX_ARM64_HASH}" ]]; then 
     echo "❌ No hashes were calculated and dry-run is NOT engaged. Bailing out so we don't open a bad PR to the tap."
     exit 4
   fi

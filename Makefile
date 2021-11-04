@@ -11,7 +11,7 @@ GOARCH ?= amd64
 GOPROXY ?= "https://proxy.golang.org,direct"
 MAKEFILE_PATH = $(dir $(realpath -s $(firstword $(MAKEFILE_LIST))))
 BUILD_DIR_PATH = ${MAKEFILE_PATH}/build
-SUPPORTED_PLATFORMS ?= "windows/amd64,darwin/amd64,linux/amd64,linux/arm64,linux/arm"
+SUPPORTED_PLATFORMS ?= "windows/amd64,darwin/amd64,darwin/arm64,linux/amd64,linux/arm64,linux/arm"
 SELECTOR_PKG_VERSION_VAR=github.com/aws/amazon-ec2-instance-selector/v2/pkg/selector.versionID
 LATEST_RELEASE_TAG=$(shell git describe --tags --abbrev=0)
 PREVIOUS_RELEASE_TAG=$(shell git describe --abbrev=0 --tags `git rev-list --tags --skip=1  --max-count=1`)
@@ -41,7 +41,7 @@ docker-push:
 	docker push ${IMG_W_TAG}
 
 build-docker-images:
-	${MAKEFILE_PATH}/scripts/build-docker-images -p ${SUPPORTED_PLATFORMS} -r ${IMG} -v ${VERSION}
+	${MAKEFILE_PATH}/scripts/build-docker-images -d -p ${SUPPORTED_PLATFORMS} -r ${IMG} -v ${VERSION}
 
 push-docker-images:
 	@docker login -u ${DOCKERHUB_USERNAME} -p="${DOCKERHUB_TOKEN}"
@@ -80,7 +80,7 @@ output-validation-test:
 	${MAKEFILE_PATH}/test/output-validation-test/test-output-validation
 
 build-binaries:
-	${MAKEFILE_PATH}/scripts/build-binaries -p ${SUPPORTED_PLATFORMS} -v ${VERSION}
+	${MAKEFILE_PATH}/scripts/build-binaries -d -p ${SUPPORTED_PLATFORMS} -v ${VERSION}
 
 ## requires a github token
 upload-resources-to-github:
@@ -93,8 +93,12 @@ sync-readme-to-dockerhub:
 unit-test:
 	go test -bench=. ${MAKEFILE_PATH}/...  -v -coverprofile=coverage.out -covermode=atomic -outputdir=${BUILD_DIR_PATH}
 
+## requires aws credentials
 e2e-test: build
 	${MAKEFILE_PATH}/test/e2e/run-test
+
+## requires aws credentials
+integ-test: e2e-test output-validation-test readme-codeblock-test
 
 homebrew-sync-dry-run:
 	${MAKEFILE_PATH}/scripts/sync-to-aws-homebrew-tap -d -b ${BIN} -r ${REPO_FULL_NAME} -p ${SUPPORTED_PLATFORMS} -v ${LATEST_RELEASE_TAG}
@@ -112,9 +116,6 @@ help:
 	@grep -E '^[a-zA-Z_-]+:.*$$' $(MAKEFILE_LIST) | sort
 
 ## Targets intended to be run in preparation for a new release
-draft-release-notes:
-	${MAKEFILE_PATH}/scripts/draft-release-notes
-
 create-local-release-tag-major:
 	${MAKEFILE_PATH}/scripts/create-local-tag-for-release -m
 

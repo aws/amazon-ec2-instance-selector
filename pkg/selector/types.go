@@ -124,6 +124,9 @@ type Filters struct {
 	// EnaSupport returns instances that can support an Elastic Network Adapter.
 	EnaSupport *bool
 
+	// EfaSupport returns instances that can support an Elastic Fabric Adapter.
+	EfaSupport *bool
+
 	// FPGA is used to only return FPGA instance type results
 	Fpga *bool
 

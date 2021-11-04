@@ -56,7 +56,8 @@ type spotPricingEntry struct {
 // New creates an instance of instance-selector EC2Pricing
 func New(sess *session.Session) *EC2Pricing {
 	return &EC2Pricing{
-		PricingClient:        pricing.New(sess),
+		// use us-east-1 since pricing only has endpoints in us-east-1 and ap-south-1
+		PricingClient:        pricing.New(sess.Copy(aws.NewConfig().WithRegion("us-east-1"))),
 		EC2Client:            ec2.New(sess),
 		AWSSession:           sess,
 		lastOnDemandCacheUTC: nil,

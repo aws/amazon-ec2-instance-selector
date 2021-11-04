@@ -3,7 +3,7 @@
 <h4>A CLI tool and go library which recommends instance types based on resource criteria like vcpus and memory.</h4>
 
 <p>
-  <a href="https://golang.org/doc/go1.15">
+  <a href="https://golang.org/doc/go1.17">
     <img src="https://img.shields.io/github/go-mod/go-version/aws/amazon-ec2-instance-selector?color=blueviolet" alt="go-version">
   </a>
   <a href="https://opensource.org/licenses/Apache-2.0">
@@ -49,7 +49,7 @@ brew install ec2-instance-selector
 #### Install w/ Curl for Linux/Mac
 
 ```
-curl -Lo ec2-instance-selector https://github.com/aws/amazon-ec2-instance-selector/releases/download/v2.0.1/ec2-instance-selector-`uname | tr '[:upper:]' '[:lower:]'`-amd64 && chmod +x ec2-instance-selector
+curl -Lo ec2-instance-selector https://github.com/aws/amazon-ec2-instance-selector/releases/download/v2.0.3/ec2-instance-selector-`uname | tr '[:upper:]' '[:lower:]'`-amd64 && chmod +x ec2-instance-selector
 ```
 
 To execute the CLI, you will need AWS credentials configured. Take a look at the [AWS CLI configuration documentation](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html#config-settings-and-precedence) for details on the various ways to configure credentials. An easy way to try out the ec2-instance-selector CLI is to populate the following environment variables with your AWS API credentials.
@@ -165,6 +165,7 @@ Filter Flags:
   -a, --cpu-architecture string           CPU architecture [x86_64/amd64, i386, or arm64]
       --current-generation                Current generation instance types (explicitly set this to false to not return current generation instance types)
       --deny-list string                  List of instance types which should be excluded w/ regex syntax (Example: m[1-2]\.*)
+      --efa-support                       Instance types that support Elastic Fabric Adapters (EFA)
   -e, --ena-support                       Instance types where ENA is supported or required
   -f, --fpga-support                      FPGA instance types
       --gpu-memory-total string           Number of GPUs' total memory (Example: 4 GiB) (sets --gpu-memory-total-min and -max to the same value)
