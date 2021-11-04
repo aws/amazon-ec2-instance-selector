@@ -15,9 +15,3 @@ require (
 	go.uber.org/multierr v1.1.0
 	gopkg.in/ini.v1 v1.57.0
 )
-
-require (
-	github.com/inconshreveable/mousetrap v1.0.0 // indirect
-	github.com/jmespath/go-jmespath v0.4.0 // indirect
-	gopkg.in/yaml.v2 v2.3.0 // indirect
-)
