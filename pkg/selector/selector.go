@@ -156,7 +156,7 @@ func (itf Selector) rawFilter(filters Filters) ([]instancetypes.Details, error) 
 	if err != nil {
 		return nil, err
 	}
-	var locations, aZones []string
+	var locations, availabilityZones []string
 
 	if filters.CPUArchitecture != nil && *filters.CPUArchitecture == cpuArchitectureAMD64 {
 		*filters.CPUArchitecture = cpuArchitectureX8664
@@ -165,7 +165,7 @@ func (itf Selector) rawFilter(filters Filters) ([]instancetypes.Details, error) 
 		*filters.VirtualizationType = virtualizationTypeParaVirtual
 	}
 	if filters.AvailabilityZones != nil {
-		aZones = *filters.AvailabilityZones
+		availabilityZones = *filters.AvailabilityZones
 		locations = *filters.AvailabilityZones
 	} else if filters.Region != nil {
 		locations = []string{*filters.Region}
@@ -198,7 +198,7 @@ func (itf Selector) rawFilter(filters Filters) ([]instancetypes.Details, error) 
 				}
 			}
 			if itf.EC2Pricing.LastSpotCachedUTC() != nil {
-				price, err := itf.EC2Pricing.GetSpotInstanceTypeNDayAvgCost(instanceTypeName, aZones, 30)
+				price, err := itf.EC2Pricing.GetSpotInstanceTypeNDayAvgCost(instanceTypeName, availabilityZones, 30)
 				if err != nil {
 					fmt.Printf("Could not retrieve 30 day avg hourly spot price for instance type %s\n", instanceTypeName)
 				} else {
