@@ -269,8 +269,6 @@ func (p *EC2Pricing) HydrateOndemandCache() error {
 		},
 	}
 	var processingErr error
-	// FIXME Only works for us-east-1 and ap-south-1
-	// https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/using-pelong.html#pe-endpoint
 	errAPI := p.PricingClient.GetProductsPages(&productInput, func(pricingOutput *pricing.GetProductsOutput, nextPage bool) bool {
 		for _, priceDoc := range pricingOutput.PriceList {
 			instanceTypeName, price, errParse := parseOndemandUnitPrice(priceDoc)
