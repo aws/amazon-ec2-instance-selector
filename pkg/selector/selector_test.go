@@ -659,7 +659,7 @@ func TestFilter_PricePerHour(t *testing.T) {
 	}
 	results, err := itf.Filter(filters)
 	h.Ok(t, err)
-	h.Assert(t, len(results) == 1, "Should return 1 instance type")
+	h.Assert(t, len(results) == 1, fmt.Sprintf("Should return 1 instance type; got %d", len(results)))
 }
 
 func TestFilter_PricePerHour_NoResults(t *testing.T) {
@@ -698,7 +698,7 @@ func TestFilter_PricePerHour_OD(t *testing.T) {
 	}
 	results, err := itf.Filter(filters)
 	h.Ok(t, err)
-	h.Assert(t, len(results) == 1, "Should return 1 instance type")
+	h.Assert(t, len(results) == 1, fmt.Sprintf("Should return 1 instance type; got %d", len(results)))
 }
 
 func TestFilter_PricePerHour_Spot(t *testing.T) {
@@ -718,5 +718,5 @@ func TestFilter_PricePerHour_Spot(t *testing.T) {
 	}
 	results, err := itf.Filter(filters)
 	h.Ok(t, err)
-	h.Assert(t, len(results) == 1, "Should return 1 instance type")
+	h.Assert(t, len(results) == 1, fmt.Sprintf("Should return 1 instance type; got %d", len(results)))
 }
