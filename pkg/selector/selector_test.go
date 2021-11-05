@@ -149,7 +149,8 @@ func TestNew(t *testing.T) {
 func TestFilterVerbose(t *testing.T) {
 	ec2Mock := setupMock(t, describeInstanceTypesPages, "t3_micro.json")
 	itf := selector.Selector{
-		EC2: ec2Mock,
+		EC2:        ec2Mock,
+		EC2Pricing: &ec2PricingMock{},
 	}
 	filters := selector.Filters{
 		VCpusRange: &selector.IntRangeFilter{LowerBound: 2, UpperBound: 2},
@@ -163,7 +164,8 @@ func TestFilterVerbose(t *testing.T) {
 func TestFilterVerbose_NoResults(t *testing.T) {
 	ec2Mock := setupMock(t, describeInstanceTypesPages, "t3_micro.json")
 	itf := selector.Selector{
-		EC2: ec2Mock,
+		EC2:        ec2Mock,
+		EC2Pricing: &ec2PricingMock{},
 	}
 	filters := selector.Filters{
 		VCpusRange: &selector.IntRangeFilter{LowerBound: 4, UpperBound: 4},
@@ -195,7 +197,8 @@ func TestFilterVerbose_AZFilteredIn(t *testing.T) {
 		DescribeAvailabilityZonesResp:     setupMock(t, describeAvailabilityZones, "us-east-2.json").DescribeAvailabilityZonesResp,
 	}
 	itf := selector.Selector{
-		EC2: ec2Mock,
+		EC2:        ec2Mock,
+		EC2Pricing: &ec2PricingMock{},
 	}
 	filters := selector.Filters{
 		VCpusRange:        &selector.IntRangeFilter{LowerBound: 2, UpperBound: 2},
@@ -214,7 +217,8 @@ func TestFilterVerbose_AZFilteredOut(t *testing.T) {
 		DescribeAvailabilityZonesResp:     setupMock(t, describeAvailabilityZones, "us-east-2.json").DescribeAvailabilityZonesResp,
 	}
 	itf := selector.Selector{
-		EC2: ec2Mock,
+		EC2:        ec2Mock,
+		EC2Pricing: &ec2PricingMock{},
 	}
 	filters := selector.Filters{
 		AvailabilityZones: &[]string{"us-east-2a"},
@@ -240,7 +244,8 @@ func TestFilterVerboseAZ_FilteredErr(t *testing.T) {
 func TestFilterVerbose_Gpus(t *testing.T) {
 	ec2Mock := setupMock(t, describeInstanceTypesPages, "t3_micro_and_p3_16xl.json")
 	itf := selector.Selector{
-		EC2: ec2Mock,
+		EC2:        ec2Mock,
+		EC2Pricing: &ec2PricingMock{},
 	}
 	gpuMemory, err := bytequantity.ParseToByteQuantity("128g")
 	h.Ok(t, err)
@@ -260,7 +265,8 @@ func TestFilterVerbose_Gpus(t *testing.T) {
 func TestFilter(t *testing.T) {
 	ec2Mock := setupMock(t, describeInstanceTypesPages, "t3_micro.json")
 	itf := selector.Selector{
-		EC2: ec2Mock,
+		EC2:        ec2Mock,
+		EC2Pricing: &ec2PricingMock{},
 	}
 	filters := selector.Filters{
 		VCpusRange: &selector.IntRangeFilter{LowerBound: 2, UpperBound: 2},
@@ -274,7 +280,8 @@ func TestFilter(t *testing.T) {
 func TestFilter_MoreFilters(t *testing.T) {
 	ec2Mock := setupMock(t, describeInstanceTypesPages, "t3_micro.json")
 	itf := selector.Selector{
-		EC2: ec2Mock,
+		EC2:        ec2Mock,
+		EC2Pricing: &ec2PricingMock{},
 	}
 	filters := selector.Filters{
 		VCpusRange:      &selector.IntRangeFilter{LowerBound: 2, UpperBound: 2},
@@ -292,7 +299,8 @@ func TestFilter_MoreFilters(t *testing.T) {
 func TestFilter_TruncateToMaxResults(t *testing.T) {
 	ec2Mock := setupMock(t, describeInstanceTypesPages, "25_instances.json")
 	itf := selector.Selector{
-		EC2: ec2Mock,
+		EC2:        ec2Mock,
+		EC2Pricing: &ec2PricingMock{},
 	}
 	filters := selector.Filters{
 		VCpusRange: &selector.IntRangeFilter{LowerBound: 0, UpperBound: 100},
@@ -324,7 +332,8 @@ func TestFilter_Failure(t *testing.T) {
 	}
 
 	itf := selector.Selector{
-		EC2: ec2Mock,
+		EC2:        ec2Mock,
+		EC2Pricing: &ec2PricingMock{},
 	}
 	filters := selector.Filters{
 		VCpusRange: &selector.IntRangeFilter{LowerBound: 4, UpperBound: 4},
@@ -433,7 +442,8 @@ func TestFilter_InstanceTypeBase(t *testing.T) {
 		DescribeInstanceTypeOfferingsResp: setupMock(t, describeInstanceTypeOfferings, "us-east-2a.json").DescribeInstanceTypeOfferingsResp,
 	}
 	itf := selector.Selector{
-		EC2: ec2Mock,
+		EC2:        ec2Mock,
+		EC2Pricing: &ec2PricingMock{},
 	}
 	c4Large := "c4.large"
 	filters := selector.Filters{
@@ -508,7 +518,8 @@ func TestFilter_AllowList(t *testing.T) {
 		DescribeInstanceTypeOfferingsResp: setupMock(t, describeInstanceTypeOfferings, "us-east-2a.json").DescribeInstanceTypeOfferingsResp,
 	}
 	itf := selector.Selector{
-		EC2: ec2Mock,
+		EC2:        ec2Mock,
+		EC2Pricing: &ec2PricingMock{},
 	}
 	allowRegex, err := regexp.Compile("c4.large")
 	h.Ok(t, err)
@@ -526,7 +537,8 @@ func TestFilter_DenyList(t *testing.T) {
 		DescribeInstanceTypeOfferingsResp: setupMock(t, describeInstanceTypeOfferings, "us-east-2a.json").DescribeInstanceTypeOfferingsResp,
 	}
 	itf := selector.Selector{
-		EC2: ec2Mock,
+		EC2:        ec2Mock,
+		EC2Pricing: &ec2PricingMock{},
 	}
 	denyRegex, err := regexp.Compile("c4.large")
 	h.Ok(t, err)
@@ -544,7 +556,8 @@ func TestFilter_AllowAndDenyList(t *testing.T) {
 		DescribeInstanceTypeOfferingsResp: setupMock(t, describeInstanceTypeOfferings, "us-east-2a.json").DescribeInstanceTypeOfferingsResp,
 	}
 	itf := selector.Selector{
-		EC2: ec2Mock,
+		EC2:        ec2Mock,
+		EC2Pricing: &ec2PricingMock{},
 	}
 	allowRegex, err := regexp.Compile("c4.*")
 	h.Ok(t, err)
@@ -562,7 +575,8 @@ func TestFilter_AllowAndDenyList(t *testing.T) {
 func TestFilter_X8664_AMD64(t *testing.T) {
 	ec2Mock := setupMock(t, describeInstanceTypesPages, "t3_micro.json")
 	itf := selector.Selector{
-		EC2: ec2Mock,
+		EC2:        ec2Mock,
+		EC2Pricing: &ec2PricingMock{},
 	}
 	filters := selector.Filters{
 		CPUArchitecture: aws.String("amd64"),
@@ -576,7 +590,8 @@ func TestFilter_X8664_AMD64(t *testing.T) {
 func TestFilter_VirtType_PV(t *testing.T) {
 	ec2Mock := setupMock(t, describeInstanceTypesPages, "pv_instances.json")
 	itf := selector.Selector{
-		EC2: ec2Mock,
+		EC2:        ec2Mock,
+		EC2Pricing: &ec2PricingMock{},
 	}
 	filters := selector.Filters{
 		VirtualizationType: aws.String("pv"),
