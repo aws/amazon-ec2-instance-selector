@@ -645,10 +645,12 @@ func (p *ec2PricingMock) LastSpotCacheUTC() *time.Time {
 
 func TestFilter_PricePerHour(t *testing.T) {
 	ec2Mock := setupMock(t, describeInstanceTypesPages, "t3_micro.json")
+	now := time.Now()
 	itf := selector.Selector{
 		EC2: ec2Mock,
 		EC2Pricing: &ec2PricingMock{
 			GetOndemandInstanceTypeCostResp: 0.0104,
+			lastOnDemandCacheUTC:            &now,
 		},
 	}
 	filters := selector.Filters{
@@ -664,10 +666,12 @@ func TestFilter_PricePerHour(t *testing.T) {
 
 func TestFilter_PricePerHour_NoResults(t *testing.T) {
 	ec2Mock := setupMock(t, describeInstanceTypesPages, "t3_micro.json")
+	now := time.Now()
 	itf := selector.Selector{
 		EC2: ec2Mock,
 		EC2Pricing: &ec2PricingMock{
 			GetOndemandInstanceTypeCostResp: 0.0104,
+			lastOnDemandCacheUTC:            &now,
 		},
 	}
 	filters := selector.Filters{
@@ -683,10 +687,12 @@ func TestFilter_PricePerHour_NoResults(t *testing.T) {
 
 func TestFilter_PricePerHour_OD(t *testing.T) {
 	ec2Mock := setupMock(t, describeInstanceTypesPages, "t3_micro.json")
+	now := time.Now()
 	itf := selector.Selector{
 		EC2: ec2Mock,
 		EC2Pricing: &ec2PricingMock{
 			GetOndemandInstanceTypeCostResp: 0.0104,
+			lastOnDemandCacheUTC:            &now,
 		},
 	}
 	filters := selector.Filters{
@@ -703,10 +709,12 @@ func TestFilter_PricePerHour_OD(t *testing.T) {
 
 func TestFilter_PricePerHour_Spot(t *testing.T) {
 	ec2Mock := setupMock(t, describeInstanceTypesPages, "t3_micro.json")
+	now := time.Now()
 	itf := selector.Selector{
 		EC2: ec2Mock,
 		EC2Pricing: &ec2PricingMock{
 			GetSpotInstanceTypeNDayAvgCostResp: 0.0104,
+			lastSpotCacheUTC:                   &now,
 		},
 	}
 	filters := selector.Filters{
