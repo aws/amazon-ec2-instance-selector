@@ -199,10 +199,8 @@ func TableOutputWide(instanceTypeInfoSlice []instancetypes.Details) []string {
 	w.Init(buf, 8, 8, 2, ' ', 0)
 	defer w.Flush()
 
-	pricePerHourHeader := "On-Demand Price/Hr"
-	if instanceTypeInfoSlice[0].SpotPrice != nil {
-		pricePerHourHeader = "Spot Price/Hr (30 days)"
-	}
+	onDemandPricePerHourHeader := "On-Demand Price/Hr"
+	spotPricePerHourHeader := "Spot Price/Hr (30d avg)"
 
 	headers := []interface{}{
 		"Instance Type",
@@ -217,9 +215,10 @@ func TableOutputWide(instanceTypeInfoSlice []instancetypes.Details) []string {
 		"GPUs",
 		"GPU Mem (GiB)",
 		"GPU Info",
-		pricePerHourHeader,
+		onDemandPricePerHourHeader,
+		spotPricePerHourHeader,
 	}
-	separators := []interface{}{}
+	separators := make([]interface{}, 0)
 
 	headerFormat := ""
 	for _, header := range headers {
@@ -249,17 +248,16 @@ func TableOutputWide(instanceTypeInfoSlice []instancetypes.Details) []string {
 			}
 		}
 
-		pricePerHour := instanceTypeInfo.OndemandPricePerHour
-		if instanceTypeInfo.SpotPrice != nil {
-			pricePerHour = instanceTypeInfo.SpotPrice
+		onDemandPricePerHourStr := "-Not Fetched-"
+		spotPricePerHourStr := "-Not Fetched-"
+		if instanceTypeInfo.OndemandPricePerHour != nil {
+			onDemandPricePerHourStr = fmt.Sprintf("$%s", formatFloat(*instanceTypeInfo.OndemandPricePerHour))
 		}
-		specifyPriceFilter := "-No Price Filter Specified-"
-		pricePerHourStr := specifyPriceFilter
-		if pricePerHour != nil {
-			pricePerHourStr = fmt.Sprintf("$%s", formatFloat(*pricePerHour))
+		if instanceTypeInfo.SpotPrice != nil {
+			spotPricePerHourStr = fmt.Sprintf("$%s", formatFloat(*instanceTypeInfo.SpotPrice))
 		}
 
-		fmt.Fprintf(w, "\n%s\t%d\t%s\t%s\t%t\t%t\t%s\t%s\t%d\t%d\t%s\t%s\t%s\t",
+		fmt.Fprintf(w, "\n%s\t%d\t%s\t%s\t%t\t%t\t%s\t%s\t%d\t%d\t%s\t%s\t%s\t%s\t",
 			*instanceTypeInfo.InstanceType,
 			*instanceTypeInfo.VCpuInfo.DefaultVCpus,
 			formatFloat(float64(*instanceTypeInfo.MemoryInfo.SizeInMiB)/1024.0),
@@ -272,7 +270,8 @@ func TableOutputWide(instanceTypeInfoSlice []instancetypes.Details) []string {
 			gpus,
 			formatFloat(float64(gpuMemory)/1024.0),
 			strings.Join(gpuType, ", "),
-			pricePerHourStr,
+			onDemandPricePerHourStr,
+			spotPricePerHourStr,
 		)
 	}
 	w.Flush()

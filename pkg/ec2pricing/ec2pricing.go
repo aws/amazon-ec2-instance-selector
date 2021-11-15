@@ -8,8 +8,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/endpoints"
+	"go.uber.org/multierr"
+
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/ec2/ec2iface"
@@ -25,19 +27,25 @@ const (
 
 // EC2Pricing is the public struct to interface with AWS pricing APIs
 type EC2Pricing struct {
-	PricingClient pricingiface.PricingAPI
-	EC2Client     ec2iface.EC2API
-	AWSSession    *session.Session
-	cache         map[string]float64
-	spotCache     map[string]map[string][]spotPricingEntry
+	PricingClient        pricingiface.PricingAPI
+	EC2Client            ec2iface.EC2API
+	AWSSession           *session.Session
+	onDemandCache        map[string]float64
+	spotCache            map[string]map[string][]spotPricingEntry
+	lastOnDemandCacheUTC *time.Time // Updated on successful cache write
+	lastSpotCacheUTC     *time.Time // Updated on successful cache write
 }
 
 // EC2PricingIface is the EC2Pricing interface mainly used to mock out ec2pricing during testing
 type EC2PricingIface interface {
 	GetOndemandInstanceTypeCost(instanceType string) (float64, error)
 	GetSpotInstanceTypeNDayAvgCost(instanceType string, availabilityZones []string, days int) (float64, error)
+	// Keep hydrate functions thread safe by keeping different write data points
+	// In simple words, make sure they don't write the same variable/file/row etc. which they don't (they have different cache maps)
 	HydrateOndemandCache() error
 	HydrateSpotCache(days int) error
+	LastOnDemandCacheUTC() *time.Time
+	LastSpotCacheUTC() *time.Time
 }
 
 type spotPricingEntry struct {
@@ -49,10 +57,24 @@ type spotPricingEntry struct {
 func New(sess *session.Session) *EC2Pricing {
 	return &EC2Pricing{
 		// use us-east-1 since pricing only has endpoints in us-east-1 and ap-south-1
-		PricingClient: pricing.New(sess.Copy(aws.NewConfig().WithRegion("us-east-1"))),
-		EC2Client:     ec2.New(sess),
-		AWSSession:    sess,
+		PricingClient:        pricing.New(sess.Copy(aws.NewConfig().WithRegion("us-east-1"))),
+		EC2Client:            ec2.New(sess),
+		AWSSession:           sess,
+		lastOnDemandCacheUTC: nil,
+		lastSpotCacheUTC:     nil,
 	}
+}
+
+// LastOnDemandCacheUTC returns the UTC timestamp when the onDemandCache was last refreshed
+// Returns nil if the onDemandCache has not been initialized
+func (p *EC2Pricing) LastOnDemandCacheUTC() *time.Time {
+	return p.lastOnDemandCacheUTC
+}
+
+// LastSpotCacheUTC returns the UTC timestamp when the spotCache was last refreshed
+// Returns nil if the spotCache has not been initialized
+func (p *EC2Pricing) LastSpotCacheUTC() *time.Time {
+	return p.lastSpotCacheUTC
 }
 
 // GetSpotInstanceTypeNDayAvgCost retrieves the spot price history for a given AZ from the past N days and averages the price
@@ -67,16 +89,19 @@ func (p *EC2Pricing) GetSpotInstanceTypeNDayAvgCost(instanceType string, availab
 		EndTime:             &endTime,
 		InstanceTypes:       []*string{&instanceType},
 	}
-	zoneToPriceEntries := map[string][]spotPricingEntry{}
+	zoneToPriceEntries := make(map[string][]spotPricingEntry)
 
 	if _, ok := p.spotCache[instanceType]; !ok {
 		var processingErr error
-		err := p.EC2Client.DescribeSpotPriceHistoryPages(&spotPriceHistInput, func(dspho *ec2.DescribeSpotPriceHistoryOutput, b bool) bool {
+		errAPI := p.EC2Client.DescribeSpotPriceHistoryPages(&spotPriceHistInput, func(dspho *ec2.DescribeSpotPriceHistoryOutput, b bool) bool {
 			for _, history := range dspho.SpotPriceHistory {
 				var spotPrice float64
-				spotPrice, processingErr = strconv.ParseFloat(*history.SpotPrice, 64)
+				spotPrice, errParse := strconv.ParseFloat(*history.SpotPrice, 64)
+				if errParse != nil {
+					processingErr = multierr.Append(processingErr, errParse)
+					continue
+				}
 				zone := *history.AvailabilityZone
-
 				zoneToPriceEntries[zone] = append(zoneToPriceEntries[zone], spotPricingEntry{
 					Timestamp: *history.Timestamp,
 					SpotPrice: spotPrice,
@@ -84,11 +109,11 @@ func (p *EC2Pricing) GetSpotInstanceTypeNDayAvgCost(instanceType string, availab
 			}
 			return true
 		})
-		if err != nil {
-			return float64(0), err
+		if errAPI != nil {
+			return float64(-1), errAPI
 		}
 		if processingErr != nil {
-			return float64(0), processingErr
+			return float64(-1), processingErr
 		}
 	} else {
 		for zone, priceEntries := range p.spotCache[instanceType] {
@@ -113,7 +138,7 @@ func (p *EC2Pricing) GetSpotInstanceTypeNDayAvgCost(instanceType string, availab
 		aggregateZonePriceSum += p.calculateSpotAggregate(priceEntries)
 	}
 
-	return (aggregateZonePriceSum / float64(numOfZones)), nil
+	return aggregateZonePriceSum / float64(numOfZones), nil
 }
 
 func (p *EC2Pricing) calculateSpotAggregate(spotPriceEntries []spotPricingEntry) float64 {
@@ -134,11 +159,16 @@ func (p *EC2Pricing) calculateSpotAggregate(spotPriceEntries []spotPricingEntry)
 		duration := spotPriceEntries[int(math.Max(float64(i-1), 0))].Timestamp.Sub(entry.Timestamp).Minutes()
 		priceSum += duration * entry.SpotPrice
 	}
-	return (priceSum / totalDuration)
+	return priceSum / totalDuration
 }
 
 // GetOndemandInstanceTypeCost retrieves the on-demand hourly cost for the specified instance type
 func (p *EC2Pricing) GetOndemandInstanceTypeCost(instanceType string) (float64, error) {
+	// Check cache first and return it if available
+	if price, ok := p.onDemandCache[instanceType]; ok {
+		return price, nil
+	}
+
 	regionDescription := p.getRegionForPricingAPI()
 	// TODO: mac.metal instances cannot be found with the below filters
 	productInput := pricing.GetProductsInput{
@@ -154,25 +184,25 @@ func (p *EC2Pricing) GetOndemandInstanceTypeCost(instanceType string) (float64, 
 		},
 	}
 
-	// Check cache first and return it if available
-	if price, ok := p.cache[instanceType]; ok {
-		return price, nil
-	}
-
 	pricePerUnitInUSD := float64(-1)
-	err := p.PricingClient.GetProductsPages(&productInput, func(pricingOutput *pricing.GetProductsOutput, nextPage bool) bool {
-		var err error
+	var processingErr error
+	errAPI := p.PricingClient.GetProductsPages(&productInput, func(pricingOutput *pricing.GetProductsOutput, nextPage bool) bool {
+		var errParse error
 		for _, priceDoc := range pricingOutput.PriceList {
-			_, pricePerUnitInUSD, err = parseOndemandUnitPrice(priceDoc)
-		}
-		if err != nil {
-			// keep going through pages if we can't parse the pricing doc
-			return true
+			_, pricePerUnitInUSD, errParse = parseOndemandUnitPrice(priceDoc)
+			if errParse != nil {
+				processingErr = multierr.Append(processingErr, errParse)
+				// keep going through pages if we can't parse the pricing doc
+				return true
+			}
 		}
 		return false
 	})
-	if err != nil {
-		return -1, err
+	if errAPI != nil {
+		return -1, errAPI
+	}
+	if processingErr != nil {
+		return -1, processingErr
 	}
 	return pricePerUnitInUSD, nil
 }
@@ -182,7 +212,7 @@ func (p *EC2Pricing) GetOndemandInstanceTypeCost(instanceType string) (float64, 
 // There is no TTL on cache entries
 // You'll only want to use this if you don't mind a long startup time (around 30 seconds) and will query the cache often after that.
 func (p *EC2Pricing) HydrateSpotCache(days int) error {
-	newCache := map[string]map[string][]spotPricingEntry{}
+	newCache := make(map[string]map[string][]spotPricingEntry)
 
 	endTime := time.Now().UTC()
 	startTime := endTime.Add(time.Hour * time.Duration(24*-1*days))
@@ -192,14 +222,17 @@ func (p *EC2Pricing) HydrateSpotCache(days int) error {
 		EndTime:             &endTime,
 	}
 	var processingErr error
-	err := p.EC2Client.DescribeSpotPriceHistoryPages(&spotPriceHistInput, func(dspho *ec2.DescribeSpotPriceHistoryOutput, b bool) bool {
+	errAPI := p.EC2Client.DescribeSpotPriceHistoryPages(&spotPriceHistInput, func(dspho *ec2.DescribeSpotPriceHistoryOutput, b bool) bool {
 		for _, history := range dspho.SpotPriceHistory {
-			var spotPrice float64
-			spotPrice, processingErr = strconv.ParseFloat(*history.SpotPrice, 64)
+			spotPrice, errFloat := strconv.ParseFloat(*history.SpotPrice, 64)
+			if errFloat != nil {
+				processingErr = multierr.Append(processingErr, errFloat)
+				continue
+			}
 			instanceType := *history.InstanceType
 			zone := *history.AvailabilityZone
 			if _, ok := newCache[instanceType]; !ok {
-				newCache[instanceType] = map[string][]spotPricingEntry{}
+				newCache[instanceType] = make(map[string][]spotPricingEntry)
 			}
 			newCache[instanceType][zone] = append(newCache[instanceType][zone], spotPricingEntry{
 				Timestamp: *history.Timestamp,
@@ -208,10 +241,12 @@ func (p *EC2Pricing) HydrateSpotCache(days int) error {
 		}
 		return true
 	})
-	if err != nil {
-		return err
+	if errAPI != nil {
+		return errAPI
 	}
+	cTime := time.Now().UTC()
 	p.spotCache = newCache
+	p.lastSpotCacheUTC = &cTime
 	return processingErr
 }
 
@@ -219,9 +254,8 @@ func (p *EC2Pricing) HydrateSpotCache(days int) error {
 // If HydrateOndemandCache is called more than once, the cache will be fully refreshed
 // There is no TTL on cache entries
 func (p *EC2Pricing) HydrateOndemandCache() error {
-	if p.cache == nil {
-		p.cache = make(map[string]float64)
-	}
+	newOnDemandCache := make(map[string]float64)
+
 	regionDescription := p.getRegionForPricingAPI()
 	productInput := pricing.GetProductsInput{
 		ServiceCode: aws.String(serviceCode),
@@ -234,17 +268,25 @@ func (p *EC2Pricing) HydrateOndemandCache() error {
 			{Type: aws.String(pricing.FilterTypeTermMatch), Field: aws.String("tenancy"), Value: aws.String("shared")},
 		},
 	}
-	err := p.PricingClient.GetProductsPages(&productInput, func(pricingOutput *pricing.GetProductsOutput, nextPage bool) bool {
+	var processingErr error
+	errAPI := p.PricingClient.GetProductsPages(&productInput, func(pricingOutput *pricing.GetProductsOutput, nextPage bool) bool {
 		for _, priceDoc := range pricingOutput.PriceList {
-			instanceTypeName, price, err := parseOndemandUnitPrice(priceDoc)
-			if err != nil {
+			instanceTypeName, price, errParse := parseOndemandUnitPrice(priceDoc)
+			if errParse != nil {
+				processingErr = multierr.Append(processingErr, errParse)
 				continue
 			}
-			p.cache[instanceTypeName] = price
+			newOnDemandCache[instanceTypeName] = price
 		}
 		return true
 	})
-	return err
+	if errAPI != nil {
+		return errAPI
+	}
+	cTime := time.Now().UTC()
+	p.onDemandCache = newOnDemandCache
+	p.lastOnDemandCacheUTC = &cTime
+	return processingErr
 }
 
 // getRegionForPricingAPI attempts to retrieve the region description based on the AWS session used to create

@@ -9,14 +9,16 @@ require (
 	github.com/hashicorp/hcl v1.0.0
 	github.com/imdario/mergo v0.3.11
 	github.com/mitchellh/go-homedir v1.1.0
-	github.com/smartystreets/goconvey v1.6.4 // indirect
 	github.com/spf13/cobra v0.0.7
 	github.com/spf13/pflag v1.0.3
+	go.uber.org/multierr v1.1.0
 	gopkg.in/ini.v1 v1.57.0
 )
 
 require (
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
+	github.com/smartystreets/goconvey v1.6.4 // indirect
+	go.uber.org/atomic v1.4.0 // indirect
 	gopkg.in/yaml.v2 v2.3.0 // indirect
 )
