@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/bytequantity"
+	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/pflag"
 )
 
@@ -90,6 +91,11 @@ func (cl *CommandLineInterface) RegexFlag(name string, shorthand *string, defaul
 	cl.RegexFlagOnFlagSet(cl.Command.Flags(), name, shorthand, defaultValue, description)
 }
 
+// PathFlag creates and registers a flag accepting a string representing a path and validates that it is a valid path.
+func (cl *CommandLineInterface) PathFlag(name string, shorthand *string, defaultValue *string, description string) {
+	cl.PathFlagOnFlagSet(cl.Command.Flags(), name, shorthand, defaultValue, description)
+}
+
 // StringOptionsFlag creates and registers a flag accepting a string and valid options for use in validation.
 func (cl *CommandLineInterface) StringOptionsFlag(name string, shorthand *string, defaultValue *string, description string, validOpts []string) {
 	cl.StringOptionsFlagOnFlagSet(cl.Command.Flags(), name, shorthand, defaultValue, description, validOpts)
@@ -107,9 +113,15 @@ func (cl *CommandLineInterface) ConfigStringFlag(name string, shorthand *string,
 }
 
 // ConfigStringSliceFlag creates and registers a flag accepting a list of strings.
-// Suite flags will be grouped in the middle of the output --help
+// Config flags will be grouped at the bottom in the output of --help
 func (cl *CommandLineInterface) ConfigStringSliceFlag(name string, shorthand *string, defaultValue []string, description string) {
 	cl.StringSliceFlagOnFlagSet(cl.Command.PersistentFlags(), name, shorthand, defaultValue, description)
+}
+
+// ConfigPathFlag creates and registers a flag accepting a string representing a path and validates that it is a valid path.
+// Config flags will be grouped at the bottom in the output of --help
+func (cl *CommandLineInterface) ConfigPathFlag(name string, shorthand *string, defaultValue *string, description string) {
+	cl.PathFlagOnFlagSet(cl.Command.PersistentFlags(), name, shorthand, defaultValue, description)
 }
 
 // ConfigIntFlag creates and registers a flag accepting an Integer for configuration purposes.
@@ -377,4 +389,26 @@ func (cl *CommandLineInterface) RegexFlagOnFlagSet(flagSet *pflag.FlagSet, name 
 		}
 	}
 	cl.StringFlagOnFlagSet(flagSet, name, shorthand, defaultValue, description, regexProcessor, regexValidator)
+}
+
+// PathFlagOnFlagSet creates and registers a flag accepting a string as a path
+func (cl *CommandLineInterface) PathFlagOnFlagSet(flagSet *pflag.FlagSet, name string, shorthand *string, defaultValue *string, description string) {
+	invalidInputMsg := fmt.Sprintf("Invalid path input for --%s. ", name)
+	pathProcessor := func(val interface{}) error {
+		if val == nil {
+			return nil
+		}
+		switch v := val.(type) {
+		case *string:
+			path, err := homedir.Expand(*v)
+			if err != nil {
+				return fmt.Errorf(invalidInputMsg + "Unable to expand path.")
+			}
+			cl.Flags[name] = &path
+		default:
+			return fmt.Errorf(invalidInputMsg + "Input type is unsupported.")
+		}
+		return nil
+	}
+	cl.StringFlagOnFlagSet(flagSet, name, shorthand, defaultValue, description, pathProcessor, nil)
 }

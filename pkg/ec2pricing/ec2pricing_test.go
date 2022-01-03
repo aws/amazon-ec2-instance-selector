@@ -1,3 +1,16 @@
+// Copyright Amazon.com Inc. or its affiliates. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License"). You may
+// not use this file except in compliance with the License. A copy of the
+// License is located at
+//
+//     http://aws.amazon.com/apache2.0/
+//
+// or in the "license" file accompanying this file. This file is distributed
+// on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+// express or implied. See the License for the specific language governing
+// permissions and limitations under the License.
+
 package ec2pricing_test
 
 import (
@@ -21,6 +34,12 @@ const (
 	describeSpotPriceHistoryPages = "DescribeSpotPriceHistoryPages"
 	mockFilesPath                 = "../../test/static"
 )
+
+var sess = session.Session{
+	Config: &aws.Config{
+		Region: aws.String("us-east-1"),
+	},
+}
 
 // Mocking helpers
 
@@ -76,68 +95,44 @@ func setupMock(t *testing.T, api string, file string) mockedPricing {
 }
 
 func TestGetOndemandInstanceTypeCost_m5large(t *testing.T) {
-	sess := session.Session{
-		Config: &aws.Config{
-			Region: aws.String("us-east-1"),
-		},
-	}
 	pricingMock := setupMock(t, getProductsPages, "m5_large.json")
 	ec2pricingClient := ec2pricing.EC2Pricing{
-		PricingClient: pricingMock,
-		AWSSession:    &sess,
+		ODPricing: ec2pricing.LoadODCacheOrNew(pricingMock, "us-east-1", 0, ""),
 	}
-	price, err := ec2pricingClient.GetOndemandInstanceTypeCost("m5.large")
+	price, err := ec2pricingClient.GetOnDemandInstanceTypeCost("m5.large")
 	h.Ok(t, err)
 	h.Equals(t, float64(0.096), price)
 }
 
-func TestHydrateOndemandCache(t *testing.T) {
-	sess := session.Session{
-		Config: &aws.Config{
-			Region: aws.String("us-east-1"),
-		},
-	}
+func TestRefreshOnDemandCache(t *testing.T) {
 	pricingMock := setupMock(t, getProductsPages, "m5_large.json")
 	ec2pricingClient := ec2pricing.EC2Pricing{
-		PricingClient: pricingMock,
-		AWSSession:    &sess,
+		ODPricing: ec2pricing.LoadODCacheOrNew(pricingMock, "us-east-1", 0, ""),
 	}
-	err := ec2pricingClient.HydrateOndemandCache()
+	err := ec2pricingClient.RefreshOnDemandCache()
 	h.Ok(t, err)
 
-	price, err := ec2pricingClient.GetOndemandInstanceTypeCost("m5.large")
+	price, err := ec2pricingClient.GetOnDemandInstanceTypeCost("m5.large")
 	h.Ok(t, err)
 	h.Equals(t, float64(0.096), price)
 }
 
 func TestGetSpotInstanceTypeNDayAvgCost(t *testing.T) {
-	sess := session.Session{
-		Config: &aws.Config{
-			Region: aws.String("us-east-1"),
-		},
-	}
 	ec2Mock := setupMock(t, describeSpotPriceHistoryPages, "m5_large.json")
 	ec2pricingClient := ec2pricing.EC2Pricing{
-		EC2Client:  ec2Mock,
-		AWSSession: &sess,
+		SpotPricing: ec2pricing.LoadSpotCacheOrNew(ec2Mock, "us-east-1", 0, "", 30),
 	}
 	price, err := ec2pricingClient.GetSpotInstanceTypeNDayAvgCost("m5.large", []string{"us-east-1a"}, 30)
 	h.Ok(t, err)
 	h.Equals(t, float64(0.041486231229302666), price)
 }
 
-func TestHydrateSpotCache(t *testing.T) {
-	sess := session.Session{
-		Config: &aws.Config{
-			Region: aws.String("us-east-1"),
-		},
-	}
+func TestRefreshSpotCache(t *testing.T) {
 	ec2Mock := setupMock(t, describeSpotPriceHistoryPages, "m5_large.json")
 	ec2pricingClient := ec2pricing.EC2Pricing{
-		EC2Client:  ec2Mock,
-		AWSSession: &sess,
+		SpotPricing: ec2pricing.LoadSpotCacheOrNew(ec2Mock, "us-east-1", 0, "", 30),
 	}
-	err := ec2pricingClient.HydrateSpotCache(30)
+	err := ec2pricingClient.RefreshSpotCache(30)
 	h.Ok(t, err)
 
 	price, err := ec2pricingClient.GetSpotInstanceTypeNDayAvgCost("m5.large", []string{"us-east-1a"}, 30)

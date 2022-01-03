@@ -28,7 +28,7 @@ import (
 )
 
 // SimpleInstanceTypeOutput is an OutputFn which outputs a slice of instance type names
-func SimpleInstanceTypeOutput(instanceTypeInfoSlice []instancetypes.Details) []string {
+func SimpleInstanceTypeOutput(instanceTypeInfoSlice []*instancetypes.Details) []string {
 	instanceTypeStrings := []string{}
 	for _, instanceTypeInfo := range instanceTypeInfoSlice {
 		instanceTypeStrings = append(instanceTypeStrings, *instanceTypeInfo.InstanceType)
@@ -37,7 +37,7 @@ func SimpleInstanceTypeOutput(instanceTypeInfoSlice []instancetypes.Details) []s
 }
 
 // VerboseInstanceTypeOutput is an OutputFn which outputs a slice of instance type names
-func VerboseInstanceTypeOutput(instanceTypeInfoSlice []instancetypes.Details) []string {
+func VerboseInstanceTypeOutput(instanceTypeInfoSlice []*instancetypes.Details) []string {
 	output, err := json.MarshalIndent(instanceTypeInfoSlice, "", "    ")
 	if err != nil {
 		log.Println("Unable to convert instance type info to JSON")
@@ -50,7 +50,7 @@ func VerboseInstanceTypeOutput(instanceTypeInfoSlice []instancetypes.Details) []
 }
 
 // TerraformSpotMixedInstancesPolicyHCLOutput is an OutputFn which returns an ASG MixedInstancePolicy in Terraform HCL syntax
-func TerraformSpotMixedInstancesPolicyHCLOutput(instanceTypeInfoSlice []instancetypes.Details) []string {
+func TerraformSpotMixedInstancesPolicyHCLOutput(instanceTypeInfoSlice []*instancetypes.Details) []string {
 	instanceTypeOverrides := instanceTypeInfoToOverrides(instanceTypeInfoSlice)
 	overridesString := ""
 	for _, override := range instanceTypeOverrides {
@@ -96,7 +96,7 @@ func TerraformSpotMixedInstancesPolicyHCLOutput(instanceTypeInfoSlice []instance
 }
 
 // CloudFormationSpotMixedInstancesPolicyYAMLOutput is an OutputFn which returns an ASG MixedInstancePolicy in CloudFormation YAML syntax
-func CloudFormationSpotMixedInstancesPolicyYAMLOutput(instanceTypeInfoSlice []instancetypes.Details) []string {
+func CloudFormationSpotMixedInstancesPolicyYAMLOutput(instanceTypeInfoSlice []*instancetypes.Details) []string {
 	instanceTypeOverrides := instanceTypeInfoToOverrides(instanceTypeInfoSlice)
 	cfnMig := getCfnMIGResources(instanceTypeOverrides)
 	cfnMigYAML, err := yaml.Marshal(cfnMig)
@@ -107,7 +107,7 @@ func CloudFormationSpotMixedInstancesPolicyYAMLOutput(instanceTypeInfoSlice []in
 }
 
 // CloudFormationSpotMixedInstancesPolicyJSONOutput is an OutputFn which returns an MixedInstancePolicy in CloudFormation JSON syntax
-func CloudFormationSpotMixedInstancesPolicyJSONOutput(instanceTypeInfoSlice []instancetypes.Details) []string {
+func CloudFormationSpotMixedInstancesPolicyJSONOutput(instanceTypeInfoSlice []*instancetypes.Details) []string {
 	instanceTypeOverrides := instanceTypeInfoToOverrides(instanceTypeInfoSlice)
 	cfnMig := getCfnMIGResources(instanceTypeOverrides)
 	cfnJSONMig, err := json.MarshalIndent(cfnMig, "", "    ")
@@ -144,7 +144,7 @@ func getCfnMIGResources(instanceTypeOverrides []InstanceTypeOverride) Resources 
 	return Resources{Resources: resources}
 }
 
-func instanceTypeInfoToOverrides(instanceTypeInfoSlice []instancetypes.Details) []InstanceTypeOverride {
+func instanceTypeInfoToOverrides(instanceTypeInfoSlice []*instancetypes.Details) []InstanceTypeOverride {
 	instanceTypeOverrides := []InstanceTypeOverride{}
 	for _, instanceTypeInfo := range instanceTypeInfoSlice {
 		instanceTypeOverrides = append(instanceTypeOverrides, InstanceTypeOverride{InstanceType: *instanceTypeInfo.InstanceType})
@@ -153,8 +153,8 @@ func instanceTypeInfoToOverrides(instanceTypeInfoSlice []instancetypes.Details) 
 }
 
 // TableOutputShort is an OutputFn which returns a CLI table for easy reading
-func TableOutputShort(instanceTypeInfoSlice []instancetypes.Details) []string {
-	if instanceTypeInfoSlice == nil || len(instanceTypeInfoSlice) == 0 {
+func TableOutputShort(instanceTypeInfoSlice []*instancetypes.Details) []string {
+	if len(instanceTypeInfoSlice) == 0 {
 		return nil
 	}
 	w := new(tabwriter.Writer)
@@ -189,8 +189,8 @@ func TableOutputShort(instanceTypeInfoSlice []instancetypes.Details) []string {
 }
 
 // TableOutputWide is an OutputFn which returns a detailed CLI table for easy reading
-func TableOutputWide(instanceTypeInfoSlice []instancetypes.Details) []string {
-	if instanceTypeInfoSlice == nil || len(instanceTypeInfoSlice) == 0 {
+func TableOutputWide(instanceTypeInfoSlice []*instancetypes.Details) []string {
+	if len(instanceTypeInfoSlice) == 0 {
 		return nil
 	}
 	w := new(tabwriter.Writer)
@@ -279,7 +279,7 @@ func TableOutputWide(instanceTypeInfoSlice []instancetypes.Details) []string {
 }
 
 // OneLineOutput is an output function which prints the instance type names on a single line separated by commas
-func OneLineOutput(instanceTypeInfoSlice []instancetypes.Details) []string {
+func OneLineOutput(instanceTypeInfoSlice []*instancetypes.Details) []string {
 	instanceTypeNames := []string{}
 	for _, instanceType := range instanceTypeInfoSlice {
 		instanceTypeNames = append(instanceTypeNames, *instanceType.InstanceType)
@@ -293,6 +293,9 @@ func OneLineOutput(instanceTypeInfoSlice []instancetypes.Details) []string {
 func formatFloat(f float64) string {
 	s := strconv.FormatFloat(f, 'f', 5, 64)
 	parts := strings.Split(s, ".")
+	if len(parts) == 1 {
+		return s
+	}
 	reversed := reverse(parts[0])
 	withCommas := ""
 	for i, p := range reversed {

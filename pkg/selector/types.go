@@ -25,23 +25,24 @@ import (
 
 // InstanceTypesOutput can be implemented to provide custom output to instance type results
 type InstanceTypesOutput interface {
-	Output([]instancetypes.Details) []string
+	Output([]*instancetypes.Details) []string
 }
 
 // InstanceTypesOutputFn is the func type definition for InstanceTypesOuput
-type InstanceTypesOutputFn func([]instancetypes.Details) []string
+type InstanceTypesOutputFn func([]*instancetypes.Details) []string
 
 // Output implements InstanceTypesOutput interface on InstanceTypesOutputFn
 // This allows any InstanceTypesOutputFn to be passed into funcs accepting InstanceTypesOutput interface
-func (fn InstanceTypesOutputFn) Output(instanceTypes []instancetypes.Details) []string {
+func (fn InstanceTypesOutputFn) Output(instanceTypes []*instancetypes.Details) []string {
 	return fn(instanceTypes)
 }
 
 // Selector is used to filter instance type resource specs
 type Selector struct {
-	EC2             ec2iface.EC2API
-	EC2Pricing      ec2pricing.EC2PricingIface
-	ServiceRegistry ServiceRegistry
+	EC2                   ec2iface.EC2API
+	EC2Pricing            ec2pricing.EC2PricingIface
+	InstanceTypesProvider *instancetypes.Provider
+	ServiceRegistry       ServiceRegistry
 }
 
 // IntRangeFilter holds an upper and lower bound int
