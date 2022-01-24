@@ -41,7 +41,7 @@ func (e *EKS) Filters(version string) (Filters, error) {
 	if e.AMIRepoURL == "" {
 		e.AMIRepoURL = eksAMIRepoURL
 	}
-	filters := Filters{}
+	var filters Filters
 
 	if version == "" {
 		var err error
@@ -50,9 +50,6 @@ func (e *EKS) Filters(version string) (Filters, error) {
 			log.Printf("There was a problem fetching the latest EKS AMI version, using hardcoded fallback version %s\n", eksFallbackLatestAMIVersion)
 			version = eksFallbackLatestAMIVersion
 		}
-	}
-	if !strings.HasPrefix(version, "v") {
-		version = fmt.Sprintf("v%s", version)
 	}
 	supportedInstanceTypes, err := e.getSupportedInstanceTypes(version)
 	if err != nil {
@@ -72,7 +69,7 @@ func (e *EKS) getSupportedInstanceTypes(version string) ([]string, error) {
 	}
 
 	defer resp.Body.Close()
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		return supportedInstanceTypes, fmt.Errorf("Unable to retrieve EKS supported instance types, got non-200 status code: %d", resp.StatusCode)
 	}
 
@@ -119,7 +116,7 @@ func (e EKS) getLatestAMIVersion() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if resp.StatusCode != 302 {
+	if resp.StatusCode != http.StatusFound {
 		return "", fmt.Errorf("Can't retrieve latest release from github because redirect was not sent")
 	}
 	versionRedirect := resp.Header.Get("location")
