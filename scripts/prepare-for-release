@@ -154,7 +154,8 @@ confirm_with_user_and_create_pr(){
     ${MAGENTA}$(git diff HEAD^ HEAD)${RESET_FMT}
 EOM
     while true; do
-        read -p "🥑${BOLD}Do you wish to create the release prep PR? Enter y/n  " yn
+        echo -e "🥑${BOLD}Do you wish to create the release prep PR? Enter y/n"
+        read -p "" yn
         case $yn in
             [Yy]* ) create_pr; break;;
             [Nn]* ) rollback; exit;;
