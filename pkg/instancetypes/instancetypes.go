@@ -151,7 +151,7 @@ func (p *Provider) isFullRefreshNeeded() bool {
 }
 
 func (p *Provider) Save() error {
-	if p.FullRefreshTTL <= 0 {
+	if p.FullRefreshTTL <= 0 || p.cache.ItemCount() == 0 {
 		return nil
 	}
 	cacheBytes, err := json.Marshal(p.cache.Items())
@@ -165,4 +165,8 @@ func (p *Provider) Save() error {
 func (p *Provider) Clear() error {
 	p.cache.Flush()
 	return os.Remove(getCacheFilePath(p.Region, p.DirectoryPath))
+}
+
+func (p *Provider) CacheCount() int {
+	return p.cache.ItemCount()
 }

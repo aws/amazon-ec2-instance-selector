@@ -141,7 +141,7 @@ func (c *OnDemandPricing) Count() int {
 }
 
 func (c *OnDemandPricing) Save() error {
-	if c.FullRefreshTTL == 0 {
+	if c.FullRefreshTTL == 0 || c.Count() == 0 {
 		return nil
 	}
 	cacheBytes, err := json.Marshal(c.cache.Items())

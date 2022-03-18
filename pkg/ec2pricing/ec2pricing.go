@@ -85,12 +85,17 @@ func (p *EC2Pricing) GetSpotInstanceTypeNDayAvgCost(instanceType string, availab
 		return p.SpotPricing.Get(instanceType, "", days)
 	}
 	costs := []float64{}
+	var errs error
 	for _, zone := range availabilityZones {
 		cost, err := p.SpotPricing.Get(instanceType, zone, days)
 		if err != nil {
-			return -1, err
+			errs = multierr.Append(errs, err)
 		}
 		costs = append(costs, cost)
+	}
+
+	if len(multierr.Errors(errs)) == len(availabilityZones) {
+		return -1, errs
 	}
 	return costs[0], nil
 }

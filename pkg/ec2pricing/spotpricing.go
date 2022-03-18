@@ -125,10 +125,8 @@ func (c *SpotPricing) Refresh(days int) error {
 	for instanceTypeAndZone, cost := range spotInstanceTypeCosts {
 		c.cache.SetDefault(instanceTypeAndZone, cost)
 	}
-	if c.FullRefreshTTL > 0 {
-		if err := c.Save(); err != nil {
-			return fmt.Errorf("unable to save the refreshed spot instance type pricing cache file: %v", err)
-		}
+	if err := c.Save(); err != nil {
+		return fmt.Errorf("unable to save the refreshed spot instance type pricing cache file: %v", err)
 	}
 	return nil
 }
@@ -170,7 +168,10 @@ func (c *SpotPricing) calculateSpotAggregate(spotPriceEntries []*spotPricingEntr
 	if len(spotPriceEntries) == 0 {
 		return 0.0
 	}
-	// Sort slice by timestamp in decending order from the end time (most likely, now)
+	if len(spotPriceEntries) == 1 {
+		return spotPriceEntries[0].SpotPrice
+	}
+	// Sort slice by timestamp in descending order from the end time (most likely, now)
 	sort.Slice(spotPriceEntries, func(i, j int) bool {
 		return spotPriceEntries[i].Timestamp.After(spotPriceEntries[j].Timestamp)
 	})
@@ -207,7 +208,7 @@ func (c *SpotPricing) Count() int {
 }
 
 func (c *SpotPricing) Save() error {
-	if c.FullRefreshTTL <= 0 {
+	if c.FullRefreshTTL <= 0 || c.Count() == 0 {
 		return nil
 	}
 	if err := os.Mkdir(c.DirectoryPath, 0755); err != nil && !errors.Is(err, os.ErrExist) {
