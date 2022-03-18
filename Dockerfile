@@ -1,4 +1,4 @@
-FROM public.ecr.aws/bitnami/golang:1.17 as builder
+FROM golang:1.17 as builder
 
 ## GOLANG env
 ARG GOPROXY="https://proxy.golang.org|direct"
