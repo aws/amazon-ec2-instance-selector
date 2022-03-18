@@ -1,5 +1,5 @@
 FROM golang:1
 
-RUN go get -u github.com/client9/misspell/cmd/misspell
+RUN go install github.com/client9/misspell/cmd/misspell@latest
 
 CMD [ "/go/bin/misspell" ]
