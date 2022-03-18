@@ -6,7 +6,7 @@ Copyright 2014-2015 Stripe, Inc.
 Copyright © 2015 Steve Francia <spf@spf13.com>
 ** go-yaml/yaml; version v2.2.2 -- https://github.com/go-yaml/yaml
 Copyright 2011-2016 Canonical Ltd.
-** go-ini/ini.v1; version v1.57.0 -- https://github.com/go-ini/ini
+** gopkg.in/ini.v1; version v1.57.0 -- https://gopkg.in/ini.v1
 ** gopkg.in/yaml.v2; version v2.3.0 -- https://gopkg.in/yaml.v2
 
 Licensed under the Apache License, Version 2.0 (the "License");
