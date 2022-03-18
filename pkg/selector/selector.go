@@ -16,6 +16,7 @@ package selector
 
 import (
 	"fmt"
+	"log"
 	"reflect"
 	"regexp"
 	"sort"
@@ -208,7 +209,7 @@ func (itf Selector) rawFilter(filters Filters) ([]*instancetypes.Details, error)
 		if itf.EC2Pricing.OnDemandCacheCount() > 0 {
 			price, err := itf.EC2Pricing.GetOnDemandInstanceTypeCost(instanceTypeName)
 			if err != nil {
-				fmt.Printf("Could not retrieve instantaneous hourly on-demand price for instance type %s\n", instanceTypeName)
+				log.Printf("Could not retrieve instantaneous hourly on-demand price for instance type %s\n", instanceTypeName)
 			} else {
 				instanceTypeHourlyPriceOnDemand = &price
 				instanceTypeInfo.OndemandPricePerHour = instanceTypeHourlyPriceOnDemand
@@ -217,7 +218,7 @@ func (itf Selector) rawFilter(filters Filters) ([]*instancetypes.Details, error)
 		if itf.EC2Pricing.SpotCacheCount() > 0 && contains(instanceTypeInfo.SupportedUsageClasses, "spot") {
 			price, err := itf.EC2Pricing.GetSpotInstanceTypeNDayAvgCost(instanceTypeName, availabilityZones, 30)
 			if err != nil {
-				fmt.Printf("Could not retrieve 30 day avg hourly spot price for instance type %s\n", instanceTypeName)
+				log.Printf("Could not retrieve 30 day avg hourly spot price for instance type %s\n", instanceTypeName)
 			} else {
 				instanceTypeHourlyPriceSpot = &price
 				instanceTypeInfo.SpotPrice = instanceTypeHourlyPriceSpot
