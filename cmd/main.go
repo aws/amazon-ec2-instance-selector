@@ -17,15 +17,20 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/signal"
 	"strings"
 	"sync"
+	"syscall"
+	"time"
 
 	commandline "github.com/aws/amazon-ec2-instance-selector/v2/pkg/cli"
+	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/env"
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/selector"
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/selector/outputs"
 	"github.com/aws/aws-sdk-go/aws/session"
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
+	"go.uber.org/multierr"
 	"gopkg.in/ini.v1"
 )
 
@@ -35,6 +40,7 @@ const (
 	defaultRegionEnvVar = "AWS_DEFAULT_REGION"
 	defaultProfile      = "default"
 	awsConfigFile       = "~/.aws/config"
+	spotPricingDaysBack = 30
 
 	// cfnJSON is an output type
 	cfnJSON = "cfn-json"
@@ -90,6 +96,8 @@ const (
 	version    = "version"
 	region     = "region"
 	output     = "output"
+	cacheTTL   = "cache-ttl"
+	cacheDir   = "cache-dir"
 )
 
 var (
@@ -126,7 +134,7 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	cli.IntMinMaxRangeFlags(vcpus, cli.StringMe("c"), nil, "Number of vcpus available to the instance type.")
 	cli.ByteQuantityMinMaxRangeFlags(memory, cli.StringMe("m"), nil, "Amount of Memory available (Example: 4 GiB)")
 	cli.RatioFlag(vcpusToMemoryRatio, nil, nil, "The ratio of vcpus to GiBs of memory. (Example: 1:2)")
-	cli.StringOptionsFlag(cpuArchitecture, cli.StringMe("a"), nil, "CPU architecture [x86_64/amd64, i386, or arm64]", []string{"x86_64", "amd64", "i386", "arm64"})
+	cli.StringOptionsFlag(cpuArchitecture, cli.StringMe("a"), nil, "CPU architecture [x86_64/amd64, x86_64_mac, i386, or arm64]", []string{"x86_64", "x86_64_mac", "amd64", "i386", "arm64"})
 	cli.IntMinMaxRangeFlags(gpus, cli.StringMe("g"), nil, "Total Number of GPUs (Example: 4)")
 	cli.ByteQuantityMinMaxRangeFlags(gpuMemoryTotal, nil, nil, "Number of GPUs' total memory (Example: 4 GiB)")
 	cli.StringOptionsFlag(placementGroupStrategy, nil, nil, "Placement group strategy: [cluster, partition, spread]", []string{"cluster", "partition", "spread"})
@@ -156,10 +164,12 @@ Full docs can be found at github.com/aws/amazon-` + binName
 
 	// Configuration Flags - These will be grouped at the bottom of the help flags
 
-	cli.ConfigIntFlag(maxResults, nil, cli.IntMe(20), "The maximum number of instance types that match your criteria to return")
+	cli.ConfigIntFlag(maxResults, nil, env.WithDefaultInt("EC2_INSTANCE_SELECTOR_MAX_RESULTS", 20), "The maximum number of instance types that match your criteria to return")
 	cli.ConfigStringFlag(profile, nil, nil, "AWS CLI profile to use for credentials and config", nil)
 	cli.ConfigStringFlag(region, cli.StringMe("r"), nil, "AWS Region to use for API requests (NOTE: if not passed in, uses AWS SDK default precedence)", nil)
 	cli.ConfigStringFlag(output, cli.StringMe("o"), nil, fmt.Sprintf("Specify the output format (%s)", strings.Join(cliOutputTypes, ", ")), nil)
+	cli.ConfigIntFlag(cacheTTL, nil, env.WithDefaultInt("EC2_INSTANCE_SELECTOR_CACHE_TTL", 168), "Cache TTLs in hours for pricing and instance type caches. Setting the cache to 0 will turn off caching and cleanup any on-disk caches.")
+	cli.ConfigPathFlag(cacheDir, nil, env.WithDefaultString("EC2_INSTANCE_SELECTOR_CACHE_DIR", "~/.ec2-instance-selector/"), "Directory to save the pricing and instance type caches")
 	cli.ConfigBoolFlag(verbose, cli.StringMe("v"), nil, "Verbose - will print out full instance specs")
 	cli.ConfigBoolFlag(help, cli.StringMe("h"), nil, "Help")
 	cli.ConfigBoolFlag(version, nil, nil, "Prints CLI version")
@@ -186,31 +196,36 @@ Full docs can be found at github.com/aws/amazon-` + binName
 		os.Exit(1)
 	}
 	flags[region] = sess.Config.Region
-
-	instanceSelector := selector.New(sess)
+	cacheTTLDuration := time.Hour * time.Duration(*cli.IntMe(flags[cacheTTL]))
+	instanceSelector := selector.NewWithCache(sess, cacheTTLDuration, *cli.StringMe(flags[cacheDir]))
+	shutdown := func() {
+		if err := instanceSelector.Save(); err != nil {
+			log.Printf("There was an error saving pricing caches: %v", err)
+		}
+	}
+	registerShutdown(shutdown)
 	outputFlag := cli.StringMe(flags[output])
 	if outputFlag != nil && *outputFlag == tableWideOutput {
 		// If output type is `table-wide`, simply print both prices for better comparison,
 		//   even if the actual filter is applied on any one of those based on usage class
-
-		// Save time by hydrating in parallel
-		wg := &sync.WaitGroup{}
-		wg.Add(2)
-		go func(waitGroup *sync.WaitGroup) {
-			defer waitGroup.Done()
-			_ = instanceSelector.EC2Pricing.HydrateOndemandCache()
-		}(wg)
-		go func(waitGroup *sync.WaitGroup) {
-			defer waitGroup.Done()
-			_ = instanceSelector.EC2Pricing.HydrateSpotCache(30)
-		}(wg)
-		wg.Wait()
+		// Save time by hydrating all caches in parallel
+		if err := hydrateCaches(*instanceSelector); err != nil {
+			log.Printf("%v", err)
+		}
 	} else if flags[pricePerHour] != nil {
 		// Else, if price filters are applied, only hydrate the respective cache as we don't have to print the prices
 		if flags[usageClass] == nil || *cli.StringMe(flags[usageClass]) == "on-demand" {
-			_ = instanceSelector.EC2Pricing.HydrateOndemandCache()
+			if instanceSelector.EC2Pricing.OnDemandCacheCount() == 0 {
+				if err := instanceSelector.EC2Pricing.RefreshOnDemandCache(); err != nil {
+					log.Printf("There was a problem refreshing the on-demand pricing cache: %v", err)
+				}
+			}
 		} else {
-			_ = instanceSelector.EC2Pricing.HydrateSpotCache(30)
+			if instanceSelector.EC2Pricing.SpotCacheCount() == 0 {
+				if err := instanceSelector.EC2Pricing.RefreshSpotCache(spotPricingDaysBack); err != nil {
+					log.Printf("There was a problem refreshing the spot pricing cache: %v", err)
+				}
+			}
 		}
 	}
 
@@ -290,6 +305,46 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	if itemsTruncated > 0 {
 		log.Printf("%d entries were truncated, increase --%s to see more", itemsTruncated, maxResults)
 	}
+	shutdown()
+}
+
+func hydrateCaches(instanceSelector selector.Selector) (errs error) {
+	wg := &sync.WaitGroup{}
+	hydrateTasks := []func(*sync.WaitGroup) error{
+		func(waitGroup *sync.WaitGroup) error {
+			defer waitGroup.Done()
+			if instanceSelector.EC2Pricing.OnDemandCacheCount() == 0 {
+				if err := instanceSelector.EC2Pricing.RefreshOnDemandCache(); err != nil {
+					return multierr.Append(errs, fmt.Errorf("There was a problem refreshing the on-demand pricing cache: %w", err))
+				}
+			}
+			return nil
+		},
+		func(waitGroup *sync.WaitGroup) error {
+			defer waitGroup.Done()
+			if instanceSelector.EC2Pricing.SpotCacheCount() == 0 {
+				if err := instanceSelector.EC2Pricing.RefreshSpotCache(spotPricingDaysBack); err != nil {
+					return multierr.Append(errs, fmt.Errorf("There was a problem refreshing the spot pricing cache: %w", err))
+				}
+			}
+			return nil
+		},
+		func(waitGroup *sync.WaitGroup) error {
+			defer waitGroup.Done()
+			if instanceSelector.InstanceTypesProvider.CacheCount() == 0 {
+				if _, err := instanceSelector.InstanceTypesProvider.Get(nil); err != nil {
+					return multierr.Append(errs, fmt.Errorf("There was a problem refreshing the instance types cache: %w", err))
+				}
+			}
+			return nil
+		},
+	}
+	wg.Add(len(hydrateTasks))
+	for _, task := range hydrateTasks {
+		go task(wg)
+	}
+	wg.Wait()
+	return errs
 }
 
 func getOutputFn(outputFlag *string, currentFn selector.InstanceTypesOutputFn) selector.InstanceTypesOutputFn {
@@ -376,4 +431,13 @@ func getProfileRegion(profileName string) (string, error) {
 		return "", fmt.Errorf("Warning: there is no region configured for the specified aws profile %s at %s", profileName, awsConfigPath)
 	}
 	return regionConfig.String(), nil
+}
+
+func registerShutdown(shutdown func()) {
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		<-sigs
+		shutdown()
+	}()
 }

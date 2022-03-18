@@ -9,6 +9,7 @@ require (
 	github.com/hashicorp/hcl v1.0.0
 	github.com/imdario/mergo v0.3.11
 	github.com/mitchellh/go-homedir v1.1.0
+	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/spf13/cobra v0.0.7
 	github.com/spf13/pflag v1.0.3
 	go.uber.org/multierr v1.1.0

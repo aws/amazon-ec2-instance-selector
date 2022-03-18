@@ -62,9 +62,6 @@ image:
 license-test:
 	${MAKEFILE_PATH}/test/license-test/run-license-test.sh
 
-go-report-card-test:
-	${MAKEFILE_PATH}/test/go-report-card-test/run-report-card-test.sh
-
 spellcheck:
 	${MAKEFILE_PATH}/test/readme-test/run-readme-spellcheck
 
@@ -110,7 +107,7 @@ build: compile
 
 release: build-binaries build-docker-images push-docker-images upload-resources-to-github
 
-test: spellcheck shellcheck unit-test license-test go-report-card-test e2e-test output-validation-test readme-codeblock-test
+test: spellcheck shellcheck unit-test license-test e2e-test output-validation-test readme-codeblock-test
 
 help:
 	@grep -E '^[a-zA-Z_-]+:.*$$' $(MAKEFILE_LIST) | sort

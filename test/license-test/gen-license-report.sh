@@ -4,9 +4,10 @@ set -euo pipefail
 SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
 BUILD_DIR="$SCRIPTPATH/../../build"
 mkdir -p $BUILD_DIR
-export PATH="$PATH:$(go env GOPATH | sed 's+:+/bin+g')/bin"
+GOBIN=$(go env GOPATH | sed 's+:+/bin+g')/bin
+export PATH="$PATH:$GOBIN"
 
-go get github.com/mitchellh/golicense
-make -s -f $SCRIPTPATH/../../Makefile compile 
-golicense -out-xlsx=$BUILD_DIR/report.xlsx $SCRIPTPATH/license-config.hcl $BUILD_DIR/amazon-ec2-instance-selector
+go install github.com/mitchellh/golicense@v0.2.0
+go build -o $BUILD_DIR/aeis $SCRIPTPATH/../../.
+golicense -out-xlsx=$BUILD_DIR/report.xlsx $SCRIPTPATH/license-config.hcl $BUILD_DIR/aeis
 

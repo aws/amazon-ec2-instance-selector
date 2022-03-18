@@ -29,9 +29,6 @@ jobs:
     
     - name: Lints
       run: make spellcheck shellcheck
-
-    - name: Go Report Card Tests
-      run: make go-report-card-test
     
     - name: Brew Sync Dry run
       run: make homebrew-sync-dry-run

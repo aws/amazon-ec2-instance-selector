@@ -16,10 +16,12 @@ package selector
 
 import (
 	"fmt"
+	"log"
 	"reflect"
 	"regexp"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/ec2pricing"
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/instancetypes"
@@ -28,6 +30,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
+	"go.uber.org/multierr"
 )
 
 var (
@@ -81,14 +84,29 @@ const (
 func New(sess *session.Session) *Selector {
 	serviceRegistry := NewRegistry()
 	serviceRegistry.RegisterAWSServices()
-	userAgentTag := fmt.Sprintf("%s-%s", sdkName, versionID)
-	userAgentHandler := request.MakeAddToUserAgentFreeFormHandler(userAgentTag)
-	sess.Handlers.Build.PushBack(userAgentHandler)
+	ec2Client := ec2.New(userAgentWith(sess))
 	return &Selector{
-		EC2:             ec2.New(sess),
-		EC2Pricing:      ec2pricing.New(sess),
-		ServiceRegistry: serviceRegistry,
+		EC2:                   ec2Client,
+		EC2Pricing:            ec2pricing.New(sess),
+		InstanceTypesProvider: instancetypes.LoadFromOrNew("", *sess.Config.Region, 0, ec2Client),
+		ServiceRegistry:       serviceRegistry,
 	}
+}
+
+func NewWithCache(sess *session.Session, ttl time.Duration, cacheDir string) *Selector {
+	serviceRegistry := NewRegistry()
+	serviceRegistry.RegisterAWSServices()
+	ec2Client := ec2.New(userAgentWith(sess))
+	return &Selector{
+		EC2:                   ec2Client,
+		EC2Pricing:            ec2pricing.NewWithCache(sess, ttl, cacheDir),
+		InstanceTypesProvider: instancetypes.LoadFromOrNew(cacheDir, *sess.Config.Region, ttl, ec2Client),
+		ServiceRegistry:       serviceRegistry,
+	}
+}
+
+func (itf Selector) Save() error {
+	return multierr.Append(itf.EC2Pricing.Save(), itf.InstanceTypesProvider.Save())
 }
 
 // Filter accepts a Filters struct which is used to select the available instance types
@@ -101,7 +119,7 @@ func (itf Selector) Filter(filters Filters) ([]string, error) {
 
 // FilterVerbose accepts a Filters struct which is used to select the available instance types
 // matching the criteria within Filters and returns a list instanceTypeInfo
-func (itf Selector) FilterVerbose(filters Filters) ([]instancetypes.Details, error) {
+func (itf Selector) FilterVerbose(filters Filters) ([]*instancetypes.Details, error) {
 	instanceTypeInfoSlice, err := itf.rawFilter(filters)
 	if err != nil {
 		return nil, err
@@ -122,7 +140,7 @@ func (itf Selector) FilterWithOutput(filters Filters, outputFn InstanceTypesOutp
 	return output, numOfItemsTruncated, nil
 }
 
-func (itf Selector) truncateResults(maxResults *int, instanceTypeInfoSlice []instancetypes.Details) ([]instancetypes.Details, int) {
+func (itf Selector) truncateResults(maxResults *int, instanceTypeInfoSlice []*instancetypes.Details) ([]*instancetypes.Details, int) {
 	if maxResults == nil {
 		return instanceTypeInfoSlice, 0
 	}
@@ -152,7 +170,7 @@ func (itf Selector) AggregateFilterTransform(filters Filters) (Filters, error) {
 
 // rawFilter accepts a Filters struct which is used to select the available instance types
 // matching the criteria within Filters and returns the detailed specs of matching instance types
-func (itf Selector) rawFilter(filters Filters) ([]instancetypes.Details, error) {
+func (itf Selector) rawFilter(filters Filters) ([]*instancetypes.Details, error) {
 	filters, err := itf.AggregateFilterTransform(filters)
 	if err != nil {
 		return nil, err
@@ -176,115 +194,102 @@ func (itf Selector) rawFilter(filters Filters) ([]instancetypes.Details, error) 
 		return nil, err
 	}
 
-	instanceTypesInput := &ec2.DescribeInstanceTypesInput{}
-	instanceTypeCandidates := map[string]*instancetypes.Details{}
-	// innerErr will hold any error while processing DescribeInstanceTypes pages
-	var innerErr error
-
-	err = itf.EC2.DescribeInstanceTypesPages(instanceTypesInput, func(page *ec2.DescribeInstanceTypesOutput, lastPage bool) bool {
-		for _, instanceTypeInfo := range page.InstanceTypes {
-			instanceTypeName := *instanceTypeInfo.InstanceType
-			instanceTypeCandidates[instanceTypeName] = &instancetypes.Details{InstanceTypeInfo: *instanceTypeInfo}
-			isFpga := instanceTypeInfo.FpgaInfo != nil
-			var instanceTypeHourlyPriceForFilter float64 // Price used to filter based on usage class
-			var instanceTypeHourlyPriceOnDemand, instanceTypeHourlyPriceSpot *float64
-			// If prices are fetched, populate the fields irrespective of the price filters
-			if itf.EC2Pricing.LastOnDemandCacheUTC() != nil {
-				price, err := itf.EC2Pricing.GetOndemandInstanceTypeCost(instanceTypeName)
-				if err != nil {
-					fmt.Printf("Could not retrieve instantaneous hourly on-demand price for instance type %s\n", instanceTypeName)
-				} else {
-					instanceTypeHourlyPriceOnDemand = &price
-					instanceTypeCandidates[instanceTypeName].OndemandPricePerHour = instanceTypeHourlyPriceOnDemand
-				}
-			}
-			if itf.EC2Pricing.LastSpotCacheUTC() != nil {
-				price, err := itf.EC2Pricing.GetSpotInstanceTypeNDayAvgCost(instanceTypeName, availabilityZones, 30)
-				if err != nil {
-					fmt.Printf("Could not retrieve 30 day avg hourly spot price for instance type %s\n", instanceTypeName)
-				} else {
-					instanceTypeHourlyPriceSpot = &price
-					instanceTypeCandidates[instanceTypeName].SpotPrice = instanceTypeHourlyPriceSpot
-				}
-			}
-			if filters.PricePerHour != nil {
-				// If price filter is present, prices should be already fetched
-				// If prices are not fetched, filter should fail and the corresponding error is already printed
-				if filters.UsageClass != nil && *filters.UsageClass == "spot" && instanceTypeHourlyPriceSpot != nil {
-					instanceTypeHourlyPriceForFilter = *instanceTypeHourlyPriceSpot
-				} else if instanceTypeHourlyPriceOnDemand != nil {
-					instanceTypeHourlyPriceForFilter = *instanceTypeHourlyPriceOnDemand
-				}
-			}
-
-			// filterToInstanceSpecMappingPairs is a map of filter name [key] to filter pair [value].
-			// A filter pair includes user input filter value and instance spec value retrieved from DescribeInstanceTypes
-			filterToInstanceSpecMappingPairs := map[string]filterPair{
-				cpuArchitecture:        {filters.CPUArchitecture, instanceTypeInfo.ProcessorInfo.SupportedArchitectures},
-				usageClass:             {filters.UsageClass, instanceTypeInfo.SupportedUsageClasses},
-				rootDeviceType:         {filters.RootDeviceType, instanceTypeInfo.SupportedRootDeviceTypes},
-				hibernationSupported:   {filters.HibernationSupported, instanceTypeInfo.HibernationSupported},
-				vcpusRange:             {filters.VCpusRange, instanceTypeInfo.VCpuInfo.DefaultVCpus},
-				memoryRange:            {filters.MemoryRange, instanceTypeInfo.MemoryInfo.SizeInMiB},
-				gpuMemoryRange:         {filters.GpuMemoryRange, getTotalGpuMemory(instanceTypeInfo.GpuInfo)},
-				gpusRange:              {filters.GpusRange, getTotalGpusCount(instanceTypeInfo.GpuInfo)},
-				placementGroupStrategy: {filters.PlacementGroupStrategy, instanceTypeInfo.PlacementGroupInfo.SupportedStrategies},
-				hypervisor:             {filters.Hypervisor, instanceTypeInfo.Hypervisor},
-				baremetal:              {filters.BareMetal, instanceTypeInfo.BareMetal},
-				burstable:              {filters.Burstable, instanceTypeInfo.BurstablePerformanceSupported},
-				fpga:                   {filters.Fpga, &isFpga},
-				enaSupport:             {filters.EnaSupport, supportSyntaxToBool(instanceTypeInfo.NetworkInfo.EnaSupport)},
-				efaSupport:             {filters.EfaSupport, instanceTypeInfo.NetworkInfo.EfaSupported},
-				vcpusToMemoryRatio:     {filters.VCpusToMemoryRatio, calculateVCpusToMemoryRatio(instanceTypeInfo.VCpuInfo.DefaultVCpus, instanceTypeInfo.MemoryInfo.SizeInMiB)},
-				currentGeneration:      {filters.CurrentGeneration, instanceTypeInfo.CurrentGeneration},
-				networkInterfaces:      {filters.NetworkInterfaces, instanceTypeInfo.NetworkInfo.MaximumNetworkInterfaces},
-				networkPerformance:     {filters.NetworkPerformance, getNetworkPerformance(instanceTypeInfo.NetworkInfo.NetworkPerformance)},
-				instanceTypes:          {filters.InstanceTypes, instanceTypeInfo.InstanceType},
-				virtualizationType:     {filters.VirtualizationType, instanceTypeInfo.SupportedVirtualizationTypes},
-				pricePerHour:           {filters.PricePerHour, &instanceTypeHourlyPriceForFilter},
-			}
-
-			if isInDenyList(filters.DenyList, instanceTypeName) || !isInAllowList(filters.AllowList, instanceTypeName) {
-				delete(instanceTypeCandidates, instanceTypeName)
-			}
-
-			if !isSupportedInLocation(locationInstanceOfferings, instanceTypeName) {
-				delete(instanceTypeCandidates, instanceTypeName)
-			}
-
-			var isInstanceSupported bool
-			isInstanceSupported, innerErr = itf.executeFilters(filterToInstanceSpecMappingPairs, instanceTypeName)
-			if innerErr != nil {
-				// stops paging through instance types
-				return false
-			}
-			if !isInstanceSupported {
-				delete(instanceTypeCandidates, instanceTypeName)
-			}
-		}
-		// continue paging through instance types
-		return true
-	})
+	instanceTypeDetails, err := itf.InstanceTypesProvider.Get(nil)
 	if err != nil {
 		return nil, err
 	}
-	if innerErr != nil {
-		return nil, innerErr
+	filteredInstanceTypes := []*instancetypes.Details{}
+
+	for _, instanceTypeInfo := range instanceTypeDetails {
+		instanceTypeName := *instanceTypeInfo.InstanceType
+		isFpga := instanceTypeInfo.FpgaInfo != nil
+		var instanceTypeHourlyPriceForFilter float64 // Price used to filter based on usage class
+		var instanceTypeHourlyPriceOnDemand, instanceTypeHourlyPriceSpot *float64
+		// If prices are fetched, populate the fields irrespective of the price filters
+		if itf.EC2Pricing.OnDemandCacheCount() > 0 {
+			price, err := itf.EC2Pricing.GetOnDemandInstanceTypeCost(instanceTypeName)
+			if err != nil {
+				log.Printf("Could not retrieve instantaneous hourly on-demand price for instance type %s\n", instanceTypeName)
+			} else {
+				instanceTypeHourlyPriceOnDemand = &price
+				instanceTypeInfo.OndemandPricePerHour = instanceTypeHourlyPriceOnDemand
+			}
+		}
+		if itf.EC2Pricing.SpotCacheCount() > 0 && contains(instanceTypeInfo.SupportedUsageClasses, "spot") {
+			price, err := itf.EC2Pricing.GetSpotInstanceTypeNDayAvgCost(instanceTypeName, availabilityZones, 30)
+			if err != nil {
+				log.Printf("Could not retrieve 30 day avg hourly spot price for instance type %s\n", instanceTypeName)
+			} else {
+				instanceTypeHourlyPriceSpot = &price
+				instanceTypeInfo.SpotPrice = instanceTypeHourlyPriceSpot
+			}
+		}
+		if filters.PricePerHour != nil {
+			// If price filter is present, prices should be already fetched
+			// If prices are not fetched, filter should fail and the corresponding error is already printed
+			if filters.UsageClass != nil && *filters.UsageClass == "spot" && instanceTypeHourlyPriceSpot != nil {
+				instanceTypeHourlyPriceForFilter = *instanceTypeHourlyPriceSpot
+			} else if instanceTypeHourlyPriceOnDemand != nil {
+				instanceTypeHourlyPriceForFilter = *instanceTypeHourlyPriceOnDemand
+			}
+		}
+
+		// filterToInstanceSpecMappingPairs is a map of filter name [key] to filter pair [value].
+		// A filter pair includes user input filter value and instance spec value retrieved from DescribeInstanceTypes
+		filterToInstanceSpecMappingPairs := map[string]filterPair{
+			cpuArchitecture:        {filters.CPUArchitecture, instanceTypeInfo.ProcessorInfo.SupportedArchitectures},
+			usageClass:             {filters.UsageClass, instanceTypeInfo.SupportedUsageClasses},
+			rootDeviceType:         {filters.RootDeviceType, instanceTypeInfo.SupportedRootDeviceTypes},
+			hibernationSupported:   {filters.HibernationSupported, instanceTypeInfo.HibernationSupported},
+			vcpusRange:             {filters.VCpusRange, instanceTypeInfo.VCpuInfo.DefaultVCpus},
+			memoryRange:            {filters.MemoryRange, instanceTypeInfo.MemoryInfo.SizeInMiB},
+			gpuMemoryRange:         {filters.GpuMemoryRange, getTotalGpuMemory(instanceTypeInfo.GpuInfo)},
+			gpusRange:              {filters.GpusRange, getTotalGpusCount(instanceTypeInfo.GpuInfo)},
+			placementGroupStrategy: {filters.PlacementGroupStrategy, instanceTypeInfo.PlacementGroupInfo.SupportedStrategies},
+			hypervisor:             {filters.Hypervisor, instanceTypeInfo.Hypervisor},
+			baremetal:              {filters.BareMetal, instanceTypeInfo.BareMetal},
+			burstable:              {filters.Burstable, instanceTypeInfo.BurstablePerformanceSupported},
+			fpga:                   {filters.Fpga, &isFpga},
+			enaSupport:             {filters.EnaSupport, supportSyntaxToBool(instanceTypeInfo.NetworkInfo.EnaSupport)},
+			efaSupport:             {filters.EfaSupport, instanceTypeInfo.NetworkInfo.EfaSupported},
+			vcpusToMemoryRatio:     {filters.VCpusToMemoryRatio, calculateVCpusToMemoryRatio(instanceTypeInfo.VCpuInfo.DefaultVCpus, instanceTypeInfo.MemoryInfo.SizeInMiB)},
+			currentGeneration:      {filters.CurrentGeneration, instanceTypeInfo.CurrentGeneration},
+			networkInterfaces:      {filters.NetworkInterfaces, instanceTypeInfo.NetworkInfo.MaximumNetworkInterfaces},
+			networkPerformance:     {filters.NetworkPerformance, getNetworkPerformance(instanceTypeInfo.NetworkInfo.NetworkPerformance)},
+			instanceTypes:          {filters.InstanceTypes, instanceTypeInfo.InstanceType},
+			virtualizationType:     {filters.VirtualizationType, instanceTypeInfo.SupportedVirtualizationTypes},
+			pricePerHour:           {filters.PricePerHour, &instanceTypeHourlyPriceForFilter},
+		}
+
+		if isInDenyList(filters.DenyList, instanceTypeName) || !isInAllowList(filters.AllowList, instanceTypeName) {
+			continue
+		}
+
+		if !isSupportedInLocation(locationInstanceOfferings, instanceTypeName) {
+			continue
+		}
+
+		var isInstanceSupported bool
+		isInstanceSupported, err = itf.executeFilters(filterToInstanceSpecMappingPairs, instanceTypeName)
+		if err != nil {
+			return nil, err
+		}
+		if !isInstanceSupported {
+			continue
+		}
+		itInfo := instanceTypeInfo
+		filteredInstanceTypes = append(filteredInstanceTypes, itInfo)
 	}
 
-	instanceTypeInfoSlice := []instancetypes.Details{}
-	for _, instanceTypeInfo := range instanceTypeCandidates {
-		instanceTypeInfoSlice = append(instanceTypeInfoSlice, *instanceTypeInfo)
-	}
-	return sortInstanceTypeInfo(instanceTypeInfoSlice), nil
+	return sortInstanceTypeInfo(filteredInstanceTypes), nil
 }
 
 // sortInstanceTypeInfo will sort based on instance type info alpha-numerically
-func sortInstanceTypeInfo(instanceTypeInfoSlice []instancetypes.Details) []instancetypes.Details {
+func sortInstanceTypeInfo(instanceTypeInfoSlice []*instancetypes.Details) []*instancetypes.Details {
 	sort.Slice(instanceTypeInfoSlice, func(i, j int) bool {
 		iInstanceInfo := instanceTypeInfoSlice[i]
 		jInstanceInfo := instanceTypeInfoSlice[j]
-		return strings.Compare(*iInstanceInfo.InstanceType, *jInstanceInfo.InstanceType) <= 0
+		return strings.Compare(aws.StringValue(iInstanceInfo.InstanceType), aws.StringValue(jInstanceInfo.InstanceType)) <= 0
 	})
 	return instanceTypeInfoSlice
 }
@@ -492,4 +497,10 @@ func isInAllowList(allowRegex *regexp.Regexp, instanceTypeName string) bool {
 		return true
 	}
 	return allowRegex.MatchString(instanceTypeName)
+}
+
+func userAgentWith(sess *session.Session) *session.Session {
+	userAgentHandler := request.MakeAddToUserAgentFreeFormHandler(fmt.Sprintf("%s-%s", sdkName, versionID))
+	sess.Handlers.Build.PushBack(userAgentHandler)
+	return sess
 }
