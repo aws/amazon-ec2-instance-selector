@@ -3,7 +3,8 @@ allow = [
    "Apache-2.0",
    "BSD-3-Clause",
    "BSD-2-Clause",
-   "ISC"
+   "ISC",
+   "MPL-2.0"
 ]
 deny = [
    "GNU General Public License v2.0"
