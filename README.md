@@ -82,6 +82,8 @@ c5.large
 c5a.large
 c5ad.large
 c5d.large
+c6a.large
+c6i.large
 t2.medium
 t3.medium
 t3a.medium
@@ -93,9 +95,12 @@ $ ec2-instance-selector --network-performance 100 --usage-class spot -r us-east-
 c5n.18xlarge
 c5n.metal
 c6gn.16xlarge
+dl1.24xlarge
 g4dn.metal
+g5.48xlarge
 i3en.24xlarge
 i3en.metal
+im4gn.16xlarge
 inf1.24xlarge
 m5dn.24xlarge
 m5dn.metal
@@ -107,8 +112,6 @@ p3dn.24xlarge
 p4d.24xlarge
 r5dn.24xlarge
 r5dn.metal
-r5n.24xlarge
-r5n.metal
 ```
 
 **Short Table Output**
@@ -120,6 +123,8 @@ c5.large             2            4
 c5a.large            2            4
 c5ad.large           2            4
 c5d.large            2            4
+c6a.large            2            4
+c6i.large            2            4
 t2.medium            2            4
 t3.medium            2            4
 t3a.medium           2            4
@@ -128,15 +133,17 @@ t3a.medium           2            4
 **Wide Table Output**
 ```
 $ ec2-instance-selector --memory 4 --vcpus 2 --cpu-architecture x86_64 -r us-east-1 -o table-wide
-Instance Type  VCPUs   Mem (GiB)  Hypervisor  Current Gen  Hibernation Support  CPU Arch      Network Performance  ENIs    GPUs    GPU Mem (GiB)  GPU Info  On-Demand Price/Hr
--------------  -----   ---------  ----------  -----------  -------------------  --------      -------------------  ----    ----    -------------  --------  ------------------
-c5.large       2       4          nitro       true         true                 x86_64        Up to 10 Gigabit     3       0       0                        -No Price Filter Specified-
-c5a.large      2       4          nitro       true         false                x86_64        Up to 10 Gigabit     3       0       0                        -No Price Filter Specified-
-c5ad.large     2       4          nitro       true         false                x86_64        Up to 10 Gigabit     3       0       0                        -No Price Filter Specified-
-c5d.large      2       4          nitro       true         false                x86_64        Up to 10 Gigabit     3       0       0                        -No Price Filter Specified-
-t2.medium      2       4          xen         true         true                 i386, x86_64  Low to Moderate      3       0       0                        -No Price Filter Specified-
-t3.medium      2       4          nitro       true         true                 x86_64        Up to 5 Gigabit      3       0       0                        -No Price Filter Specified-
-t3a.medium     2       4          nitro       true         true                 x86_64        Up to 5 Gigabit      3       0       0                        -No Price Filter Specified-  
+Instance Type  VCPUs   Mem (GiB)  Hypervisor  Current Gen  Hibernation Support  CPU Arch      Network Performance  ENIs    GPUs    GPU Mem (GiB)  GPU Info  On-Demand Price/Hr  Spot Price/Hr (30d avg)
+-------------  -----   ---------  ----------  -----------  -------------------  --------      -------------------  ----    ----    -------------  --------  ------------------  -----------------------
+c5.large       2       4          nitro       true         true                 x86_64        Up to 10 Gigabit     3       0       0                        $0.085              $0.03706
+c5a.large      2       4          nitro       true         false                x86_64        Up to 10 Gigabit     3       0       0                        $0.077              $0.03592
+c5ad.large     2       4          nitro       true         false                x86_64        Up to 10 Gigabit     3       0       0                        $0.086              $0.0324
+c5d.large      2       4          nitro       true         true                 x86_64        Up to 10 Gigabit     3       0       0                        $0.096              $0.03267
+c6a.large      2       4          nitro       true         false                x86_64        Up to 12.5 Gigabit   3       0       0                        $0.0765             $0.034
+c6i.large      2       4          nitro       true         false                x86_64        Up to 12.5 Gigabit   3       0       0                        $0.085              $0.034
+t2.medium      2       4          xen         true         true                 i386, x86_64  Low to Moderate      3       0       0                        $0.0464             $0.01417
+t3.medium      2       4          nitro       true         true                 x86_64        Up to 5 Gigabit      3       0       0                        $0.0416             $0.0125
+t3a.medium     2       4          nitro       true         true                 x86_64        Up to 5 Gigabit      3       0       0                        $0.0376             $0.0116
 ```
 
 **All CLI Options**
@@ -146,7 +153,7 @@ $ ec2-instance-selector --help
 ```
 
 ```bash#help
-ec2-instance-selector is a CLI tool to filter EC2 instance types based on resource criteria.
+eec2-instance-selector is a CLI tool to filter EC2 instance types based on resource criteria.
 Filtering allows you to select all the instance types that match your application requirements.
 Full docs can be found at github.com/aws/amazon-ec2-instance-selector
 
@@ -162,7 +169,7 @@ Filter Flags:
   -z, --availability-zones strings        Availability zones or zone ids to check EC2 capacity offered in specific AZs
       --baremetal                         Bare Metal instance types (.metal instances)
   -b, --burst-support                     Burstable instance types
-  -a, --cpu-architecture string           CPU architecture [x86_64/amd64, i386, or arm64]
+  -a, --cpu-architecture string           CPU architecture [x86_64/amd64, x86_64_mac, i386, or arm64]
       --current-generation                Current generation instance types (explicitly set this to false to not return current generation instance types)
       --deny-list string                  List of instance types which should be excluded w/ regex syntax (Example: m[1-2]\.*)
       --efa-support                       Instance types that support Elastic Fabric Adapters (EFA)
@@ -205,13 +212,15 @@ Suite Flags:
 
 
 Global Flags:
-  -h, --help              Help
-      --max-results int   The maximum number of instance types that match your criteria to return (default 20)
-  -o, --output string     Specify the output format (table, table-wide, one-line)
-      --profile string    AWS CLI profile to use for credentials and config
-  -r, --region string     AWS Region to use for API requests (NOTE: if not passed in, uses AWS SDK default precedence)
-  -v, --verbose           Verbose - will print out full instance specs
-      --version           Prints CLI version
+      --cache-dir string   Directory to save the pricing and instance type caches (default "~/.ec2-instance-selector/")
+      --cache-ttl int      Cache TTLs in hours for pricing and instance type caches. Setting the cache to 0 will turn off caching and cleanup any on-disk caches. (default 168)
+  -h, --help               Help
+      --max-results int    The maximum number of instance types that match your criteria to return (default 20)
+  -o, --output string      Specify the output format (table, table-wide, one-line)
+      --profile string     AWS CLI profile to use for credentials and config
+  -r, --region string      AWS Region to use for API requests (NOTE: if not passed in, uses AWS SDK default precedence)
+  -v, --verbose            Verbose - will print out full instance specs
+      --version            Prints CLI version
 ```
 
 
@@ -287,7 +296,7 @@ func main() {
 $ git clone https://github.com/aws/amazon-ec2-instance-selector.git
 $ cd amazon-ec2-instance-selector/
 $ go run cmd/examples/example1.go
-[c4.large c5.large c5a.large c5d.large t2.medium t3.medium t3.small t3a.medium t3a.small]
+[c4.large c5.large c5a.large c5ad.large c5d.large c6i.large t2.medium t3.medium t3.small t3a.medium t3a.small]
 ```
 
 ## Building
