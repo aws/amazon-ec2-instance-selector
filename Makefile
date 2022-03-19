@@ -105,7 +105,7 @@ homebrew-sync:
 
 build: compile
 
-release: build-binaries build-docker-images push-docker-images upload-resources-to-github
+release: build-binaries upload-resources-to-github
 
 test: spellcheck shellcheck unit-test license-test e2e-test output-validation-test readme-codeblock-test
 

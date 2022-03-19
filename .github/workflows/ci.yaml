@@ -68,8 +68,5 @@ jobs:
     - name: Release Assets
       run: make release
     
-    - name: Sync Readme to Dockerhub
-      run: make sync-readme-to-dockerhub
-    
     - name: Sync to Homebrew
       run: make homebrew-sync
