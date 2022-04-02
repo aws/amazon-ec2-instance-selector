@@ -132,18 +132,17 @@ t3a.medium           2            4
 
 **Wide Table Output**
 ```
-$ ec2-instance-selector --memory 4 --vcpus 2 --cpu-architecture x86_64 -r us-east-1 -o table-wide
-Instance Type  VCPUs   Mem (GiB)  Hypervisor  Current Gen  Hibernation Support  CPU Arch      Network Performance  ENIs    GPUs    GPU Mem (GiB)  GPU Info  On-Demand Price/Hr  Spot Price/Hr (30d avg)
+$ ec2-instance-selector --memory 4 --vcpus 2 --cpu-architecture x86_64 -r us-east-1 -o table-wideInstance Type  VCPUs   Mem (GiB)  Hypervisor  Current Gen  Hibernation Support  CPU Arch      Network Performance  ENIs    GPUs    GPU Mem (GiB)  GPU Info  On-Demand Price/Hr  Spot Price/Hr (30d avg)
 -------------  -----   ---------  ----------  -----------  -------------------  --------      -------------------  ----    ----    -------------  --------  ------------------  -----------------------
-c5.large       2       4          nitro       true         true                 x86_64        Up to 10 Gigabit     3       0       0                        $0.085              $0.03706
-c5a.large      2       4          nitro       true         false                x86_64        Up to 10 Gigabit     3       0       0                        $0.077              $0.03592
+c5.large       2       4          nitro       true         true                 x86_64        Up to 10 Gigabit     3       0       0                        $0.085              $0.04708
+c5a.large      2       4          nitro       true         false                x86_64        Up to 10 Gigabit     3       0       0                        $0.077              $0.03249
 c5ad.large     2       4          nitro       true         false                x86_64        Up to 10 Gigabit     3       0       0                        $0.086              $0.0324
-c5d.large      2       4          nitro       true         true                 x86_64        Up to 10 Gigabit     3       0       0                        $0.096              $0.03267
+c5d.large      2       4          nitro       true         true                 x86_64        Up to 10 Gigabit     3       0       0                        $0.096              $0.03525
 c6a.large      2       4          nitro       true         false                x86_64        Up to 12.5 Gigabit   3       0       0                        $0.0765             $0.034
-c6i.large      2       4          nitro       true         false                x86_64        Up to 12.5 Gigabit   3       0       0                        $0.085              $0.034
-t2.medium      2       4          xen         true         true                 i386, x86_64  Low to Moderate      3       0       0                        $0.0464             $0.01417
+c6i.large      2       4          nitro       true         false                x86_64        Up to 12.5 Gigabit   3       0       0                        $0.085              $0.03416
+t2.medium      2       4          xen         true         true                 i386, x86_64  Low to Moderate      3       0       0                        $0.0464             $0.01407
 t3.medium      2       4          nitro       true         true                 x86_64        Up to 5 Gigabit      3       0       0                        $0.0416             $0.0125
-t3a.medium     2       4          nitro       true         true                 x86_64        Up to 5 Gigabit      3       0       0                        $0.0376             $0.0116
+t3a.medium     2       4          nitro       true         true                 x86_64        Up to 5 Gigabit      3       0       0                        $0.0376             $0.01431
 ```
 
 **All CLI Options**
@@ -165,44 +164,62 @@ ec2-instance-selector --vcpus 4 --region us-east-2 --availability-zones us-east-
 ec2-instance-selector --memory-min 4 --memory-max 8 --vcpus-min 4 --vcpus-max 8 --region us-east-2
 
 Filter Flags:
-      --allow-list string                 List of allowed instance types to select from w/ regex syntax (Example: m[3-5]\.*)
-  -z, --availability-zones strings        Availability zones or zone ids to check EC2 capacity offered in specific AZs
-      --baremetal                         Bare Metal instance types (.metal instances)
-  -b, --burst-support                     Burstable instance types
-  -a, --cpu-architecture string           CPU architecture [x86_64/amd64, x86_64_mac, i386, or arm64]
-      --current-generation                Current generation instance types (explicitly set this to false to not return current generation instance types)
-      --deny-list string                  List of instance types which should be excluded w/ regex syntax (Example: m[1-2]\.*)
-      --efa-support                       Instance types that support Elastic Fabric Adapters (EFA)
-  -e, --ena-support                       Instance types where ENA is supported or required
-  -f, --fpga-support                      FPGA instance types
-      --gpu-memory-total string           Number of GPUs' total memory (Example: 4 GiB) (sets --gpu-memory-total-min and -max to the same value)
-      --gpu-memory-total-max string       Maximum Number of GPUs' total memory (Example: 4 GiB) If --gpu-memory-total-min is not specified, the lower bound will be 0
-      --gpu-memory-total-min string       Minimum Number of GPUs' total memory (Example: 4 GiB) If --gpu-memory-total-max is not specified, the upper bound will be infinity
-  -g, --gpus int                          Total Number of GPUs (Example: 4) (sets --gpus-min and -max to the same value)
-      --gpus-max int                      Maximum Total Number of GPUs (Example: 4) If --gpus-min is not specified, the lower bound will be 0
-      --gpus-min int                      Minimum Total Number of GPUs (Example: 4) If --gpus-max is not specified, the upper bound will be infinity
-      --hibernation-support               Hibernation supported
-      --hypervisor string                 Hypervisor: [xen or nitro]
-  -m, --memory string                     Amount of Memory available (Example: 4 GiB) (sets --memory-min and -max to the same value)
-      --memory-max string                 Maximum Amount of Memory available (Example: 4 GiB) If --memory-min is not specified, the lower bound will be 0
-      --memory-min string                 Minimum Amount of Memory available (Example: 4 GiB) If --memory-max is not specified, the upper bound will be infinity
-      --network-interfaces int            Number of network interfaces (ENIs) that can be attached to the instance (sets --network-interfaces-min and -max to the same value)
-      --network-interfaces-max int        Maximum Number of network interfaces (ENIs) that can be attached to the instance If --network-interfaces-min is not specified, the lower bound will be 0
-      --network-interfaces-min int        Minimum Number of network interfaces (ENIs) that can be attached to the instance If --network-interfaces-max is not specified, the upper bound will be infinity
-      --network-performance int           Bandwidth in Gib/s of network performance (Example: 100) (sets --network-performance-min and -max to the same value)
-      --network-performance-max int       Maximum Bandwidth in Gib/s of network performance (Example: 100) If --network-performance-min is not specified, the lower bound will be 0
-      --network-performance-min int       Minimum Bandwidth in Gib/s of network performance (Example: 100) If --network-performance-max is not specified, the upper bound will be infinity
-      --placement-group-strategy string   Placement group strategy: [cluster, partition, spread]
-      --price-per-hour float              Price/hour in USD (Example: 0.09) (sets --price-per-hour-min and -max to the same value)
-      --price-per-hour-max float          Maximum Price/hour in USD (Example: 0.09) If --price-per-hour-min is not specified, the lower bound will be 0
-      --price-per-hour-min float          Minimum Price/hour in USD (Example: 0.09) If --price-per-hour-max is not specified, the upper bound will be infinity
-      --root-device-type string           Supported root device types: [ebs or instance-store]
-  -u, --usage-class string                Usage class: [spot or on-demand]
-  -c, --vcpus int                         Number of vcpus available to the instance type. (sets --vcpus-min and -max to the same value)
-      --vcpus-max int                     Maximum Number of vcpus available to the instance type. If --vcpus-min is not specified, the lower bound will be 0
-      --vcpus-min int                     Minimum Number of vcpus available to the instance type. If --vcpus-max is not specified, the upper bound will be infinity
-      --vcpus-to-memory-ratio string      The ratio of vcpus to GiBs of memory. (Example: 1:2)
-      --virtualization-type string        Virtualization Type supported: [hvm or pv]
+      --allow-list string                              List of allowed instance types to select from w/ regex syntax (Example: m[3-5]\.*)
+  -z, --availability-zones strings                     Availability zones or zone ids to check EC2 capacity offered in specific AZs
+      --baremetal                                      Bare Metal instance types (.metal instances)
+  -b, --burst-support                                  Burstable instance types
+  -a, --cpu-architecture string                        CPU architecture [x86_64/amd64, x86_64_mac, i386, or arm64]
+      --current-generation                             Current generation instance types (explicitly set this to false to not return current generation instance types)
+      --deny-list string                               List of instance types which should be excluded w/ regex syntax (Example: m[1-2]\.*)
+      --disk-encryption                                EBS or local instance storage where encryption is supported or required
+      --disk-type string                               Disk Type: [hdd or ssd]
+      --ebs-optimized                                  EBS Optimized is supported or default
+      --ebs-optimized-baseline-bandwidth string        EBS Optimized baseline bandwidth (Example: 4 GiB) (sets --ebs-optimized-baseline-bandwidth-min and -max to the same value)
+      --ebs-optimized-baseline-bandwidth-max string    Maximum EBS Optimized baseline bandwidth (Example: 4 GiB) If --ebs-optimized-baseline-bandwidth-min is not specified, the lower bound will be 0
+      --ebs-optimized-baseline-bandwidth-min string    Minimum EBS Optimized baseline bandwidth (Example: 4 GiB) If --ebs-optimized-baseline-bandwidth-max is not specified, the upper bound will be infinity
+      --ebs-optimized-baseline-iops int                EBS Optimized baseline IOPS per second (Example: 10000) (sets --ebs-optimized-baseline-iops-min and -max to the same value)
+      --ebs-optimized-baseline-iops-max int            Maximum EBS Optimized baseline IOPS per second (Example: 10000) If --ebs-optimized-baseline-iops-min is not specified, the lower bound will be 0
+      --ebs-optimized-baseline-iops-min int            Minimum EBS Optimized baseline IOPS per second (Example: 10000) If --ebs-optimized-baseline-iops-max is not specified, the upper bound will be infinity
+      --ebs-optimized-baseline-throughput string       EBS Optimized baseline throughput per second (Example: 4 GiB) (sets --ebs-optimized-baseline-throughput-min and -max to the same value)
+      --ebs-optimized-baseline-throughput-max string   Maximum EBS Optimized baseline throughput per second (Example: 4 GiB) If --ebs-optimized-baseline-throughput-min is not specified, the lower bound will be 0
+      --ebs-optimized-baseline-throughput-min string   Minimum EBS Optimized baseline throughput per second (Example: 4 GiB) If --ebs-optimized-baseline-throughput-max is not specified, the upper bound will be infinity
+      --efa-support                                    Instance types that support Elastic Fabric Adapters (EFA)
+  -e, --ena-support                                    Instance types where ENA is supported or required
+  -f, --fpga-support                                   FPGA instance types
+      --gpu-memory-total string                        Number of GPUs' total memory (Example: 4 GiB) (sets --gpu-memory-total-min and -max to the same value)
+      --gpu-memory-total-max string                    Maximum Number of GPUs' total memory (Example: 4 GiB) If --gpu-memory-total-min is not specified, the lower bound will be 0
+      --gpu-memory-total-min string                    Minimum Number of GPUs' total memory (Example: 4 GiB) If --gpu-memory-total-max is not specified, the upper bound will be infinity
+  -g, --gpus int                                       Total Number of GPUs (Example: 4) (sets --gpus-min and -max to the same value)
+      --gpus-max int                                   Maximum Total Number of GPUs (Example: 4) If --gpus-min is not specified, the lower bound will be 0
+      --gpus-min int                                   Minimum Total Number of GPUs (Example: 4) If --gpus-max is not specified, the upper bound will be infinity
+      --hibernation-support                            Hibernation supported
+      --hypervisor string                              Hypervisor: [xen or nitro]
+      --instance-storage string                        Amount of local instance storage (Example: 4 GiB) (sets --instance-storage-min and -max to the same value)
+      --instance-storage-max string                    Maximum Amount of local instance storage (Example: 4 GiB) If --instance-storage-min is not specified, the lower bound will be 0
+      --instance-storage-min string                    Minimum Amount of local instance storage (Example: 4 GiB) If --instance-storage-max is not specified, the upper bound will be infinity
+      --ipv6                                           Instance Types that support IPv6
+  -m, --memory string                                  Amount of Memory available (Example: 4 GiB) (sets --memory-min and -max to the same value)
+      --memory-max string                              Maximum Amount of Memory available (Example: 4 GiB) If --memory-min is not specified, the lower bound will be 0
+      --memory-min string                              Minimum Amount of Memory available (Example: 4 GiB) If --memory-max is not specified, the upper bound will be infinity
+      --network-encryption                             Instance Types that support automatic network encryption in-transit
+      --network-interfaces int                         Number of network interfaces (ENIs) that can be attached to the instance (sets --network-interfaces-min and -max to the same value)
+      --network-interfaces-max int                     Maximum Number of network interfaces (ENIs) that can be attached to the instance If --network-interfaces-min is not specified, the lower bound will be 0
+      --network-interfaces-min int                     Minimum Number of network interfaces (ENIs) that can be attached to the instance If --network-interfaces-max is not specified, the upper bound will be infinity
+      --network-performance int                        Bandwidth in Gib/s of network performance (Example: 100) (sets --network-performance-min and -max to the same value)
+      --network-performance-max int                    Maximum Bandwidth in Gib/s of network performance (Example: 100) If --network-performance-min is not specified, the lower bound will be 0
+      --network-performance-min int                    Minimum Bandwidth in Gib/s of network performance (Example: 100) If --network-performance-max is not specified, the upper bound will be infinity
+      --nvme                                           EBS or local instance storage where NVME is supported or required
+      --placement-group-strategy string                Placement group strategy: [cluster, partition, spread]
+      --price-per-hour float                           Price/hour in USD (Example: 0.09) (sets --price-per-hour-min and -max to the same value)
+      --price-per-hour-max float                       Maximum Price/hour in USD (Example: 0.09) If --price-per-hour-min is not specified, the lower bound will be 0
+      --price-per-hour-min float                       Minimum Price/hour in USD (Example: 0.09) If --price-per-hour-max is not specified, the upper bound will be infinity
+      --root-device-type string                        Supported root device types: [ebs or instance-store]
+  -u, --usage-class string                             Usage class: [spot or on-demand]
+  -c, --vcpus int                                      Number of vcpus available to the instance type. (sets --vcpus-min and -max to the same value)
+      --vcpus-max int                                  Maximum Number of vcpus available to the instance type. If --vcpus-min is not specified, the lower bound will be 0
+      --vcpus-min int                                  Minimum Number of vcpus available to the instance type. If --vcpus-max is not specified, the upper bound will be infinity
+      --vcpus-to-memory-ratio string                   The ratio of vcpus to GiBs of memory. (Example: 1:2)
+      --virtualization-type string                     Virtualization Type supported: [hvm or pv]
 
 
 Suite Flags:
