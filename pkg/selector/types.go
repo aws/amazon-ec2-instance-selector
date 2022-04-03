@@ -137,6 +137,9 @@ type Filters struct {
 	// GpuMemoryRange filter is a range of acceptable GPU memory in Gibibytes (GiB) available to an EC2 instance type in aggreagte across all GPUs.
 	GpuMemoryRange *ByteQuantityRangeFilter
 
+	// InferenceAcceleratorsRange filters inference acclerators available to the instance type
+	InferenceAcceleratorsRange *IntRangeFilter
+
 	// HibernationSupported denotes whether EC2 hibernate is supported
 	// Possible values are: true or false
 	HibernationSupported *bool

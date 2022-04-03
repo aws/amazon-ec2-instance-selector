@@ -132,7 +132,8 @@ t3a.medium           2            4
 
 **Wide Table Output**
 ```
-$ ec2-instance-selector --memory 4 --vcpus 2 --cpu-architecture x86_64 -r us-east-1 -o table-wideInstance Type  VCPUs   Mem (GiB)  Hypervisor  Current Gen  Hibernation Support  CPU Arch      Network Performance  ENIs    GPUs    GPU Mem (GiB)  GPU Info  On-Demand Price/Hr  Spot Price/Hr (30d avg)
+$ ec2-instance-selector --memory 4 --vcpus 2 --cpu-architecture x86_64 -r us-east-1 -o table-wide
+Instance Type  VCPUs   Mem (GiB)  Hypervisor  Current Gen  Hibernation Support  CPU Arch      Network Performance  ENIs    GPUs    GPU Mem (GiB)  GPU Info  On-Demand Price/Hr  Spot Price/Hr (30d avg)
 -------------  -----   ---------  ----------  -----------  -------------------  --------      -------------------  ----    ----    -------------  --------  ------------------  -----------------------
 c5.large       2       4          nitro       true         true                 x86_64        Up to 10 Gigabit     3       0       0                        $0.085              $0.04708
 c5a.large      2       4          nitro       true         false                x86_64        Up to 10 Gigabit     3       0       0                        $0.077              $0.03249
@@ -194,6 +195,9 @@ Filter Flags:
       --gpus-min int                                   Minimum Total Number of GPUs (Example: 4) If --gpus-max is not specified, the upper bound will be infinity
       --hibernation-support                            Hibernation supported
       --hypervisor string                              Hypervisor: [xen or nitro]
+      --inference-accelerators int                     Total Number of inference accelerators (Example: 4) (sets --inference-accelerators-min and -max to the same value)
+      --inference-accelerators-max int                 Maximum Total Number of inference accelerators (Example: 4) If --inference-accelerators-min is not specified, the lower bound will be 0
+      --inference-accelerators-min int                 Minimum Total Number of inference accelerators (Example: 4) If --inference-accelerators-max is not specified, the upper bound will be infinity
       --instance-storage string                        Amount of local instance storage (Example: 4 GiB) (sets --instance-storage-min and -max to the same value)
       --instance-storage-max string                    Maximum Amount of local instance storage (Example: 4 GiB) If --instance-storage-min is not specified, the lower bound will be 0
       --instance-storage-min string                    Minimum Amount of local instance storage (Example: 4 GiB) If --instance-storage-max is not specified, the upper bound will be infinity

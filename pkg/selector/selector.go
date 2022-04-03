@@ -55,6 +55,7 @@ const (
 	memoryRange                    = "memoryRange"
 	gpuMemoryRange                 = "gpuMemoryRange"
 	gpusRange                      = "gpusRange"
+	inferenceAcceleratorsRange     = "inferenceAcceleratorsRange"
 	placementGroupStrategy         = "placementGroupStrategy"
 	hypervisor                     = "hypervisor"
 	baremetal                      = "baremetal"
@@ -255,6 +256,7 @@ func (itf Selector) rawFilter(filters Filters) ([]*instancetypes.Details, error)
 			memoryRange:                    {filters.MemoryRange, instanceTypeInfo.MemoryInfo.SizeInMiB},
 			gpuMemoryRange:                 {filters.GpuMemoryRange, getTotalGpuMemory(instanceTypeInfo.GpuInfo)},
 			gpusRange:                      {filters.GpusRange, getTotalGpusCount(instanceTypeInfo.GpuInfo)},
+			inferenceAcceleratorsRange:     {filters.InferenceAcceleratorsRange, getTotalAcceleratorsCount(instanceTypeInfo.InferenceAcceleratorInfo)},
 			placementGroupStrategy:         {filters.PlacementGroupStrategy, instanceTypeInfo.PlacementGroupInfo.SupportedStrategies},
 			hypervisor:                     {filters.Hypervisor, instanceTypeInfo.Hypervisor},
 			baremetal:                      {filters.BareMetal, instanceTypeInfo.BareMetal},

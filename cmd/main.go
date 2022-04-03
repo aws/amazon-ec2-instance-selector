@@ -60,6 +60,7 @@ const (
 	cpuArchitecture                = "cpu-architecture"
 	gpus                           = "gpus"
 	gpuMemoryTotal                 = "gpu-memory-total"
+	inferenceAccelerators          = "inference-accelerators"
 	placementGroupStrategy         = "placement-group-strategy"
 	usageClass                     = "usage-class"
 	rootDeviceType                 = "root-device-type"
@@ -147,6 +148,7 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	cli.StringOptionsFlag(cpuArchitecture, cli.StringMe("a"), nil, "CPU architecture [x86_64/amd64, x86_64_mac, i386, or arm64]", []string{"x86_64", "x86_64_mac", "amd64", "i386", "arm64"})
 	cli.IntMinMaxRangeFlags(gpus, cli.StringMe("g"), nil, "Total Number of GPUs (Example: 4)")
 	cli.ByteQuantityMinMaxRangeFlags(gpuMemoryTotal, nil, nil, "Number of GPUs' total memory (Example: 4 GiB)")
+	cli.IntMinMaxRangeFlags(inferenceAccelerators, nil, nil, "Total Number of inference accelerators (Example: 4)")
 	cli.StringOptionsFlag(placementGroupStrategy, nil, nil, "Placement group strategy: [cluster, partition, spread]", []string{"cluster", "partition", "spread"})
 	cli.StringOptionsFlag(usageClass, cli.StringMe("u"), nil, "Usage class: [spot or on-demand]", []string{"spot", "on-demand"})
 	cli.StringOptionsFlag(rootDeviceType, nil, nil, "Supported root device types: [ebs or instance-store]", []string{"ebs", "instance-store"})
@@ -256,6 +258,7 @@ Full docs can be found at github.com/aws/amazon-` + binName
 		CPUArchitecture:                cli.StringMe(flags[cpuArchitecture]),
 		GpusRange:                      cli.IntRangeMe(flags[gpus]),
 		GpuMemoryRange:                 cli.ByteQuantityRangeMe(flags[gpuMemoryTotal]),
+		InferenceAcceleratorsRange:     cli.IntRangeMe(flags[inferenceAccelerators]),
 		PlacementGroupStrategy:         cli.StringMe(flags[placementGroupStrategy]),
 		UsageClass:                     cli.StringMe(flags[usageClass]),
 		RootDeviceType:                 cli.StringMe(flags[rootDeviceType]),

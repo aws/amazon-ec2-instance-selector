@@ -111,6 +111,17 @@ func isSupportedWithBool(instanceTypeValue *bool, target *bool) bool {
 
 // Helper functions for aggregating data parsed from AWS API calls
 
+func getTotalAcceleratorsCount(acceleratorInfo *ec2.InferenceAcceleratorInfo) *int64 {
+	if acceleratorInfo == nil {
+		return nil
+	}
+	total := aws.Int64(0)
+	for _, accel := range acceleratorInfo.Accelerators {
+		total = aws.Int64(*total + *accel.Count)
+	}
+	return total
+}
+
 func getTotalGpusCount(gpusInfo *ec2.GpuInfo) *int64 {
 	if gpusInfo == nil {
 		return nil
