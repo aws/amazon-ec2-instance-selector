@@ -72,9 +72,6 @@ shellcheck:
 readme-codeblock-test: 
 	${MAKEFILE_PATH}/test/readme-test/run-readme-codeblocks
 
-## requires aws credentials
-output-validation-test: 
-	${MAKEFILE_PATH}/test/output-validation-test/test-output-validation
 
 build-binaries:
 	${MAKEFILE_PATH}/scripts/build-binaries -d -p ${SUPPORTED_PLATFORMS} -v ${VERSION}
@@ -95,7 +92,7 @@ e2e-test: build
 	${MAKEFILE_PATH}/test/e2e/run-test
 
 ## requires aws credentials
-integ-test: e2e-test output-validation-test readme-codeblock-test
+integ-test: e2e-test readme-codeblock-test
 
 homebrew-sync-dry-run:
 	${MAKEFILE_PATH}/scripts/sync-to-aws-homebrew-tap -d -b ${BIN} -r ${REPO_FULL_NAME} -p ${SUPPORTED_PLATFORMS} -v ${LATEST_RELEASE_TAG}
@@ -107,7 +104,7 @@ build: compile
 
 release: build-binaries upload-resources-to-github
 
-test: spellcheck shellcheck unit-test license-test e2e-test output-validation-test readme-codeblock-test
+test: spellcheck shellcheck unit-test license-test e2e-test readme-codeblock-test
 
 help:
 	@grep -E '^[a-zA-Z_-]+:.*$$' $(MAKEFILE_LIST) | sort
