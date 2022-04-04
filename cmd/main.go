@@ -42,11 +42,6 @@ const (
 	awsConfigFile       = "~/.aws/config"
 	spotPricingDaysBack = 30
 
-	// cfnJSON is an output type
-	cfnJSON = "cfn-json"
-	// cfnYAML is an output type
-	cfnYAML         = "cfn-yaml"
-	terraformHCL    = "terraform-hcl"
 	tableOutput     = "table"
 	tableWideOutput = "table-wide"
 	oneLine         = "one-line"
@@ -384,12 +379,6 @@ func getOutputFn(outputFlag *string, currentFn selector.InstanceTypesOutputFn) s
 	outputFn := selector.InstanceTypesOutputFn(currentFn)
 	if outputFlag != nil {
 		switch *outputFlag {
-		case cfnJSON:
-			return selector.InstanceTypesOutputFn(outputs.CloudFormationSpotMixedInstancesPolicyJSONOutput)
-		case cfnYAML:
-			return selector.InstanceTypesOutputFn(outputs.CloudFormationSpotMixedInstancesPolicyYAMLOutput)
-		case terraformHCL:
-			return selector.InstanceTypesOutputFn(outputs.TerraformSpotMixedInstancesPolicyHCLOutput)
 		case tableWideOutput:
 			return selector.InstanceTypesOutputFn(outputs.TableOutputWide)
 		case tableOutput:
