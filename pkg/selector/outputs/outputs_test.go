@@ -24,8 +24,6 @@ import (
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/selector/outputs"
 	h "github.com/aws/amazon-ec2-instance-selector/v2/pkg/test"
 	"github.com/aws/aws-sdk-go/service/ec2"
-	"github.com/ghodss/yaml"
-	"github.com/hashicorp/hcl"
 )
 
 const (
@@ -75,33 +73,6 @@ func TestVerboseInstanceTypeOutput(t *testing.T) {
 
 	instanceTypeOut = outputs.VerboseInstanceTypeOutput(nil)
 	h.Assert(t, len(instanceTypeOut) == 0, "Should return 0 instance types when passed nil")
-}
-
-func TestTerraformSpotMixedInstancesPolicyHCLOutput(t *testing.T) {
-	instanceTypes := getInstanceTypes(t, "t3_micro.json")
-	instanceTypeOut := outputs.TerraformSpotMixedInstancesPolicyHCLOutput(instanceTypes)
-	outputStr := strings.Join(instanceTypeOut, "")
-	_, err := hcl.ParseString(outputStr)
-	h.Ok(t, err)
-	h.Assert(t, strings.Contains(outputStr, `instance_type = "t3.micro"`), "HCL should include a t3.micro instanceType override")
-}
-
-func TestCloudFormationSpotMixedInstancesPolicyYAMLOutput(t *testing.T) {
-	instanceTypes := getInstanceTypes(t, "t3_micro.json")
-	instanceTypeOut := outputs.CloudFormationSpotMixedInstancesPolicyYAMLOutput(instanceTypes)
-	outputStr := strings.Join(instanceTypeOut, "")
-	_, err := yaml.YAMLToJSON([]byte(outputStr))
-	h.Ok(t, err)
-	h.Assert(t, strings.Contains(outputStr, `InstanceType: t3.micro`), "CFN Yaml should include a t3.micro InstanceType override")
-}
-
-func TestCloudFormationSpotMixedInstancesPolicyJSONOutput(t *testing.T) {
-	instanceTypes := getInstanceTypes(t, "t3_micro.json")
-	instanceTypeOut := outputs.CloudFormationSpotMixedInstancesPolicyJSONOutput(instanceTypes)
-	outputStr := strings.Join(instanceTypeOut, "")
-	_, err := yaml.JSONToYAML([]byte(outputStr))
-	h.Ok(t, err)
-	h.Assert(t, strings.Contains(outputStr, `"InstanceType": "t3.micro"`), "CFN JSON should include a t3.micro InstanceType override")
 }
 
 func TestTableOutputShort(t *testing.T) {

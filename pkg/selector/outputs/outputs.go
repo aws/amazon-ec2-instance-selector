@@ -24,7 +24,6 @@ import (
 	"text/tabwriter"
 
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/instancetypes"
-	"github.com/ghodss/yaml"
 )
 
 // SimpleInstanceTypeOutput is an OutputFn which outputs a slice of instance type names
@@ -47,109 +46,6 @@ func VerboseInstanceTypeOutput(instanceTypeInfoSlice []*instancetypes.Details) [
 		return []string{}
 	}
 	return []string{string(output)}
-}
-
-// TerraformSpotMixedInstancesPolicyHCLOutput is an OutputFn which returns an ASG MixedInstancePolicy in Terraform HCL syntax
-func TerraformSpotMixedInstancesPolicyHCLOutput(instanceTypeInfoSlice []*instancetypes.Details) []string {
-	instanceTypeOverrides := instanceTypeInfoToOverrides(instanceTypeInfoSlice)
-	overridesString := ""
-	for _, override := range instanceTypeOverrides {
-		overridesString = overridesString + fmt.Sprintf(`
-			override {
-				instance_type = "%s"
-			}
-		`, override.InstanceType)
-	}
-	asgResource := fmt.Sprintf(`resource "aws_autoscaling_group" "AutoScalingGroupMIG" {
-		vpc_zone_identifier = [
-		  "REPLACE_WITH_SUBNET_ID"
-		]
-	  
-		name = "AutoScalingGroupMIG"
-		max_size = 0
-		min_size = 0
-		desired_capacity = 0
-	  
-		mixed_instances_policy {
-		  instances_distribution {
-			on_demand_base_capacity = 0
-			on_demand_percentage_above_base_capacity = 0
-			spot_allocation_strategy = "capacity-optimized"
-		  }
-	  
-		  launch_template {
-			launch_template_specification {
-			  launch_template_id = "REPLACE_WITH_LAUNCH_TEMPLATE_ID"
-			  version = "$$Latest"
-			}
-
-			%s
-		  }
-		}
-	  }
-	  provider "aws" {
-		  region = "us-east-1"
-	  }
-	  `, overridesString)
-
-	return []string{asgResource}
-}
-
-// CloudFormationSpotMixedInstancesPolicyYAMLOutput is an OutputFn which returns an ASG MixedInstancePolicy in CloudFormation YAML syntax
-func CloudFormationSpotMixedInstancesPolicyYAMLOutput(instanceTypeInfoSlice []*instancetypes.Details) []string {
-	instanceTypeOverrides := instanceTypeInfoToOverrides(instanceTypeInfoSlice)
-	cfnMig := getCfnMIGResources(instanceTypeOverrides)
-	cfnMigYAML, err := yaml.Marshal(cfnMig)
-	if err != nil {
-		log.Printf("Unable to create CloudFormation YAML: %v\n", err)
-	}
-	return []string{string(cfnMigYAML)}
-}
-
-// CloudFormationSpotMixedInstancesPolicyJSONOutput is an OutputFn which returns an MixedInstancePolicy in CloudFormation JSON syntax
-func CloudFormationSpotMixedInstancesPolicyJSONOutput(instanceTypeInfoSlice []*instancetypes.Details) []string {
-	instanceTypeOverrides := instanceTypeInfoToOverrides(instanceTypeInfoSlice)
-	cfnMig := getCfnMIGResources(instanceTypeOverrides)
-	cfnJSONMig, err := json.MarshalIndent(cfnMig, "", "    ")
-	if err != nil {
-		log.Printf("Unable to create CloudFormation JSON: %v\n", err)
-		return []string{}
-	}
-	return []string{string(cfnJSONMig)}
-}
-
-func getCfnMIGResources(instanceTypeOverrides []InstanceTypeOverride) Resources {
-	resources := map[string]AutoScalingGroup{}
-	resources["AutoScalingGroupMIG"] = AutoScalingGroup{
-		Type: typeASG,
-		Properties: AutoScalingGroupProperties{
-			AutoScalingGroupName: "REPLACE_WITH_NAME",
-			VPCZoneIdentifier:    []string{"replace-with-subnet-ids"},
-			MixedInstancesPolicy: MixedInstancesPolicy{
-				InstancesDistribution: InstancesDistribution{
-					OnDemandBaseCapacity:                0,
-					OnDemandPercentageAboveBaseCapacity: 0,
-					SpotAllocationStrategy:              capacityOptimized,
-				},
-				LaunchTemplate: LaunchTemplate{
-					LaunchTemplateSpecification: LaunchTemplateSpecification{
-						LaunchTemplateID: "REPLACE_WITH_LAUNCH_TEMPLATE_ID",
-						Version:          "REPLACE_WITH_VERSION",
-					},
-					Overrides: instanceTypeOverrides,
-				},
-			},
-		},
-	}
-	return Resources{Resources: resources}
-}
-
-func instanceTypeInfoToOverrides(instanceTypeInfoSlice []*instancetypes.Details) []InstanceTypeOverride {
-	instanceTypeOverrides := []InstanceTypeOverride{}
-	for _, instanceTypeInfo := range instanceTypeInfoSlice {
-		instanceTypeOverrides = append(instanceTypeOverrides, InstanceTypeOverride{InstanceType: *instanceTypeInfo.InstanceType})
-	}
-	return instanceTypeOverrides
 }
 
 // TableOutputShort is an OutputFn which returns a CLI table for easy reading
