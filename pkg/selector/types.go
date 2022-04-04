@@ -137,6 +137,9 @@ type Filters struct {
 	// GpuMemoryRange filter is a range of acceptable GPU memory in Gibibytes (GiB) available to an EC2 instance type in aggreagte across all GPUs.
 	GpuMemoryRange *ByteQuantityRangeFilter
 
+	// InferenceAcceleratorsRange filters inference acclerators available to the instance type
+	InferenceAcceleratorsRange *IntRangeFilter
+
 	// HibernationSupported denotes whether EC2 hibernate is supported
 	// Possible values are: true or false
 	HibernationSupported *bool
@@ -156,6 +159,12 @@ type Filters struct {
 
 	// NetworkPerformance filter is a range of network bandwidth an instance type can support
 	NetworkPerformance *IntRangeFilter
+
+	// NetworkEncryption filters for instance types that automatically encrypt network traffic in-transit
+	NetworkEncryption *bool
+
+	// IPv6 filters for instance types that support IPv6
+	IPv6 *bool
 
 	// PlacementGroupStrategy is used to return instance types based on its support
 	// for a specific placement group strategy
@@ -206,4 +215,29 @@ type Filters struct {
 
 	// PricePerHour is used to return instance types that are equal to or cheaper than the specified price
 	PricePerHour *Float64RangeFilter
+
+	// InstanceStorageRange filters on a range of storage available as local disk
+	InstanceStorageRange *ByteQuantityRangeFilter
+
+	// DiskType is the backing storage medium
+	// Possible values are: hdd or ssd
+	DiskType *string
+
+	// NVME filters for NVME disks, including both EBS and local instance storage
+	NVME *bool
+
+	// EBSOptimized filters for instance types that support EBS Optimized
+	EBSOptimized *bool
+
+	// DiskEncryption filters for instance types that support EBS Encryption or local storage encryption
+	DiskEncryption *bool
+
+	// EBSOptimizedBaselineBandwidth filters on a range of bandwidth that an EBS Optimized volume supports
+	EBSOptimizedBaselineBandwidth *ByteQuantityRangeFilter
+
+	// EBSOptimizedBaselineThroughput filters on a range of throughput that an EBS Optimized volume supports
+	EBSOptimizedBaselineThroughput *ByteQuantityRangeFilter
+
+	// EBSOptimizedBaselineIOPS filters on a range of IOPS that an EBS Optimized volume supports
+	EBSOptimizedBaselineIOPS *IntRangeFilter
 }

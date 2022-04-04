@@ -47,29 +47,40 @@ const (
 
 	// Filter Keys
 
-	cpuArchitecture        = "cpuArchitecture"
-	usageClass             = "usageClass"
-	rootDeviceType         = "rootDeviceType"
-	hibernationSupported   = "hibernationSupported"
-	vcpusRange             = "vcpusRange"
-	memoryRange            = "memoryRange"
-	gpuMemoryRange         = "gpuMemoryRange"
-	gpusRange              = "gpusRange"
-	placementGroupStrategy = "placementGroupStrategy"
-	hypervisor             = "hypervisor"
-	baremetal              = "baremetal"
-	burstable              = "burstable"
-	fpga                   = "fpga"
-	enaSupport             = "enaSupport"
-	efaSupport             = "efaSupport"
-	vcpusToMemoryRatio     = "vcpusToMemoryRatio"
-	currentGeneration      = "currentGeneration"
-	networkInterfaces      = "networkInterfaces"
-	networkPerformance     = "networkPerformance"
-	allowList              = "allowList"
-	denyList               = "denyList"
-	instanceTypes          = "instanceTypes"
-	virtualizationType     = "virtualizationType"
+	cpuArchitecture                = "cpuArchitecture"
+	usageClass                     = "usageClass"
+	rootDeviceType                 = "rootDeviceType"
+	hibernationSupported           = "hibernationSupported"
+	vcpusRange                     = "vcpusRange"
+	memoryRange                    = "memoryRange"
+	gpuMemoryRange                 = "gpuMemoryRange"
+	gpusRange                      = "gpusRange"
+	inferenceAcceleratorsRange     = "inferenceAcceleratorsRange"
+	placementGroupStrategy         = "placementGroupStrategy"
+	hypervisor                     = "hypervisor"
+	baremetal                      = "baremetal"
+	burstable                      = "burstable"
+	fpga                           = "fpga"
+	enaSupport                     = "enaSupport"
+	efaSupport                     = "efaSupport"
+	vcpusToMemoryRatio             = "vcpusToMemoryRatio"
+	currentGeneration              = "currentGeneration"
+	networkInterfaces              = "networkInterfaces"
+	networkPerformance             = "networkPerformance"
+	networkEncryption              = "networkEncryption"
+	ipv6                           = "ipv6"
+	allowList                      = "allowList"
+	denyList                       = "denyList"
+	instanceTypes                  = "instanceTypes"
+	virtualizationType             = "virtualizationType"
+	instanceStorageRange           = "instanceStorageRange"
+	diskEncryption                 = "diskEncryption"
+	diskType                       = "diskType"
+	nvme                           = "nvme"
+	ebsOptimized                   = "ebsOptimized"
+	ebsOptimizedBaselineBandwidth  = "ebsOptimizedBaselineBandwidth"
+	ebsOptimizedBaselineIOPS       = "ebsOptimizedBaselineIOPS"
+	ebsOptimizedBaselineThroughput = "ebsOptimizedBaselineThroughput"
 
 	cpuArchitectureAMD64 = "amd64"
 	cpuArchitectureX8664 = "x86_64"
@@ -237,28 +248,39 @@ func (itf Selector) rawFilter(filters Filters) ([]*instancetypes.Details, error)
 		// filterToInstanceSpecMappingPairs is a map of filter name [key] to filter pair [value].
 		// A filter pair includes user input filter value and instance spec value retrieved from DescribeInstanceTypes
 		filterToInstanceSpecMappingPairs := map[string]filterPair{
-			cpuArchitecture:        {filters.CPUArchitecture, instanceTypeInfo.ProcessorInfo.SupportedArchitectures},
-			usageClass:             {filters.UsageClass, instanceTypeInfo.SupportedUsageClasses},
-			rootDeviceType:         {filters.RootDeviceType, instanceTypeInfo.SupportedRootDeviceTypes},
-			hibernationSupported:   {filters.HibernationSupported, instanceTypeInfo.HibernationSupported},
-			vcpusRange:             {filters.VCpusRange, instanceTypeInfo.VCpuInfo.DefaultVCpus},
-			memoryRange:            {filters.MemoryRange, instanceTypeInfo.MemoryInfo.SizeInMiB},
-			gpuMemoryRange:         {filters.GpuMemoryRange, getTotalGpuMemory(instanceTypeInfo.GpuInfo)},
-			gpusRange:              {filters.GpusRange, getTotalGpusCount(instanceTypeInfo.GpuInfo)},
-			placementGroupStrategy: {filters.PlacementGroupStrategy, instanceTypeInfo.PlacementGroupInfo.SupportedStrategies},
-			hypervisor:             {filters.Hypervisor, instanceTypeInfo.Hypervisor},
-			baremetal:              {filters.BareMetal, instanceTypeInfo.BareMetal},
-			burstable:              {filters.Burstable, instanceTypeInfo.BurstablePerformanceSupported},
-			fpga:                   {filters.Fpga, &isFpga},
-			enaSupport:             {filters.EnaSupport, supportSyntaxToBool(instanceTypeInfo.NetworkInfo.EnaSupport)},
-			efaSupport:             {filters.EfaSupport, instanceTypeInfo.NetworkInfo.EfaSupported},
-			vcpusToMemoryRatio:     {filters.VCpusToMemoryRatio, calculateVCpusToMemoryRatio(instanceTypeInfo.VCpuInfo.DefaultVCpus, instanceTypeInfo.MemoryInfo.SizeInMiB)},
-			currentGeneration:      {filters.CurrentGeneration, instanceTypeInfo.CurrentGeneration},
-			networkInterfaces:      {filters.NetworkInterfaces, instanceTypeInfo.NetworkInfo.MaximumNetworkInterfaces},
-			networkPerformance:     {filters.NetworkPerformance, getNetworkPerformance(instanceTypeInfo.NetworkInfo.NetworkPerformance)},
-			instanceTypes:          {filters.InstanceTypes, instanceTypeInfo.InstanceType},
-			virtualizationType:     {filters.VirtualizationType, instanceTypeInfo.SupportedVirtualizationTypes},
-			pricePerHour:           {filters.PricePerHour, &instanceTypeHourlyPriceForFilter},
+			cpuArchitecture:                {filters.CPUArchitecture, instanceTypeInfo.ProcessorInfo.SupportedArchitectures},
+			usageClass:                     {filters.UsageClass, instanceTypeInfo.SupportedUsageClasses},
+			rootDeviceType:                 {filters.RootDeviceType, instanceTypeInfo.SupportedRootDeviceTypes},
+			hibernationSupported:           {filters.HibernationSupported, instanceTypeInfo.HibernationSupported},
+			vcpusRange:                     {filters.VCpusRange, instanceTypeInfo.VCpuInfo.DefaultVCpus},
+			memoryRange:                    {filters.MemoryRange, instanceTypeInfo.MemoryInfo.SizeInMiB},
+			gpuMemoryRange:                 {filters.GpuMemoryRange, getTotalGpuMemory(instanceTypeInfo.GpuInfo)},
+			gpusRange:                      {filters.GpusRange, getTotalGpusCount(instanceTypeInfo.GpuInfo)},
+			inferenceAcceleratorsRange:     {filters.InferenceAcceleratorsRange, getTotalAcceleratorsCount(instanceTypeInfo.InferenceAcceleratorInfo)},
+			placementGroupStrategy:         {filters.PlacementGroupStrategy, instanceTypeInfo.PlacementGroupInfo.SupportedStrategies},
+			hypervisor:                     {filters.Hypervisor, instanceTypeInfo.Hypervisor},
+			baremetal:                      {filters.BareMetal, instanceTypeInfo.BareMetal},
+			burstable:                      {filters.Burstable, instanceTypeInfo.BurstablePerformanceSupported},
+			fpga:                           {filters.Fpga, &isFpga},
+			enaSupport:                     {filters.EnaSupport, supportSyntaxToBool(instanceTypeInfo.NetworkInfo.EnaSupport)},
+			efaSupport:                     {filters.EfaSupport, instanceTypeInfo.NetworkInfo.EfaSupported},
+			vcpusToMemoryRatio:             {filters.VCpusToMemoryRatio, calculateVCpusToMemoryRatio(instanceTypeInfo.VCpuInfo.DefaultVCpus, instanceTypeInfo.MemoryInfo.SizeInMiB)},
+			currentGeneration:              {filters.CurrentGeneration, instanceTypeInfo.CurrentGeneration},
+			networkInterfaces:              {filters.NetworkInterfaces, instanceTypeInfo.NetworkInfo.MaximumNetworkInterfaces},
+			networkPerformance:             {filters.NetworkPerformance, getNetworkPerformance(instanceTypeInfo.NetworkInfo.NetworkPerformance)},
+			networkEncryption:              {filters.NetworkEncryption, instanceTypeInfo.NetworkInfo.EncryptionInTransitSupported},
+			ipv6:                           {filters.IPv6, instanceTypeInfo.NetworkInfo.Ipv6Supported},
+			instanceTypes:                  {filters.InstanceTypes, instanceTypeInfo.InstanceType},
+			virtualizationType:             {filters.VirtualizationType, instanceTypeInfo.SupportedVirtualizationTypes},
+			pricePerHour:                   {filters.PricePerHour, &instanceTypeHourlyPriceForFilter},
+			instanceStorageRange:           {filters.InstanceStorageRange, getInstanceStorage(instanceTypeInfo.InstanceStorageInfo)},
+			diskType:                       {filters.DiskType, getDiskType(instanceTypeInfo.InstanceStorageInfo)},
+			nvme:                           {filters.NVME, getNVMESupport(instanceTypeInfo.InstanceStorageInfo, instanceTypeInfo.EbsInfo)},
+			ebsOptimized:                   {filters.EBSOptimized, supportSyntaxToBool(instanceTypeInfo.EbsInfo.EbsOptimizedSupport)},
+			diskEncryption:                 {filters.DiskEncryption, getDiskEncryptionSupport(instanceTypeInfo.InstanceStorageInfo, instanceTypeInfo.EbsInfo)},
+			ebsOptimizedBaselineBandwidth:  {filters.EBSOptimizedBaselineBandwidth, getEBSOptimizedBaselineBandwidth(instanceTypeInfo.EbsInfo)},
+			ebsOptimizedBaselineThroughput: {filters.EBSOptimizedBaselineThroughput, getEBSOptimizedBaselineThroughput(instanceTypeInfo.EbsInfo)},
+			ebsOptimizedBaselineIOPS:       {filters.EBSOptimizedBaselineIOPS, getEBSOptimizedBaselineIOPS(instanceTypeInfo.EbsInfo)},
 		}
 
 		if isInDenyList(filters.DenyList, instanceTypeName) || !isInAllowList(filters.AllowList, instanceTypeName) {
@@ -371,11 +393,15 @@ func (itf Selector) executeFilters(filterToInstanceSpecMapping map[string]filter
 					return false, nil
 				}
 			case *int64:
-				mibRange := Uint64RangeFilter{
-					LowerBound: filter.LowerBound.Quantity,
-					UpperBound: filter.UpperBound.Quantity,
-				}
 				if !isSupportedWithRangeUint64(iSpec, &mibRange) {
+					return false, nil
+				}
+			case *float64:
+				floatMiBRange := Float64RangeFilter{
+					LowerBound: float64(filter.LowerBound.Quantity),
+					UpperBound: float64(filter.UpperBound.Quantity),
+				}
+				if !isSupportedWithRangeFloat64(iSpec, &floatMiBRange) {
 					return false, nil
 				}
 			default:
