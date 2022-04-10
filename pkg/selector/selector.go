@@ -47,40 +47,48 @@ const (
 
 	// Filter Keys
 
-	cpuArchitecture                = "cpuArchitecture"
-	usageClass                     = "usageClass"
-	rootDeviceType                 = "rootDeviceType"
-	hibernationSupported           = "hibernationSupported"
-	vcpusRange                     = "vcpusRange"
-	memoryRange                    = "memoryRange"
-	gpuMemoryRange                 = "gpuMemoryRange"
-	gpusRange                      = "gpusRange"
-	inferenceAcceleratorsRange     = "inferenceAcceleratorsRange"
-	placementGroupStrategy         = "placementGroupStrategy"
-	hypervisor                     = "hypervisor"
-	baremetal                      = "baremetal"
-	burstable                      = "burstable"
-	fpga                           = "fpga"
-	enaSupport                     = "enaSupport"
-	efaSupport                     = "efaSupport"
-	vcpusToMemoryRatio             = "vcpusToMemoryRatio"
-	currentGeneration              = "currentGeneration"
-	networkInterfaces              = "networkInterfaces"
-	networkPerformance             = "networkPerformance"
-	networkEncryption              = "networkEncryption"
-	ipv6                           = "ipv6"
-	allowList                      = "allowList"
-	denyList                       = "denyList"
-	instanceTypes                  = "instanceTypes"
-	virtualizationType             = "virtualizationType"
-	instanceStorageRange           = "instanceStorageRange"
-	diskEncryption                 = "diskEncryption"
-	diskType                       = "diskType"
-	nvme                           = "nvme"
-	ebsOptimized                   = "ebsOptimized"
-	ebsOptimizedBaselineBandwidth  = "ebsOptimizedBaselineBandwidth"
-	ebsOptimizedBaselineIOPS       = "ebsOptimizedBaselineIOPS"
-	ebsOptimizedBaselineThroughput = "ebsOptimizedBaselineThroughput"
+	cpuArchitecture                  = "cpuArchitecture"
+	cpuManufacturer                  = "cpuManufacturer"
+	usageClass                       = "usageClass"
+	rootDeviceType                   = "rootDeviceType"
+	hibernationSupported             = "hibernationSupported"
+	vcpusRange                       = "vcpusRange"
+	memoryRange                      = "memoryRange"
+	gpuMemoryRange                   = "gpuMemoryRange"
+	gpusRange                        = "gpusRange"
+	gpuManufacturer                  = "gpuManufacturer"
+	gpuModel                         = "gpuModel"
+	inferenceAcceleratorsRange       = "inferenceAcceleratorsRange"
+	inferenceAcceleratorManufacturer = "inferenceAcceleartorManufacturer"
+	inferenceAcceleratorModel        = "inferenceAcceleratorModel"
+	placementGroupStrategy           = "placementGroupStrategy"
+	hypervisor                       = "hypervisor"
+	baremetal                        = "baremetal"
+	burstable                        = "burstable"
+	fpga                             = "fpga"
+	enaSupport                       = "enaSupport"
+	efaSupport                       = "efaSupport"
+	vcpusToMemoryRatio               = "vcpusToMemoryRatio"
+	currentGeneration                = "currentGeneration"
+	networkInterfaces                = "networkInterfaces"
+	networkPerformance               = "networkPerformance"
+	networkEncryption                = "networkEncryption"
+	ipv6                             = "ipv6"
+	allowList                        = "allowList"
+	denyList                         = "denyList"
+	instanceTypes                    = "instanceTypes"
+	virtualizationType               = "virtualizationType"
+	instanceStorageRange             = "instanceStorageRange"
+	diskEncryption                   = "diskEncryption"
+	diskType                         = "diskType"
+	nvme                             = "nvme"
+	ebsOptimized                     = "ebsOptimized"
+	ebsOptimizedBaselineBandwidth    = "ebsOptimizedBaselineBandwidth"
+	ebsOptimizedBaselineIOPS         = "ebsOptimizedBaselineIOPS"
+	ebsOptimizedBaselineThroughput   = "ebsOptimizedBaselineThroughput"
+	freeTier                         = "freeTier"
+	autoRecovery                     = "autoRecovery"
+	dedicatedHosts                   = "dedicatedHosts"
 
 	cpuArchitectureAMD64 = "amd64"
 	cpuArchitectureX8664 = "x86_64"
@@ -248,39 +256,47 @@ func (itf Selector) rawFilter(filters Filters) ([]*instancetypes.Details, error)
 		// filterToInstanceSpecMappingPairs is a map of filter name [key] to filter pair [value].
 		// A filter pair includes user input filter value and instance spec value retrieved from DescribeInstanceTypes
 		filterToInstanceSpecMappingPairs := map[string]filterPair{
-			cpuArchitecture:                {filters.CPUArchitecture, instanceTypeInfo.ProcessorInfo.SupportedArchitectures},
-			usageClass:                     {filters.UsageClass, instanceTypeInfo.SupportedUsageClasses},
-			rootDeviceType:                 {filters.RootDeviceType, instanceTypeInfo.SupportedRootDeviceTypes},
-			hibernationSupported:           {filters.HibernationSupported, instanceTypeInfo.HibernationSupported},
-			vcpusRange:                     {filters.VCpusRange, instanceTypeInfo.VCpuInfo.DefaultVCpus},
-			memoryRange:                    {filters.MemoryRange, instanceTypeInfo.MemoryInfo.SizeInMiB},
-			gpuMemoryRange:                 {filters.GpuMemoryRange, getTotalGpuMemory(instanceTypeInfo.GpuInfo)},
-			gpusRange:                      {filters.GpusRange, getTotalGpusCount(instanceTypeInfo.GpuInfo)},
-			inferenceAcceleratorsRange:     {filters.InferenceAcceleratorsRange, getTotalAcceleratorsCount(instanceTypeInfo.InferenceAcceleratorInfo)},
-			placementGroupStrategy:         {filters.PlacementGroupStrategy, instanceTypeInfo.PlacementGroupInfo.SupportedStrategies},
-			hypervisor:                     {filters.Hypervisor, instanceTypeInfo.Hypervisor},
-			baremetal:                      {filters.BareMetal, instanceTypeInfo.BareMetal},
-			burstable:                      {filters.Burstable, instanceTypeInfo.BurstablePerformanceSupported},
-			fpga:                           {filters.Fpga, &isFpga},
-			enaSupport:                     {filters.EnaSupport, supportSyntaxToBool(instanceTypeInfo.NetworkInfo.EnaSupport)},
-			efaSupport:                     {filters.EfaSupport, instanceTypeInfo.NetworkInfo.EfaSupported},
-			vcpusToMemoryRatio:             {filters.VCpusToMemoryRatio, calculateVCpusToMemoryRatio(instanceTypeInfo.VCpuInfo.DefaultVCpus, instanceTypeInfo.MemoryInfo.SizeInMiB)},
-			currentGeneration:              {filters.CurrentGeneration, instanceTypeInfo.CurrentGeneration},
-			networkInterfaces:              {filters.NetworkInterfaces, instanceTypeInfo.NetworkInfo.MaximumNetworkInterfaces},
-			networkPerformance:             {filters.NetworkPerformance, getNetworkPerformance(instanceTypeInfo.NetworkInfo.NetworkPerformance)},
-			networkEncryption:              {filters.NetworkEncryption, instanceTypeInfo.NetworkInfo.EncryptionInTransitSupported},
-			ipv6:                           {filters.IPv6, instanceTypeInfo.NetworkInfo.Ipv6Supported},
-			instanceTypes:                  {filters.InstanceTypes, instanceTypeInfo.InstanceType},
-			virtualizationType:             {filters.VirtualizationType, instanceTypeInfo.SupportedVirtualizationTypes},
-			pricePerHour:                   {filters.PricePerHour, &instanceTypeHourlyPriceForFilter},
-			instanceStorageRange:           {filters.InstanceStorageRange, getInstanceStorage(instanceTypeInfo.InstanceStorageInfo)},
-			diskType:                       {filters.DiskType, getDiskType(instanceTypeInfo.InstanceStorageInfo)},
-			nvme:                           {filters.NVME, getNVMESupport(instanceTypeInfo.InstanceStorageInfo, instanceTypeInfo.EbsInfo)},
-			ebsOptimized:                   {filters.EBSOptimized, supportSyntaxToBool(instanceTypeInfo.EbsInfo.EbsOptimizedSupport)},
-			diskEncryption:                 {filters.DiskEncryption, getDiskEncryptionSupport(instanceTypeInfo.InstanceStorageInfo, instanceTypeInfo.EbsInfo)},
-			ebsOptimizedBaselineBandwidth:  {filters.EBSOptimizedBaselineBandwidth, getEBSOptimizedBaselineBandwidth(instanceTypeInfo.EbsInfo)},
-			ebsOptimizedBaselineThroughput: {filters.EBSOptimizedBaselineThroughput, getEBSOptimizedBaselineThroughput(instanceTypeInfo.EbsInfo)},
-			ebsOptimizedBaselineIOPS:       {filters.EBSOptimizedBaselineIOPS, getEBSOptimizedBaselineIOPS(instanceTypeInfo.EbsInfo)},
+			cpuArchitecture:                  {filters.CPUArchitecture, instanceTypeInfo.ProcessorInfo.SupportedArchitectures},
+			cpuManufacturer:                  {filters.CPUManufacturer, getCPUManufacturer(&instanceTypeInfo.InstanceTypeInfo)},
+			usageClass:                       {filters.UsageClass, instanceTypeInfo.SupportedUsageClasses},
+			rootDeviceType:                   {filters.RootDeviceType, instanceTypeInfo.SupportedRootDeviceTypes},
+			hibernationSupported:             {filters.HibernationSupported, instanceTypeInfo.HibernationSupported},
+			vcpusRange:                       {filters.VCpusRange, instanceTypeInfo.VCpuInfo.DefaultVCpus},
+			memoryRange:                      {filters.MemoryRange, instanceTypeInfo.MemoryInfo.SizeInMiB},
+			gpuMemoryRange:                   {filters.GpuMemoryRange, getTotalGpuMemory(instanceTypeInfo.GpuInfo)},
+			gpusRange:                        {filters.GpusRange, getTotalGpusCount(instanceTypeInfo.GpuInfo)},
+			inferenceAcceleratorsRange:       {filters.InferenceAcceleratorsRange, getTotalAcceleratorsCount(instanceTypeInfo.InferenceAcceleratorInfo)},
+			placementGroupStrategy:           {filters.PlacementGroupStrategy, instanceTypeInfo.PlacementGroupInfo.SupportedStrategies},
+			hypervisor:                       {filters.Hypervisor, instanceTypeInfo.Hypervisor},
+			baremetal:                        {filters.BareMetal, instanceTypeInfo.BareMetal},
+			burstable:                        {filters.Burstable, instanceTypeInfo.BurstablePerformanceSupported},
+			fpga:                             {filters.Fpga, &isFpga},
+			enaSupport:                       {filters.EnaSupport, supportSyntaxToBool(instanceTypeInfo.NetworkInfo.EnaSupport)},
+			efaSupport:                       {filters.EfaSupport, instanceTypeInfo.NetworkInfo.EfaSupported},
+			vcpusToMemoryRatio:               {filters.VCpusToMemoryRatio, calculateVCpusToMemoryRatio(instanceTypeInfo.VCpuInfo.DefaultVCpus, instanceTypeInfo.MemoryInfo.SizeInMiB)},
+			currentGeneration:                {filters.CurrentGeneration, instanceTypeInfo.CurrentGeneration},
+			networkInterfaces:                {filters.NetworkInterfaces, instanceTypeInfo.NetworkInfo.MaximumNetworkInterfaces},
+			networkPerformance:               {filters.NetworkPerformance, getNetworkPerformance(instanceTypeInfo.NetworkInfo.NetworkPerformance)},
+			networkEncryption:                {filters.NetworkEncryption, instanceTypeInfo.NetworkInfo.EncryptionInTransitSupported},
+			ipv6:                             {filters.IPv6, instanceTypeInfo.NetworkInfo.Ipv6Supported},
+			instanceTypes:                    {filters.InstanceTypes, instanceTypeInfo.InstanceType},
+			virtualizationType:               {filters.VirtualizationType, instanceTypeInfo.SupportedVirtualizationTypes},
+			pricePerHour:                     {filters.PricePerHour, &instanceTypeHourlyPriceForFilter},
+			instanceStorageRange:             {filters.InstanceStorageRange, getInstanceStorage(instanceTypeInfo.InstanceStorageInfo)},
+			diskType:                         {filters.DiskType, getDiskType(instanceTypeInfo.InstanceStorageInfo)},
+			nvme:                             {filters.NVME, getNVMESupport(instanceTypeInfo.InstanceStorageInfo, instanceTypeInfo.EbsInfo)},
+			ebsOptimized:                     {filters.EBSOptimized, supportSyntaxToBool(instanceTypeInfo.EbsInfo.EbsOptimizedSupport)},
+			diskEncryption:                   {filters.DiskEncryption, getDiskEncryptionSupport(instanceTypeInfo.InstanceStorageInfo, instanceTypeInfo.EbsInfo)},
+			ebsOptimizedBaselineBandwidth:    {filters.EBSOptimizedBaselineBandwidth, getEBSOptimizedBaselineBandwidth(instanceTypeInfo.EbsInfo)},
+			ebsOptimizedBaselineThroughput:   {filters.EBSOptimizedBaselineThroughput, getEBSOptimizedBaselineThroughput(instanceTypeInfo.EbsInfo)},
+			ebsOptimizedBaselineIOPS:         {filters.EBSOptimizedBaselineIOPS, getEBSOptimizedBaselineIOPS(instanceTypeInfo.EbsInfo)},
+			freeTier:                         {filters.FreeTier, instanceTypeInfo.FreeTierEligible},
+			autoRecovery:                     {filters.AutoRecovery, instanceTypeInfo.AutoRecoverySupported},
+			gpuManufacturer:                  {filters.GPUManufacturer, getGPUManufacturers(instanceTypeInfo.GpuInfo)},
+			gpuModel:                         {filters.GPUModel, getGPUModels(instanceTypeInfo.GpuInfo)},
+			inferenceAcceleratorManufacturer: {filters.InferenceAcceleratorManufacturer, getInferenceAcceleratorManufacturers(instanceTypeInfo.InferenceAcceleratorInfo)},
+			inferenceAcceleratorModel:        {filters.InferenceAcceleratorModel, getInferenceAcceleratorModels(instanceTypeInfo.InferenceAcceleratorInfo)},
+			dedicatedHosts:                   {filters.DedicatedHosts, instanceTypeInfo.DedicatedHostsSupported},
 		}
 
 		if isInDenyList(filters.DenyList, instanceTypeName) || !isInAllowList(filters.AllowList, instanceTypeName) {

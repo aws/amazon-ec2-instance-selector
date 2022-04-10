@@ -29,6 +29,8 @@ const (
 	required  = "required"
 )
 
+var amdRegex = regexp.MustCompile("[a-zA-Z0-9]+a\\.[a-zA-Z0-9]")
+
 func isSupportedFromString(instanceTypeValue *string, target *string) bool {
 	if target == nil {
 		return true
@@ -140,6 +142,50 @@ func getTotalGpuMemory(gpusInfo *ec2.GpuInfo) *int64 {
 	return gpusInfo.TotalGpuMemoryInMiB
 }
 
+func getGPUManufacturers(gpusInfo *ec2.GpuInfo) []*string {
+	if gpusInfo == nil {
+		return nil
+	}
+	var manufacturers []*string
+	for _, info := range gpusInfo.Gpus {
+		manufacturers = append(manufacturers, info.Manufacturer)
+	}
+	return manufacturers
+}
+
+func getGPUModels(gpusInfo *ec2.GpuInfo) []*string {
+	if gpusInfo == nil {
+		return nil
+	}
+	var models []*string
+	for _, info := range gpusInfo.Gpus {
+		models = append(models, info.Name)
+	}
+	return models
+}
+
+func getInferenceAcceleratorManufacturers(acceleratorInfo *ec2.InferenceAcceleratorInfo) []*string {
+	if acceleratorInfo == nil {
+		return nil
+	}
+	var manufacturers []*string
+	for _, info := range acceleratorInfo.Accelerators {
+		manufacturers = append(manufacturers, info.Manufacturer)
+	}
+	return manufacturers
+}
+
+func getInferenceAcceleratorModels(acceleratorInfo *ec2.InferenceAcceleratorInfo) []*string {
+	if acceleratorInfo == nil {
+		return nil
+	}
+	var models []*string
+	for _, info := range acceleratorInfo.Accelerators {
+		models = append(models, info.Manufacturer)
+	}
+	return models
+}
+
 func getNetworkPerformance(networkPerformance *string) *int {
 	if networkPerformance == nil {
 		return aws.Int(-1)
@@ -219,6 +265,16 @@ func getEBSOptimizedBaselineIOPS(ebsInfo *ec2.EbsInfo) *int64 {
 	return ebsInfo.EbsOptimizedInfo.BaselineIops
 }
 
+func getCPUManufacturer(instanceTypeInfo *ec2.InstanceTypeInfo) *string {
+	if contains(instanceTypeInfo.ProcessorInfo.SupportedArchitectures, ec2.ArchitectureTypeArm64) {
+		return aws.String("aws")
+	}
+	if amdRegex.Match([]byte(*instanceTypeInfo.InstanceType)) {
+		return aws.String("amd")
+	}
+	return aws.String("intel")
+}
+
 // supportSyntaxToBool takes an instance spec field that uses ["unsupported", "supported", "required", or "default"]
 // and transforms it to a *bool to use in filter execution
 func supportSyntaxToBool(instanceTypeSupport *string) *bool {
@@ -244,7 +300,7 @@ func calculateVCpusToMemoryRatio(vcpusVal *int64, memoryVal *int64) *float64 {
 
 func contains(slice []*string, target string) bool {
 	for _, it := range slice {
-		if it != nil && *it == target {
+		if it != nil && strings.EqualFold(*it, target) {
 			return true
 		}
 	}
