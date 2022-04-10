@@ -166,11 +166,14 @@ ec2-instance-selector --memory-min 4 --memory-max 8 --vcpus-min 4 --vcpus-max 8 
 
 Filter Flags:
       --allow-list string                              List of allowed instance types to select from w/ regex syntax (Example: m[3-5]\.*)
+      --auto-recovery                                  EC2 Auto-Recovery supported
   -z, --availability-zones strings                     Availability zones or zone ids to check EC2 capacity offered in specific AZs
       --baremetal                                      Bare Metal instance types (.metal instances)
   -b, --burst-support                                  Burstable instance types
   -a, --cpu-architecture string                        CPU architecture [x86_64/amd64, x86_64_mac, i386, or arm64]
+      --cpu-manufacturer string                        CPU manufacturer [amd, intel, aws]
       --current-generation                             Current generation instance types (explicitly set this to false to not return current generation instance types)
+      --dedicated-hosts                                Dedicated Hosts supported
       --deny-list string                               List of instance types which should be excluded w/ regex syntax (Example: m[1-2]\.*)
       --disk-encryption                                EBS or local instance storage where encryption is supported or required
       --disk-type string                               Disk Type: [hdd or ssd]
@@ -187,14 +190,19 @@ Filter Flags:
       --efa-support                                    Instance types that support Elastic Fabric Adapters (EFA)
   -e, --ena-support                                    Instance types where ENA is supported or required
   -f, --fpga-support                                   FPGA instance types
+      --free-tier                                      Free Tier supported
+      --gpu-manufacturer string                        GPU Manufacturer name (Example: NVIDIA)
       --gpu-memory-total string                        Number of GPUs' total memory (Example: 4 GiB) (sets --gpu-memory-total-min and -max to the same value)
       --gpu-memory-total-max string                    Maximum Number of GPUs' total memory (Example: 4 GiB) If --gpu-memory-total-min is not specified, the lower bound will be 0
       --gpu-memory-total-min string                    Minimum Number of GPUs' total memory (Example: 4 GiB) If --gpu-memory-total-max is not specified, the upper bound will be infinity
+      --gpu-model string                               GPU Model name (Example: K520)
   -g, --gpus int                                       Total Number of GPUs (Example: 4) (sets --gpus-min and -max to the same value)
       --gpus-max int                                   Maximum Total Number of GPUs (Example: 4) If --gpus-min is not specified, the lower bound will be 0
       --gpus-min int                                   Minimum Total Number of GPUs (Example: 4) If --gpus-max is not specified, the upper bound will be infinity
       --hibernation-support                            Hibernation supported
       --hypervisor string                              Hypervisor: [xen or nitro]
+      --inference-accelerator-manufacturer string      Inference Accelerator Manufacturer name (Example: AWS)
+      --inference-accelerator-model string             Inference Accelerator Model name (Example: Inferentia)
       --inference-accelerators int                     Total Number of inference accelerators (Example: 4) (sets --inference-accelerators-min and -max to the same value)
       --inference-accelerators-max int                 Maximum Total Number of inference accelerators (Example: 4) If --inference-accelerators-min is not specified, the lower bound will be 0
       --inference-accelerators-min int                 Minimum Total Number of inference accelerators (Example: 4) If --inference-accelerators-max is not specified, the upper bound will be infinity
