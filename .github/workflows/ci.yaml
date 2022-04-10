@@ -3,7 +3,7 @@ name: EC2 Instance Selector CI and Release
 on: [push, pull_request, workflow_dispatch]
 
 env:
-  DEFAULT_GO_VERSION: ^1.17
+  DEFAULT_GO_VERSION: ^1.18
   GITHUB_USERNAME: ${{ secrets.EC2_BOT_GITHUB_USERNAME }}
   GITHUB_TOKEN: ${{ secrets.EC2_BOT_GITHUB_TOKEN }}
   DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
