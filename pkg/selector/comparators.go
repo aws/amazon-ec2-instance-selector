@@ -181,7 +181,7 @@ func getInferenceAcceleratorModels(acceleratorInfo *ec2.InferenceAcceleratorInfo
 	}
 	var models []*string
 	for _, info := range acceleratorInfo.Accelerators {
-		models = append(models, info.Manufacturer)
+		models = append(models, info.Name)
 	}
 	return models
 }
