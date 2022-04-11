@@ -1,3 +1,6 @@
+github.com/aws/amazon-ec2-instance-selector (Apache-2.0) Third Party Licenses:
+---
+
 ** aws-sdk-go; version v1.29.33 -- https://github.com/aws/aws-sdk-go
 AWS SDK for Go
 Copyright 2015 Amazon.com, Inc. or its affiliates. All Rights Reserved.

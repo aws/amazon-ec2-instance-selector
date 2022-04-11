@@ -17,4 +17,5 @@ override = {
   "github.com/gogo/protobuf" = "BSD-3-Clause"
   "github.com/russross/blackfriday" = "BSD-2-Clause"
   "github.com/ghodss/yaml" = "MIT"
+  "github.com/aws/amazon-ec2-instance-selector" = "Apache-2.0"
 }

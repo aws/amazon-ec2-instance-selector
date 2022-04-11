@@ -15,12 +15,14 @@
 package selector
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"reflect"
 	"regexp"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/ec2pricing"
@@ -47,40 +49,48 @@ const (
 
 	// Filter Keys
 
-	cpuArchitecture                = "cpuArchitecture"
-	usageClass                     = "usageClass"
-	rootDeviceType                 = "rootDeviceType"
-	hibernationSupported           = "hibernationSupported"
-	vcpusRange                     = "vcpusRange"
-	memoryRange                    = "memoryRange"
-	gpuMemoryRange                 = "gpuMemoryRange"
-	gpusRange                      = "gpusRange"
-	inferenceAcceleratorsRange     = "inferenceAcceleratorsRange"
-	placementGroupStrategy         = "placementGroupStrategy"
-	hypervisor                     = "hypervisor"
-	baremetal                      = "baremetal"
-	burstable                      = "burstable"
-	fpga                           = "fpga"
-	enaSupport                     = "enaSupport"
-	efaSupport                     = "efaSupport"
-	vcpusToMemoryRatio             = "vcpusToMemoryRatio"
-	currentGeneration              = "currentGeneration"
-	networkInterfaces              = "networkInterfaces"
-	networkPerformance             = "networkPerformance"
-	networkEncryption              = "networkEncryption"
-	ipv6                           = "ipv6"
-	allowList                      = "allowList"
-	denyList                       = "denyList"
-	instanceTypes                  = "instanceTypes"
-	virtualizationType             = "virtualizationType"
-	instanceStorageRange           = "instanceStorageRange"
-	diskEncryption                 = "diskEncryption"
-	diskType                       = "diskType"
-	nvme                           = "nvme"
-	ebsOptimized                   = "ebsOptimized"
-	ebsOptimizedBaselineBandwidth  = "ebsOptimizedBaselineBandwidth"
-	ebsOptimizedBaselineIOPS       = "ebsOptimizedBaselineIOPS"
-	ebsOptimizedBaselineThroughput = "ebsOptimizedBaselineThroughput"
+	cpuArchitecture                  = "cpuArchitecture"
+	cpuManufacturer                  = "cpuManufacturer"
+	usageClass                       = "usageClass"
+	rootDeviceType                   = "rootDeviceType"
+	hibernationSupported             = "hibernationSupported"
+	vcpusRange                       = "vcpusRange"
+	memoryRange                      = "memoryRange"
+	gpuMemoryRange                   = "gpuMemoryRange"
+	gpusRange                        = "gpusRange"
+	gpuManufacturer                  = "gpuManufacturer"
+	gpuModel                         = "gpuModel"
+	inferenceAcceleratorsRange       = "inferenceAcceleratorsRange"
+	inferenceAcceleratorManufacturer = "inferenceAcceleartorManufacturer"
+	inferenceAcceleratorModel        = "inferenceAcceleratorModel"
+	placementGroupStrategy           = "placementGroupStrategy"
+	hypervisor                       = "hypervisor"
+	baremetal                        = "baremetal"
+	burstable                        = "burstable"
+	fpga                             = "fpga"
+	enaSupport                       = "enaSupport"
+	efaSupport                       = "efaSupport"
+	vcpusToMemoryRatio               = "vcpusToMemoryRatio"
+	currentGeneration                = "currentGeneration"
+	networkInterfaces                = "networkInterfaces"
+	networkPerformance               = "networkPerformance"
+	networkEncryption                = "networkEncryption"
+	ipv6                             = "ipv6"
+	allowList                        = "allowList"
+	denyList                         = "denyList"
+	instanceTypes                    = "instanceTypes"
+	virtualizationType               = "virtualizationType"
+	instanceStorageRange             = "instanceStorageRange"
+	diskEncryption                   = "diskEncryption"
+	diskType                         = "diskType"
+	nvme                             = "nvme"
+	ebsOptimized                     = "ebsOptimized"
+	ebsOptimizedBaselineBandwidth    = "ebsOptimizedBaselineBandwidth"
+	ebsOptimizedBaselineIOPS         = "ebsOptimizedBaselineIOPS"
+	ebsOptimizedBaselineThroughput   = "ebsOptimizedBaselineThroughput"
+	freeTier                         = "freeTier"
+	autoRecovery                     = "autoRecovery"
+	dedicatedHosts                   = "dedicatedHosts"
 
 	cpuArchitectureAMD64 = "amd64"
 	cpuArchitectureX8664 = "x86_64"
@@ -210,104 +220,133 @@ func (itf Selector) rawFilter(filters Filters) ([]*instancetypes.Details, error)
 		return nil, err
 	}
 	filteredInstanceTypes := []*instancetypes.Details{}
-
+	var wg sync.WaitGroup
+	instanceTypes := make(chan *instancetypes.Details, len(instanceTypeDetails))
 	for _, instanceTypeInfo := range instanceTypeDetails {
-		instanceTypeName := *instanceTypeInfo.InstanceType
-		isFpga := instanceTypeInfo.FpgaInfo != nil
-		var instanceTypeHourlyPriceForFilter float64 // Price used to filter based on usage class
-		var instanceTypeHourlyPriceOnDemand, instanceTypeHourlyPriceSpot *float64
-		// If prices are fetched, populate the fields irrespective of the price filters
-		if itf.EC2Pricing.OnDemandCacheCount() > 0 {
-			price, err := itf.EC2Pricing.GetOnDemandInstanceTypeCost(instanceTypeName)
+		wg.Add(1)
+		go func(instanceTypeInfo instancetypes.Details) {
+			defer wg.Done()
+			it, err := itf.prepareFilter(filters, instanceTypeInfo, availabilityZones, locationInstanceOfferings)
 			if err != nil {
-				log.Printf("Could not retrieve instantaneous hourly on-demand price for instance type %s\n", instanceTypeName)
-			} else {
-				instanceTypeHourlyPriceOnDemand = &price
-				instanceTypeInfo.OndemandPricePerHour = instanceTypeHourlyPriceOnDemand
+				log.Println(err)
 			}
-		}
-		if itf.EC2Pricing.SpotCacheCount() > 0 && contains(instanceTypeInfo.SupportedUsageClasses, "spot") {
-			price, err := itf.EC2Pricing.GetSpotInstanceTypeNDayAvgCost(instanceTypeName, availabilityZones, 30)
-			if err != nil {
-				log.Printf("Could not retrieve 30 day avg hourly spot price for instance type %s\n", instanceTypeName)
-			} else {
-				instanceTypeHourlyPriceSpot = &price
-				instanceTypeInfo.SpotPrice = instanceTypeHourlyPriceSpot
+			if it != nil {
+				instanceTypes <- it
 			}
-		}
-		if filters.PricePerHour != nil {
-			// If price filter is present, prices should be already fetched
-			// If prices are not fetched, filter should fail and the corresponding error is already printed
-			if filters.UsageClass != nil && *filters.UsageClass == "spot" && instanceTypeHourlyPriceSpot != nil {
-				instanceTypeHourlyPriceForFilter = *instanceTypeHourlyPriceSpot
-			} else if instanceTypeHourlyPriceOnDemand != nil {
-				instanceTypeHourlyPriceForFilter = *instanceTypeHourlyPriceOnDemand
-			}
-		}
+		}(*instanceTypeInfo)
+	}
+	wg.Wait()
+	close(instanceTypes)
+	for it := range instanceTypes {
+		filteredInstanceTypes = append(filteredInstanceTypes, it)
+	}
+	return sortInstanceTypeInfo(filteredInstanceTypes), nil
+}
 
-		// filterToInstanceSpecMappingPairs is a map of filter name [key] to filter pair [value].
-		// A filter pair includes user input filter value and instance spec value retrieved from DescribeInstanceTypes
-		filterToInstanceSpecMappingPairs := map[string]filterPair{
-			cpuArchitecture:                {filters.CPUArchitecture, instanceTypeInfo.ProcessorInfo.SupportedArchitectures},
-			usageClass:                     {filters.UsageClass, instanceTypeInfo.SupportedUsageClasses},
-			rootDeviceType:                 {filters.RootDeviceType, instanceTypeInfo.SupportedRootDeviceTypes},
-			hibernationSupported:           {filters.HibernationSupported, instanceTypeInfo.HibernationSupported},
-			vcpusRange:                     {filters.VCpusRange, instanceTypeInfo.VCpuInfo.DefaultVCpus},
-			memoryRange:                    {filters.MemoryRange, instanceTypeInfo.MemoryInfo.SizeInMiB},
-			gpuMemoryRange:                 {filters.GpuMemoryRange, getTotalGpuMemory(instanceTypeInfo.GpuInfo)},
-			gpusRange:                      {filters.GpusRange, getTotalGpusCount(instanceTypeInfo.GpuInfo)},
-			inferenceAcceleratorsRange:     {filters.InferenceAcceleratorsRange, getTotalAcceleratorsCount(instanceTypeInfo.InferenceAcceleratorInfo)},
-			placementGroupStrategy:         {filters.PlacementGroupStrategy, instanceTypeInfo.PlacementGroupInfo.SupportedStrategies},
-			hypervisor:                     {filters.Hypervisor, instanceTypeInfo.Hypervisor},
-			baremetal:                      {filters.BareMetal, instanceTypeInfo.BareMetal},
-			burstable:                      {filters.Burstable, instanceTypeInfo.BurstablePerformanceSupported},
-			fpga:                           {filters.Fpga, &isFpga},
-			enaSupport:                     {filters.EnaSupport, supportSyntaxToBool(instanceTypeInfo.NetworkInfo.EnaSupport)},
-			efaSupport:                     {filters.EfaSupport, instanceTypeInfo.NetworkInfo.EfaSupported},
-			vcpusToMemoryRatio:             {filters.VCpusToMemoryRatio, calculateVCpusToMemoryRatio(instanceTypeInfo.VCpuInfo.DefaultVCpus, instanceTypeInfo.MemoryInfo.SizeInMiB)},
-			currentGeneration:              {filters.CurrentGeneration, instanceTypeInfo.CurrentGeneration},
-			networkInterfaces:              {filters.NetworkInterfaces, instanceTypeInfo.NetworkInfo.MaximumNetworkInterfaces},
-			networkPerformance:             {filters.NetworkPerformance, getNetworkPerformance(instanceTypeInfo.NetworkInfo.NetworkPerformance)},
-			networkEncryption:              {filters.NetworkEncryption, instanceTypeInfo.NetworkInfo.EncryptionInTransitSupported},
-			ipv6:                           {filters.IPv6, instanceTypeInfo.NetworkInfo.Ipv6Supported},
-			instanceTypes:                  {filters.InstanceTypes, instanceTypeInfo.InstanceType},
-			virtualizationType:             {filters.VirtualizationType, instanceTypeInfo.SupportedVirtualizationTypes},
-			pricePerHour:                   {filters.PricePerHour, &instanceTypeHourlyPriceForFilter},
-			instanceStorageRange:           {filters.InstanceStorageRange, getInstanceStorage(instanceTypeInfo.InstanceStorageInfo)},
-			diskType:                       {filters.DiskType, getDiskType(instanceTypeInfo.InstanceStorageInfo)},
-			nvme:                           {filters.NVME, getNVMESupport(instanceTypeInfo.InstanceStorageInfo, instanceTypeInfo.EbsInfo)},
-			ebsOptimized:                   {filters.EBSOptimized, supportSyntaxToBool(instanceTypeInfo.EbsInfo.EbsOptimizedSupport)},
-			diskEncryption:                 {filters.DiskEncryption, getDiskEncryptionSupport(instanceTypeInfo.InstanceStorageInfo, instanceTypeInfo.EbsInfo)},
-			ebsOptimizedBaselineBandwidth:  {filters.EBSOptimizedBaselineBandwidth, getEBSOptimizedBaselineBandwidth(instanceTypeInfo.EbsInfo)},
-			ebsOptimizedBaselineThroughput: {filters.EBSOptimizedBaselineThroughput, getEBSOptimizedBaselineThroughput(instanceTypeInfo.EbsInfo)},
-			ebsOptimizedBaselineIOPS:       {filters.EBSOptimizedBaselineIOPS, getEBSOptimizedBaselineIOPS(instanceTypeInfo.EbsInfo)},
-		}
-
-		if isInDenyList(filters.DenyList, instanceTypeName) || !isInAllowList(filters.AllowList, instanceTypeName) {
-			continue
-		}
-
-		if !isSupportedInLocation(locationInstanceOfferings, instanceTypeName) {
-			continue
-		}
-
-		var isInstanceSupported bool
-		isInstanceSupported, err = itf.executeFilters(filterToInstanceSpecMappingPairs, instanceTypeName)
+func (itf Selector) prepareFilter(filters Filters, instanceTypeInfo instancetypes.Details, availabilityZones []string, locationInstanceOfferings map[string]string) (*instancetypes.Details, error) {
+	instanceTypeName := *instanceTypeInfo.InstanceType
+	isFpga := instanceTypeInfo.FpgaInfo != nil
+	var instanceTypeHourlyPriceForFilter float64 // Price used to filter based on usage class
+	var instanceTypeHourlyPriceOnDemand, instanceTypeHourlyPriceSpot *float64
+	// If prices are fetched, populate the fields irrespective of the price filters
+	if itf.EC2Pricing.OnDemandCacheCount() > 0 {
+		price, err := itf.EC2Pricing.GetOnDemandInstanceTypeCost(instanceTypeName)
 		if err != nil {
-			return nil, err
+			log.Printf("Could not retrieve instantaneous hourly on-demand price for instance type %s\n", instanceTypeName)
+		} else {
+			instanceTypeHourlyPriceOnDemand = &price
+			instanceTypeInfo.OndemandPricePerHour = instanceTypeHourlyPriceOnDemand
 		}
-		if !isInstanceSupported {
-			continue
+	}
+	if itf.EC2Pricing.SpotCacheCount() > 0 && contains(instanceTypeInfo.SupportedUsageClasses, "spot") {
+		price, err := itf.EC2Pricing.GetSpotInstanceTypeNDayAvgCost(instanceTypeName, availabilityZones, 30)
+		if err != nil {
+			log.Printf("Could not retrieve 30 day avg hourly spot price for instance type %s\n", instanceTypeName)
+		} else {
+			instanceTypeHourlyPriceSpot = &price
+			instanceTypeInfo.SpotPrice = instanceTypeHourlyPriceSpot
 		}
-		itInfo := instanceTypeInfo
-		filteredInstanceTypes = append(filteredInstanceTypes, itInfo)
+	}
+	if filters.PricePerHour != nil {
+		// If price filter is present, prices should be already fetched
+		// If prices are not fetched, filter should fail and the corresponding error is already printed
+		if filters.UsageClass != nil && *filters.UsageClass == "spot" && instanceTypeHourlyPriceSpot != nil {
+			instanceTypeHourlyPriceForFilter = *instanceTypeHourlyPriceSpot
+		} else if instanceTypeHourlyPriceOnDemand != nil {
+			instanceTypeHourlyPriceForFilter = *instanceTypeHourlyPriceOnDemand
+		}
 	}
 
-	return sortInstanceTypeInfo(filteredInstanceTypes), nil
+	// filterToInstanceSpecMappingPairs is a map of filter name [key] to filter pair [value].
+	// A filter pair includes user input filter value and instance spec value retrieved from DescribeInstanceTypes
+	filterToInstanceSpecMappingPairs := map[string]filterPair{
+		cpuArchitecture:                  {filters.CPUArchitecture, instanceTypeInfo.ProcessorInfo.SupportedArchitectures},
+		cpuManufacturer:                  {filters.CPUManufacturer, getCPUManufacturer(&instanceTypeInfo.InstanceTypeInfo)},
+		usageClass:                       {filters.UsageClass, instanceTypeInfo.SupportedUsageClasses},
+		rootDeviceType:                   {filters.RootDeviceType, instanceTypeInfo.SupportedRootDeviceTypes},
+		hibernationSupported:             {filters.HibernationSupported, instanceTypeInfo.HibernationSupported},
+		vcpusRange:                       {filters.VCpusRange, instanceTypeInfo.VCpuInfo.DefaultVCpus},
+		memoryRange:                      {filters.MemoryRange, instanceTypeInfo.MemoryInfo.SizeInMiB},
+		gpuMemoryRange:                   {filters.GpuMemoryRange, getTotalGpuMemory(instanceTypeInfo.GpuInfo)},
+		gpusRange:                        {filters.GpusRange, getTotalGpusCount(instanceTypeInfo.GpuInfo)},
+		inferenceAcceleratorsRange:       {filters.InferenceAcceleratorsRange, getTotalAcceleratorsCount(instanceTypeInfo.InferenceAcceleratorInfo)},
+		placementGroupStrategy:           {filters.PlacementGroupStrategy, instanceTypeInfo.PlacementGroupInfo.SupportedStrategies},
+		hypervisor:                       {filters.Hypervisor, instanceTypeInfo.Hypervisor},
+		baremetal:                        {filters.BareMetal, instanceTypeInfo.BareMetal},
+		burstable:                        {filters.Burstable, instanceTypeInfo.BurstablePerformanceSupported},
+		fpga:                             {filters.Fpga, &isFpga},
+		enaSupport:                       {filters.EnaSupport, supportSyntaxToBool(instanceTypeInfo.NetworkInfo.EnaSupport)},
+		efaSupport:                       {filters.EfaSupport, instanceTypeInfo.NetworkInfo.EfaSupported},
+		vcpusToMemoryRatio:               {filters.VCpusToMemoryRatio, calculateVCpusToMemoryRatio(instanceTypeInfo.VCpuInfo.DefaultVCpus, instanceTypeInfo.MemoryInfo.SizeInMiB)},
+		currentGeneration:                {filters.CurrentGeneration, instanceTypeInfo.CurrentGeneration},
+		networkInterfaces:                {filters.NetworkInterfaces, instanceTypeInfo.NetworkInfo.MaximumNetworkInterfaces},
+		networkPerformance:               {filters.NetworkPerformance, getNetworkPerformance(instanceTypeInfo.NetworkInfo.NetworkPerformance)},
+		networkEncryption:                {filters.NetworkEncryption, instanceTypeInfo.NetworkInfo.EncryptionInTransitSupported},
+		ipv6:                             {filters.IPv6, instanceTypeInfo.NetworkInfo.Ipv6Supported},
+		instanceTypes:                    {filters.InstanceTypes, instanceTypeInfo.InstanceType},
+		virtualizationType:               {filters.VirtualizationType, instanceTypeInfo.SupportedVirtualizationTypes},
+		pricePerHour:                     {filters.PricePerHour, &instanceTypeHourlyPriceForFilter},
+		instanceStorageRange:             {filters.InstanceStorageRange, getInstanceStorage(instanceTypeInfo.InstanceStorageInfo)},
+		diskType:                         {filters.DiskType, getDiskType(instanceTypeInfo.InstanceStorageInfo)},
+		nvme:                             {filters.NVME, getNVMESupport(instanceTypeInfo.InstanceStorageInfo, instanceTypeInfo.EbsInfo)},
+		ebsOptimized:                     {filters.EBSOptimized, supportSyntaxToBool(instanceTypeInfo.EbsInfo.EbsOptimizedSupport)},
+		diskEncryption:                   {filters.DiskEncryption, getDiskEncryptionSupport(instanceTypeInfo.InstanceStorageInfo, instanceTypeInfo.EbsInfo)},
+		ebsOptimizedBaselineBandwidth:    {filters.EBSOptimizedBaselineBandwidth, getEBSOptimizedBaselineBandwidth(instanceTypeInfo.EbsInfo)},
+		ebsOptimizedBaselineThroughput:   {filters.EBSOptimizedBaselineThroughput, getEBSOptimizedBaselineThroughput(instanceTypeInfo.EbsInfo)},
+		ebsOptimizedBaselineIOPS:         {filters.EBSOptimizedBaselineIOPS, getEBSOptimizedBaselineIOPS(instanceTypeInfo.EbsInfo)},
+		freeTier:                         {filters.FreeTier, instanceTypeInfo.FreeTierEligible},
+		autoRecovery:                     {filters.AutoRecovery, instanceTypeInfo.AutoRecoverySupported},
+		gpuManufacturer:                  {filters.GPUManufacturer, getGPUManufacturers(instanceTypeInfo.GpuInfo)},
+		gpuModel:                         {filters.GPUModel, getGPUModels(instanceTypeInfo.GpuInfo)},
+		inferenceAcceleratorManufacturer: {filters.InferenceAcceleratorManufacturer, getInferenceAcceleratorManufacturers(instanceTypeInfo.InferenceAcceleratorInfo)},
+		inferenceAcceleratorModel:        {filters.InferenceAcceleratorModel, getInferenceAcceleratorModels(instanceTypeInfo.InferenceAcceleratorInfo)},
+		dedicatedHosts:                   {filters.DedicatedHosts, instanceTypeInfo.DedicatedHostsSupported},
+	}
+
+	if isInDenyList(filters.DenyList, instanceTypeName) || !isInAllowList(filters.AllowList, instanceTypeName) {
+		return nil, nil
+	}
+
+	if !isSupportedInLocation(locationInstanceOfferings, instanceTypeName) {
+		return nil, nil
+	}
+
+	var isInstanceSupported bool
+	isInstanceSupported, err := itf.executeFilters(filterToInstanceSpecMappingPairs, instanceTypeName)
+	if err != nil {
+		return nil, err
+	}
+	if !isInstanceSupported {
+		return nil, nil
+	}
+	return &instanceTypeInfo, nil
 }
 
 // sortInstanceTypeInfo will sort based on instance type info alpha-numerically
 func sortInstanceTypeInfo(instanceTypeInfoSlice []*instancetypes.Details) []*instancetypes.Details {
+	if len(instanceTypeInfoSlice) < 2 {
+		return instanceTypeInfoSlice
+	}
 	sort.Slice(instanceTypeInfoSlice, func(i, j int) bool {
 		iInstanceInfo := instanceTypeInfoSlice[i]
 		jInstanceInfo := instanceTypeInfoSlice[j]
@@ -319,122 +358,166 @@ func sortInstanceTypeInfo(instanceTypeInfoSlice []*instancetypes.Details) []*ins
 // executeFilters accepts a mapping of filter name to filter pairs which are iterated through
 // to determine if the instance type matches the filter values.
 func (itf Selector) executeFilters(filterToInstanceSpecMapping map[string]filterPair, instanceType string) (bool, error) {
-	for filterName, filterPair := range filterToInstanceSpecMapping {
-		filterVal := filterPair.filterValue
-		instanceSpec := filterPair.instanceSpec
-		// if filter is nil, user did not specify a filter, so skip evaluation
-		if reflect.ValueOf(filterVal).IsNil() {
-			continue
+	abort := make(chan bool, len(filterToInstanceSpecMapping))
+	errs := make(chan error)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	var wg sync.WaitGroup
+	for filterName, filter := range filterToInstanceSpecMapping {
+		wg.Add(1)
+		go func(ctx context.Context, filterName string, filter filterPair) {
+			defer wg.Done()
+			select {
+			case <-ctx.Done():
+				return
+			default:
+				ok, err := exec(instanceType, filterName, filter)
+				if err != nil {
+					errs <- err
+				}
+				if !ok {
+					abort <- true
+				}
+			}
+		}(ctx, filterName, filter)
+	}
+	done := make(chan bool)
+	go func() {
+		wg.Wait()
+		done <- true
+	}()
+	select {
+	case <-abort:
+		cancel()
+		var err error
+		for {
+			select {
+			case e := <-errs:
+				err = multierr.Append(err, e)
+			default:
+				return false, err
+			}
 		}
-		instanceSpecType := reflect.ValueOf(instanceSpec).Type()
-		filterType := reflect.ValueOf(filterVal).Type()
-		filterDetailsMsg := fmt.Sprintf("filter (%s: %s => %s) corresponding to instance spec (%s => %s) for instance type %s", filterName, filterVal, filterType, instanceSpec, instanceSpecType, instanceType)
-		invalidInstanceSpecTypeMsg := fmt.Sprintf("Unable to process for %s", filterDetailsMsg)
+	case <-done:
+		return true, nil
+	}
+}
 
-		// Determine appropriate filter comparator by switching on filter type
-		switch filter := filterVal.(type) {
+func exec(instanceType string, filterName string, filter filterPair) (bool, error) {
+	filterVal := filter.filterValue
+	instanceSpec := filter.instanceSpec
+	// if filter is nil, user did not specify a filter, so skip evaluation
+	if reflect.ValueOf(filterVal).IsNil() {
+		return true, nil
+	}
+	instanceSpecType := reflect.ValueOf(instanceSpec).Type()
+	filterType := reflect.ValueOf(filterVal).Type()
+	filterDetailsMsg := fmt.Sprintf("filter (%s: %s => %s) corresponding to instance spec (%s => %s) for instance type %s", filterName, filterVal, filterType, instanceSpec, instanceSpecType, instanceType)
+	invalidInstanceSpecTypeMsg := fmt.Sprintf("Unable to process for %s", filterDetailsMsg)
+
+	// Determine appropriate filter comparator by switching on filter type
+	switch filter := filterVal.(type) {
+	case *string:
+		switch iSpec := instanceSpec.(type) {
+		case []*string:
+			if !isSupportedFromStrings(iSpec, filter) {
+				return false, nil
+			}
 		case *string:
-			switch iSpec := instanceSpec.(type) {
-			case []*string:
-				if !isSupportedFromStrings(iSpec, filter) {
-					return false, nil
-				}
-			case *string:
-				if !isSupportedFromString(iSpec, filter) {
-					return false, nil
-				}
-			default:
-				return false, fmt.Errorf(invalidInstanceSpecTypeMsg)
-			}
-		case *bool:
-			switch iSpec := instanceSpec.(type) {
-			case *bool:
-				if !isSupportedWithBool(iSpec, filter) {
-					return false, nil
-				}
-			default:
-				return false, fmt.Errorf(invalidInstanceSpecTypeMsg)
-			}
-		case *IntRangeFilter:
-			switch iSpec := instanceSpec.(type) {
-			case *int64:
-				if !isSupportedWithRangeInt64(iSpec, filter) {
-					return false, nil
-				}
-			case *int:
-				if !isSupportedWithRangeInt(iSpec, filter) {
-					return false, nil
-				}
-			default:
-				return false, fmt.Errorf(invalidInstanceSpecTypeMsg)
-			}
-		case *Float64RangeFilter:
-			switch iSpec := instanceSpec.(type) {
-			case *float64:
-				if !isSupportedWithRangeFloat64(iSpec, filter) {
-					return false, nil
-				}
-			default:
-				return false, fmt.Errorf(invalidInstanceSpecTypeMsg)
-			}
-		case *ByteQuantityRangeFilter:
-			mibRange := Uint64RangeFilter{
-				LowerBound: filter.LowerBound.Quantity,
-				UpperBound: filter.UpperBound.Quantity,
-			}
-			switch iSpec := instanceSpec.(type) {
-			case *int:
-				var iSpec64 *int64
-				if iSpec != nil {
-					iSpecVal := int64(*iSpec)
-					iSpec64 = &iSpecVal
-				}
-				if !isSupportedWithRangeUint64(iSpec64, &mibRange) {
-					return false, nil
-				}
-			case *int64:
-				if !isSupportedWithRangeUint64(iSpec, &mibRange) {
-					return false, nil
-				}
-			case *float64:
-				floatMiBRange := Float64RangeFilter{
-					LowerBound: float64(filter.LowerBound.Quantity),
-					UpperBound: float64(filter.UpperBound.Quantity),
-				}
-				if !isSupportedWithRangeFloat64(iSpec, &floatMiBRange) {
-					return false, nil
-				}
-			default:
-				return false, fmt.Errorf(invalidInstanceSpecTypeMsg)
-			}
-		case *float64:
-			switch iSpec := instanceSpec.(type) {
-			case *float64:
-				if !isSupportedWithFloat64(iSpec, filter) {
-					return false, nil
-				}
-			default:
-				return false, fmt.Errorf(invalidInstanceSpecTypeMsg)
-			}
-		case *[]string:
-			switch iSpec := instanceSpec.(type) {
-			case *string:
-				filterOfPtrs := []*string{}
-				for _, f := range *filter {
-					// this allows us to copy a static pointer to f into filterOfPtrs
-					// since the pointer to f is updated on each loop iteration
-					temp := f
-					filterOfPtrs = append(filterOfPtrs, &temp)
-				}
-				if !isSupportedFromStrings(filterOfPtrs, iSpec) {
-					return false, nil
-				}
-			default:
-				return false, fmt.Errorf(invalidInstanceSpecTypeMsg)
+			if !isSupportedFromString(iSpec, filter) {
+				return false, nil
 			}
 		default:
-			return false, fmt.Errorf("No filter handler found for %s", filterDetailsMsg)
+			return false, fmt.Errorf(invalidInstanceSpecTypeMsg)
 		}
+	case *bool:
+		switch iSpec := instanceSpec.(type) {
+		case *bool:
+			if !isSupportedWithBool(iSpec, filter) {
+				return false, nil
+			}
+		default:
+			return false, fmt.Errorf(invalidInstanceSpecTypeMsg)
+		}
+	case *IntRangeFilter:
+		switch iSpec := instanceSpec.(type) {
+		case *int64:
+			if !isSupportedWithRangeInt64(iSpec, filter) {
+				return false, nil
+			}
+		case *int:
+			if !isSupportedWithRangeInt(iSpec, filter) {
+				return false, nil
+			}
+		default:
+			return false, fmt.Errorf(invalidInstanceSpecTypeMsg)
+		}
+	case *Float64RangeFilter:
+		switch iSpec := instanceSpec.(type) {
+		case *float64:
+			if !isSupportedWithRangeFloat64(iSpec, filter) {
+				return false, nil
+			}
+		default:
+			return false, fmt.Errorf(invalidInstanceSpecTypeMsg)
+		}
+	case *ByteQuantityRangeFilter:
+		mibRange := Uint64RangeFilter{
+			LowerBound: filter.LowerBound.Quantity,
+			UpperBound: filter.UpperBound.Quantity,
+		}
+		switch iSpec := instanceSpec.(type) {
+		case *int:
+			var iSpec64 *int64
+			if iSpec != nil {
+				iSpecVal := int64(*iSpec)
+				iSpec64 = &iSpecVal
+			}
+			if !isSupportedWithRangeUint64(iSpec64, &mibRange) {
+				return false, nil
+			}
+		case *int64:
+			if !isSupportedWithRangeUint64(iSpec, &mibRange) {
+				return false, nil
+			}
+		case *float64:
+			floatMiBRange := Float64RangeFilter{
+				LowerBound: float64(filter.LowerBound.Quantity),
+				UpperBound: float64(filter.UpperBound.Quantity),
+			}
+			if !isSupportedWithRangeFloat64(iSpec, &floatMiBRange) {
+				return false, nil
+			}
+		default:
+			return false, fmt.Errorf(invalidInstanceSpecTypeMsg)
+		}
+	case *float64:
+		switch iSpec := instanceSpec.(type) {
+		case *float64:
+			if !isSupportedWithFloat64(iSpec, filter) {
+				return false, nil
+			}
+		default:
+			return false, fmt.Errorf(invalidInstanceSpecTypeMsg)
+		}
+	case *[]string:
+		switch iSpec := instanceSpec.(type) {
+		case *string:
+			filterOfPtrs := []*string{}
+			for _, f := range *filter {
+				// this allows us to copy a static pointer to f into filterOfPtrs
+				// since the pointer to f is updated on each loop iteration
+				temp := f
+				filterOfPtrs = append(filterOfPtrs, &temp)
+			}
+			if !isSupportedFromStrings(filterOfPtrs, iSpec) {
+				return false, nil
+			}
+		default:
+			return false, fmt.Errorf(invalidInstanceSpecTypeMsg)
+		}
+	default:
+		return false, fmt.Errorf("No filter handler found for %s", filterDetailsMsg)
 	}
 	return true, nil
 }

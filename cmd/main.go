@@ -49,41 +49,49 @@ const (
 
 // Filter Flag Constants
 const (
-	vcpus                          = "vcpus"
-	memory                         = "memory"
-	vcpusToMemoryRatio             = "vcpus-to-memory-ratio"
-	cpuArchitecture                = "cpu-architecture"
-	gpus                           = "gpus"
-	gpuMemoryTotal                 = "gpu-memory-total"
-	inferenceAccelerators          = "inference-accelerators"
-	placementGroupStrategy         = "placement-group-strategy"
-	usageClass                     = "usage-class"
-	rootDeviceType                 = "root-device-type"
-	enaSupport                     = "ena-support"
-	efaSupport                     = "efa-support"
-	hibernationSupport             = "hibernation-support"
-	baremetal                      = "baremetal"
-	fpgaSupport                    = "fpga-support"
-	burstSupport                   = "burst-support"
-	hypervisor                     = "hypervisor"
-	availabilityZones              = "availability-zones"
-	currentGeneration              = "current-generation"
-	networkInterfaces              = "network-interfaces"
-	networkPerformance             = "network-performance"
-	networkEncryption              = "network-encryption"
-	ipv6                           = "ipv6"
-	allowList                      = "allow-list"
-	denyList                       = "deny-list"
-	virtualizationType             = "virtualization-type"
-	pricePerHour                   = "price-per-hour"
-	instanceStorage                = "instance-storage"
-	diskType                       = "disk-type"
-	diskEncryption                 = "disk-encryption"
-	nvme                           = "nvme"
-	ebsOptimized                   = "ebs-optimized"
-	ebsOptimizedBaselineBandwidth  = "ebs-optimized-baseline-bandwidth"
-	ebsOptimizedBaselineThroughput = "ebs-optimized-baseline-throughput"
-	ebsOptimizedBaselineIOPS       = "ebs-optimized-baseline-iops"
+	vcpus                            = "vcpus"
+	memory                           = "memory"
+	vcpusToMemoryRatio               = "vcpus-to-memory-ratio"
+	cpuArchitecture                  = "cpu-architecture"
+	cpuManufacturer                  = "cpu-manufacturer"
+	gpus                             = "gpus"
+	gpuMemoryTotal                   = "gpu-memory-total"
+	gpuManufacturer                  = "gpu-manufacturer"
+	gpuModel                         = "gpu-model"
+	inferenceAccelerators            = "inference-accelerators"
+	inferenceAcceleratorManufacturer = "inference-accelerator-manufacturer"
+	inferenceAcceleratorModel        = "inference-accelerator-model"
+	placementGroupStrategy           = "placement-group-strategy"
+	usageClass                       = "usage-class"
+	rootDeviceType                   = "root-device-type"
+	enaSupport                       = "ena-support"
+	efaSupport                       = "efa-support"
+	hibernationSupport               = "hibernation-support"
+	baremetal                        = "baremetal"
+	fpgaSupport                      = "fpga-support"
+	burstSupport                     = "burst-support"
+	hypervisor                       = "hypervisor"
+	availabilityZones                = "availability-zones"
+	currentGeneration                = "current-generation"
+	networkInterfaces                = "network-interfaces"
+	networkPerformance               = "network-performance"
+	networkEncryption                = "network-encryption"
+	ipv6                             = "ipv6"
+	allowList                        = "allow-list"
+	denyList                         = "deny-list"
+	virtualizationType               = "virtualization-type"
+	pricePerHour                     = "price-per-hour"
+	instanceStorage                  = "instance-storage"
+	diskType                         = "disk-type"
+	diskEncryption                   = "disk-encryption"
+	nvme                             = "nvme"
+	ebsOptimized                     = "ebs-optimized"
+	ebsOptimizedBaselineBandwidth    = "ebs-optimized-baseline-bandwidth"
+	ebsOptimizedBaselineThroughput   = "ebs-optimized-baseline-throughput"
+	ebsOptimizedBaselineIOPS         = "ebs-optimized-baseline-iops"
+	freeTier                         = "free-tier"
+	autoRecovery                     = "auto-recovery"
+	dedicatedHosts                   = "dedicated-hosts"
 )
 
 // Aggregate Filter Flags
@@ -141,9 +149,14 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	cli.ByteQuantityMinMaxRangeFlags(memory, cli.StringMe("m"), nil, "Amount of Memory available (Example: 4 GiB)")
 	cli.RatioFlag(vcpusToMemoryRatio, nil, nil, "The ratio of vcpus to GiBs of memory. (Example: 1:2)")
 	cli.StringOptionsFlag(cpuArchitecture, cli.StringMe("a"), nil, "CPU architecture [x86_64/amd64, x86_64_mac, i386, or arm64]", []string{"x86_64", "x86_64_mac", "amd64", "i386", "arm64"})
+	cli.StringOptionsFlag(cpuManufacturer, nil, nil, "CPU manufacturer [amd, intel, aws]", []string{"amd", "intel", "aws"})
 	cli.IntMinMaxRangeFlags(gpus, cli.StringMe("g"), nil, "Total Number of GPUs (Example: 4)")
 	cli.ByteQuantityMinMaxRangeFlags(gpuMemoryTotal, nil, nil, "Number of GPUs' total memory (Example: 4 GiB)")
+	cli.StringFlag(gpuManufacturer, nil, nil, "GPU Manufacturer name (Example: NVIDIA)", nil)
+	cli.StringFlag(gpuModel, nil, nil, "GPU Model name (Example: K520)", nil)
 	cli.IntMinMaxRangeFlags(inferenceAccelerators, nil, nil, "Total Number of inference accelerators (Example: 4)")
+	cli.StringFlag(inferenceAcceleratorManufacturer, nil, nil, "Inference Accelerator Manufacturer name (Example: AWS)", nil)
+	cli.StringFlag(inferenceAcceleratorModel, nil, nil, "Inference Accelerator Model name (Example: Inferentia)", nil)
 	cli.StringOptionsFlag(placementGroupStrategy, nil, nil, "Placement group strategy: [cluster, partition, spread]", []string{"cluster", "partition", "spread"})
 	cli.StringOptionsFlag(usageClass, cli.StringMe("u"), nil, "Usage class: [spot or on-demand]", []string{"spot", "on-demand"})
 	cli.StringOptionsFlag(rootDeviceType, nil, nil, "Supported root device types: [ebs or instance-store]", []string{"ebs", "instance-store"})
@@ -172,6 +185,9 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	cli.ByteQuantityMinMaxRangeFlags(ebsOptimizedBaselineBandwidth, nil, nil, "EBS Optimized baseline bandwidth (Example: 4 GiB)")
 	cli.ByteQuantityMinMaxRangeFlags(ebsOptimizedBaselineThroughput, nil, nil, "EBS Optimized baseline throughput per second (Example: 4 GiB)")
 	cli.IntMinMaxRangeFlags(ebsOptimizedBaselineIOPS, nil, nil, "EBS Optimized baseline IOPS per second (Example: 10000)")
+	cli.BoolFlag(freeTier, nil, nil, "Free Tier supported")
+	cli.BoolFlag(autoRecovery, nil, nil, "EC2 Auto-Recovery supported")
+	cli.BoolFlag(dedicatedHosts, nil, nil, "Dedicated Hosts supported")
 
 	// Suite Flags - higher level aggregate filters that return opinionated result
 
@@ -247,46 +263,54 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	}
 
 	filters := selector.Filters{
-		VCpusRange:                     cli.IntRangeMe(flags[vcpus]),
-		MemoryRange:                    cli.ByteQuantityRangeMe(flags[memory]),
-		VCpusToMemoryRatio:             cli.Float64Me(flags[vcpusToMemoryRatio]),
-		CPUArchitecture:                cli.StringMe(flags[cpuArchitecture]),
-		GpusRange:                      cli.IntRangeMe(flags[gpus]),
-		GpuMemoryRange:                 cli.ByteQuantityRangeMe(flags[gpuMemoryTotal]),
-		InferenceAcceleratorsRange:     cli.IntRangeMe(flags[inferenceAccelerators]),
-		PlacementGroupStrategy:         cli.StringMe(flags[placementGroupStrategy]),
-		UsageClass:                     cli.StringMe(flags[usageClass]),
-		RootDeviceType:                 cli.StringMe(flags[rootDeviceType]),
-		EnaSupport:                     cli.BoolMe(flags[enaSupport]),
-		EfaSupport:                     cli.BoolMe(flags[efaSupport]),
-		HibernationSupported:           cli.BoolMe(flags[hibernationSupport]),
-		Hypervisor:                     cli.StringMe(flags[hypervisor]),
-		BareMetal:                      cli.BoolMe(flags[baremetal]),
-		Fpga:                           cli.BoolMe(flags[fpgaSupport]),
-		Burstable:                      cli.BoolMe(flags[burstSupport]),
-		Region:                         cli.StringMe(flags[region]),
-		AvailabilityZones:              cli.StringSliceMe(flags[availabilityZones]),
-		CurrentGeneration:              cli.BoolMe(flags[currentGeneration]),
-		MaxResults:                     cli.IntMe(flags[maxResults]),
-		NetworkInterfaces:              cli.IntRangeMe(flags[networkInterfaces]),
-		NetworkPerformance:             cli.IntRangeMe(flags[networkPerformance]),
-		NetworkEncryption:              cli.BoolMe(flags[networkEncryption]),
-		IPv6:                           cli.BoolMe(flags[ipv6]),
-		AllowList:                      cli.RegexMe(flags[allowList]),
-		DenyList:                       cli.RegexMe(flags[denyList]),
-		InstanceTypeBase:               cli.StringMe(flags[instanceTypeBase]),
-		Flexible:                       cli.BoolMe(flags[flexible]),
-		Service:                        cli.StringMe(flags[service]),
-		VirtualizationType:             cli.StringMe(flags[virtualizationType]),
-		PricePerHour:                   cli.Float64RangeMe(flags[pricePerHour]),
-		InstanceStorageRange:           cli.ByteQuantityRangeMe(flags[instanceStorage]),
-		DiskType:                       cli.StringMe(flags[diskType]),
-		DiskEncryption:                 cli.BoolMe(flags[diskEncryption]),
-		NVME:                           cli.BoolMe(flags[nvme]),
-		EBSOptimized:                   cli.BoolMe(flags[ebsOptimized]),
-		EBSOptimizedBaselineBandwidth:  cli.ByteQuantityRangeMe(flags[ebsOptimizedBaselineBandwidth]),
-		EBSOptimizedBaselineThroughput: cli.ByteQuantityRangeMe(flags[ebsOptimizedBaselineThroughput]),
-		EBSOptimizedBaselineIOPS:       cli.IntRangeMe(flags[ebsOptimizedBaselineIOPS]),
+		VCpusRange:                       cli.IntRangeMe(flags[vcpus]),
+		MemoryRange:                      cli.ByteQuantityRangeMe(flags[memory]),
+		VCpusToMemoryRatio:               cli.Float64Me(flags[vcpusToMemoryRatio]),
+		CPUArchitecture:                  cli.StringMe(flags[cpuArchitecture]),
+		CPUManufacturer:                  cli.StringMe(flags[cpuManufacturer]),
+		GpusRange:                        cli.IntRangeMe(flags[gpus]),
+		GpuMemoryRange:                   cli.ByteQuantityRangeMe(flags[gpuMemoryTotal]),
+		GPUManufacturer:                  cli.StringMe(flags[gpuManufacturer]),
+		GPUModel:                         cli.StringMe(flags[gpuModel]),
+		InferenceAcceleratorsRange:       cli.IntRangeMe(flags[inferenceAccelerators]),
+		InferenceAcceleratorManufacturer: cli.StringMe(flags[inferenceAcceleratorManufacturer]),
+		InferenceAcceleratorModel:        cli.StringMe(flags[inferenceAcceleratorModel]),
+		PlacementGroupStrategy:           cli.StringMe(flags[placementGroupStrategy]),
+		UsageClass:                       cli.StringMe(flags[usageClass]),
+		RootDeviceType:                   cli.StringMe(flags[rootDeviceType]),
+		EnaSupport:                       cli.BoolMe(flags[enaSupport]),
+		EfaSupport:                       cli.BoolMe(flags[efaSupport]),
+		HibernationSupported:             cli.BoolMe(flags[hibernationSupport]),
+		Hypervisor:                       cli.StringMe(flags[hypervisor]),
+		BareMetal:                        cli.BoolMe(flags[baremetal]),
+		Fpga:                             cli.BoolMe(flags[fpgaSupport]),
+		Burstable:                        cli.BoolMe(flags[burstSupport]),
+		Region:                           cli.StringMe(flags[region]),
+		AvailabilityZones:                cli.StringSliceMe(flags[availabilityZones]),
+		CurrentGeneration:                cli.BoolMe(flags[currentGeneration]),
+		MaxResults:                       cli.IntMe(flags[maxResults]),
+		NetworkInterfaces:                cli.IntRangeMe(flags[networkInterfaces]),
+		NetworkPerformance:               cli.IntRangeMe(flags[networkPerformance]),
+		NetworkEncryption:                cli.BoolMe(flags[networkEncryption]),
+		IPv6:                             cli.BoolMe(flags[ipv6]),
+		AllowList:                        cli.RegexMe(flags[allowList]),
+		DenyList:                         cli.RegexMe(flags[denyList]),
+		InstanceTypeBase:                 cli.StringMe(flags[instanceTypeBase]),
+		Flexible:                         cli.BoolMe(flags[flexible]),
+		Service:                          cli.StringMe(flags[service]),
+		VirtualizationType:               cli.StringMe(flags[virtualizationType]),
+		PricePerHour:                     cli.Float64RangeMe(flags[pricePerHour]),
+		InstanceStorageRange:             cli.ByteQuantityRangeMe(flags[instanceStorage]),
+		DiskType:                         cli.StringMe(flags[diskType]),
+		DiskEncryption:                   cli.BoolMe(flags[diskEncryption]),
+		NVME:                             cli.BoolMe(flags[nvme]),
+		EBSOptimized:                     cli.BoolMe(flags[ebsOptimized]),
+		EBSOptimizedBaselineBandwidth:    cli.ByteQuantityRangeMe(flags[ebsOptimizedBaselineBandwidth]),
+		EBSOptimizedBaselineThroughput:   cli.ByteQuantityRangeMe(flags[ebsOptimizedBaselineThroughput]),
+		EBSOptimizedBaselineIOPS:         cli.IntRangeMe(flags[ebsOptimizedBaselineIOPS]),
+		FreeTier:                         cli.BoolMe(flags[freeTier]),
+		AutoRecovery:                     cli.BoolMe(flags[autoRecovery]),
+		DedicatedHosts:                   cli.BoolMe(flags[dedicatedHosts]),
 	}
 
 	if flags[verbose] != nil {

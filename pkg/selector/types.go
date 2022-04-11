@@ -115,9 +115,18 @@ type Filters struct {
 	// Burstable is used to only return burstable instance type results like the t* series
 	Burstable *bool
 
+	// AutoRecovery is used to filter by instance types that support auto recovery
+	AutoRecovery *bool
+
+	// FreeTier is used to filter by instance types that can be used as part of the EC2 free tier
+	FreeTier *bool
+
 	// CPUArchitecture of the EC2 instance type
 	// Possible values are: x86_64/amd64 or arm64
 	CPUArchitecture *string
+
+	// CPUManufacturer is used to filter instance types with a specific CPU manufacturer
+	CPUManufacturer *string
 
 	// CurrentGeneration returns the latest generation of instance types
 	CurrentGeneration *bool
@@ -137,8 +146,20 @@ type Filters struct {
 	// GpuMemoryRange filter is a range of acceptable GPU memory in Gibibytes (GiB) available to an EC2 instance type in aggreagte across all GPUs.
 	GpuMemoryRange *ByteQuantityRangeFilter
 
-	// InferenceAcceleratorsRange filters inference acclerators available to the instance type
+	// GPUManufacturer filters by GPU manufacturer
+	GPUManufacturer *string
+
+	// GPUModel filter by the GPU model name
+	GPUModel *string
+
+	// InferenceAcceleratorsRange filters inference accelerators available to the instance type
 	InferenceAcceleratorsRange *IntRangeFilter
+
+	// InferenceAcceleratorManufacturer filters by inference acceleartor manufacturer
+	InferenceAcceleratorManufacturer *string
+
+	// InferenceAcceleratorModel filters by inference accelerator model name
+	InferenceAcceleratorModel *string
 
 	// HibernationSupported denotes whether EC2 hibernate is supported
 	// Possible values are: true or false
@@ -240,4 +261,7 @@ type Filters struct {
 
 	// EBSOptimizedBaselineIOPS filters on a range of IOPS that an EBS Optimized volume supports
 	EBSOptimizedBaselineIOPS *IntRangeFilter
+
+	// DedicatedHosts filters on instance types that support dedicated hosts tenancy
+	DedicatedHosts *bool
 }

@@ -293,7 +293,7 @@ func TestFilter_TruncateToMaxResults(t *testing.T) {
 	}
 	results, err = itf.Filter(filters)
 	h.Ok(t, err)
-	h.Assert(t, len(results) == 25, "Should return 25 instance types since max results is set to 30 but only 25 are returned in total")
+	h.Assert(t, len(results) == 25, fmt.Sprintf("Should return 25 instance types since max results is set to 30 but only %d are returned in total", len(results)))
 }
 
 func TestFilter_Failure(t *testing.T) {
