@@ -219,7 +219,7 @@ func (c *OnDemandPricing) getRegionForPricingAPI() string {
 	// endpoints package returns European regions with the word "Europe," but the pricing API expects the word "EU."
 	// This formatting mismatch is only present with European regions.
 	// So replace "Europe" with "EU" if it exists in the regionDescription string.
-	regionDescription = strings.Replace(regionDescription, "Europe", "EU", 2)
+	regionDescription = strings.ReplaceAll(regionDescription, "Europe", "EU")
 
 	return regionDescription
 }
