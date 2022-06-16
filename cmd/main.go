@@ -370,7 +370,7 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	// TODO: make filterVerbose return number of truncated values
 	instanceTypesDetails, itemsTruncated, err := instanceSelector.FilterVerbose(filters)
 	if err != nil {
-		fmt.Printf("An error occured when filtering instance types: %v", err)
+		fmt.Printf("An error occurred when filtering instance types: %v", err)
 		os.Exit(1)
 	}
 	if len(instanceTypesDetails) == 0 {
