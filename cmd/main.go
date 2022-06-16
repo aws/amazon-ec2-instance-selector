@@ -18,6 +18,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"sort"
 	"strings"
 	"sync"
 	"syscall"
@@ -25,6 +26,7 @@ import (
 
 	commandline "github.com/aws/amazon-ec2-instance-selector/v2/pkg/cli"
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/env"
+	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/instancetypes"
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/selector"
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/selector/outputs"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -45,6 +47,14 @@ const (
 	tableOutput     = "table"
 	tableWideOutput = "table-wide"
 	oneLine         = "one-line"
+
+	ODPriceSort   = "on-demand-price"
+	spotPriceSort = "spot-price"
+	vcpuSort      = "vcpu"
+	memorySort    = "memory"
+
+	sortAscending  = "ascending"
+	sortDescending = "descending"
 )
 
 // Filter Flag Constants
@@ -103,15 +113,17 @@ const (
 
 // Configuration Flag Constants
 const (
-	maxResults = "max-results"
-	profile    = "profile"
-	help       = "help"
-	verbose    = "verbose"
-	version    = "version"
-	region     = "region"
-	output     = "output"
-	cacheTTL   = "cache-ttl"
-	cacheDir   = "cache-dir"
+	maxResults    = "max-results"
+	profile       = "profile"
+	help          = "help"
+	verbose       = "verbose"
+	version       = "version"
+	region        = "region"
+	output        = "output"
+	cacheTTL      = "cache-ttl"
+	cacheDir      = "cache-dir"
+	sortDirection = "sort-direction"
+	sortFilter    = "sort-filter"
 )
 
 var (
@@ -141,6 +153,18 @@ Full docs can be found at github.com/aws/amazon-` + binName
 		oneLine,
 	}
 	resultsOutputFn := outputs.SimpleInstanceTypeOutput
+
+	cliSortCriteria := []string{
+		ODPriceSort,
+		spotPriceSort,
+		vcpuSort,
+		memorySort,
+	}
+
+	cliSortDirections := []string{
+		sortAscending,
+		sortDescending,
+	}
 
 	// Registers flags with specific input types from the cli pkg
 	// Filter Flags - These will be grouped at the top of the help flags
@@ -206,6 +230,8 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	cli.ConfigBoolFlag(verbose, cli.StringMe("v"), nil, "Verbose - will print out full instance specs")
 	cli.ConfigBoolFlag(help, cli.StringMe("h"), nil, "Help")
 	cli.ConfigBoolFlag(version, nil, nil, "Prints CLI version")
+	cli.ConfigStringFlag(sortFilter, nil, nil, fmt.Sprintf("Specify the field to sort by (%s) (NOTE: if not passed in, will be sorted by instance type name)", strings.Join(cliSortCriteria, ", ")), nil)
+	cli.ConfigStringFlag(sortDirection, nil, nil, fmt.Sprintf("Specify the direction to sort in (%s) (NOTE: if not passed in, will be ascending by default)", strings.Join(cliSortDirections, ", ")), nil)
 
 	// Parses the user input with the registered flags and runs type specific validation on the user input
 	flags, err := cli.ParseAndValidateFlags()
@@ -340,18 +366,36 @@ Full docs can be found at github.com/aws/amazon-` + binName
 
 	outputFn := getOutputFn(outputFlag, selector.InstanceTypesOutputFn(resultsOutputFn))
 
-	instanceTypes, itemsTruncated, err := instanceSelector.FilterWithOutput(filters, outputFn)
+	// get instance types based on filters
+	// TODO: make filterVerbose return number of truncated values
+	instanceTypesDetails, itemsTruncated, err := instanceSelector.FilterVerbose(filters)
 	if err != nil {
-		fmt.Printf("An error occurred when filtering instance types: %v", err)
+		fmt.Printf("An error occured when filtering instance types: %v", err)
 		os.Exit(1)
 	}
-	if len(instanceTypes) == 0 {
+	if len(instanceTypesDetails) == 0 {
 		log.Println("The criteria was too narrow and returned no valid instance types. Consider broadening your criteria so that more instance types are returned.")
 		os.Exit(1)
 	}
 
+	// sort instance types
+	sortFilterFlag := cli.StringMe(flags[sortFilter])
+	sortDirectionFlag := cli.StringMe(flags[sortDirection])
+	instanceTypesDetails = sortInstanceTypes(sortFilterFlag, sortDirectionFlag, instanceTypesDetails)
+
+	// format output
+	instanceTypes := outputFn(instanceTypesDetails)
+
+	// print output
 	for _, instanceType := range instanceTypes {
 		fmt.Println(instanceType)
+	}
+
+	if !validateSortFilter(sortFilterFlag) {
+		log.Printf("\"%s\" is not a valid sorting filter (Valid filters: %s). Results were sorted by instance type name", *sortFilterFlag, strings.Join(cliSortCriteria, ", "))
+	}
+	if !validateSortDirection(sortDirectionFlag) {
+		log.Printf("\"%s\" is not a valid sorting direction (Valid directions: %s). Results were sorted in ascending order", *sortDirectionFlag, strings.Join(cliSortDirections, ", "))
 	}
 
 	if itemsTruncated > 0 {
@@ -477,6 +521,84 @@ func getProfileRegion(profileName string) (string, error) {
 		return "", fmt.Errorf("Warning: there is no region configured for the specified aws profile %s at %s", profileName, awsConfigPath)
 	}
 	return regionConfig.String(), nil
+}
+
+// determines whether the given sort direction flag is valid or not
+func validateSortDirection(sortDirectionFlag *string) bool {
+	return sortDirectionFlag == nil || *sortDirectionFlag == sortAscending || *sortDirectionFlag == sortDescending
+}
+
+// determines whether the sort filter flag is valid
+func validateSortFilter(sortFilterFlag *string) bool {
+	if sortFilterFlag == nil {
+		return true
+	}
+
+	valid := false
+
+	switch *sortFilterFlag {
+	case ODPriceSort:
+		valid = true
+	case spotPriceSort:
+		valid = true
+	case vcpuSort:
+		valid = true
+	case memorySort:
+		valid = true
+	}
+
+	return valid
+}
+
+// sorts the given list of instance type details based on the sorting filter flag and the sort direction flag
+func sortInstanceTypes(sortFilterFlag *string, sortDirectionFlag *string, instanceTypes []*instancetypes.Details) []*instancetypes.Details {
+	// by default, sorted in ascending order.
+	shouldReverse := false
+	if sortDirectionFlag != nil && *sortDirectionFlag == sortDescending {
+		shouldReverse = true
+	}
+
+	// sort instance types based on filter flag and reverse list if the order should be descending
+	if sortFilterFlag != nil {
+		sort.Slice(instanceTypes, func(i, j int) bool {
+			firstType := instanceTypes[i]
+			secondType := instanceTypes[j]
+			switch *sortFilterFlag {
+			case ODPriceSort:
+				if shouldReverse {
+					return *firstType.OndemandPricePerHour > *secondType.OndemandPricePerHour
+				} else {
+					return *firstType.OndemandPricePerHour < *secondType.OndemandPricePerHour
+				}
+			case spotPriceSort:
+				if shouldReverse {
+					return *firstType.SpotPrice > *secondType.SpotPrice
+				} else {
+					return *firstType.SpotPrice < *secondType.SpotPrice
+				}
+			case vcpuSort:
+				if shouldReverse {
+					return *firstType.VCpuInfo.DefaultVCpus > *secondType.VCpuInfo.DefaultVCpus
+				} else {
+					return *firstType.VCpuInfo.DefaultVCpus < *secondType.VCpuInfo.DefaultVCpus
+				}
+			case memorySort:
+				if shouldReverse {
+					return *firstType.MemoryInfo.SizeInMiB > *secondType.MemoryInfo.SizeInMiB
+				} else {
+					return *firstType.MemoryInfo.SizeInMiB < *secondType.MemoryInfo.SizeInMiB
+				}
+			default:
+				if shouldReverse {
+					return i > j
+				} else {
+					return i < j
+				}
+			}
+		})
+	}
+
+	return instanceTypes
 }
 
 func registerShutdown(shutdown func()) {

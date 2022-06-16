@@ -139,14 +139,15 @@ func (itf Selector) Filter(filters Filters) ([]string, error) {
 }
 
 // FilterVerbose accepts a Filters struct which is used to select the available instance types
-// matching the criteria within Filters and returns a list instanceTypeInfo
-func (itf Selector) FilterVerbose(filters Filters) ([]*instancetypes.Details, error) {
+// matching the criteria within Filters and returns a list instanceTypeInfo along with the number
+// of truncated items.
+func (itf Selector) FilterVerbose(filters Filters) ([]*instancetypes.Details, int, error) {
 	instanceTypeInfoSlice, err := itf.rawFilter(filters)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
-	instanceTypeInfoSlice, _ = itf.truncateResults(filters.MaxResults, instanceTypeInfoSlice)
-	return instanceTypeInfoSlice, nil
+	instanceTypeInfoSlice, numOfItemsTruncated := itf.truncateResults(filters.MaxResults, instanceTypeInfoSlice)
+	return instanceTypeInfoSlice, numOfItemsTruncated, nil
 }
 
 // FilterWithOutput accepts a Filters struct which is used to select the available instance types
