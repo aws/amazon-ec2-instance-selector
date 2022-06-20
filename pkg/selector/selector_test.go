@@ -159,10 +159,11 @@ func TestFilterVerbose(t *testing.T) {
 	filters := selector.Filters{
 		VCpusRange: &selector.IntRangeFilter{LowerBound: 2, UpperBound: 2},
 	}
-	results, err := itf.FilterVerbose(filters)
+	results, truncatedItems, err := itf.FilterVerbose(filters)
 	h.Ok(t, err)
 	h.Assert(t, len(results) == 1, "Should only return 1 instance type with 2 vcpus but actually returned "+strconv.Itoa(len(results)))
 	h.Assert(t, *results[0].InstanceType == "t3.micro", "Should return t3.micro, got %s instead", results[0].InstanceType)
+	h.Assert(t, truncatedItems == 0, "No items should be truncated, but "+strconv.Itoa(truncatedItems)+" items were truncated")
 }
 
 func TestFilterVerbose_NoResults(t *testing.T) {
@@ -170,9 +171,10 @@ func TestFilterVerbose_NoResults(t *testing.T) {
 	filters := selector.Filters{
 		VCpusRange: &selector.IntRangeFilter{LowerBound: 4, UpperBound: 4},
 	}
-	results, err := itf.FilterVerbose(filters)
+	results, truncatedItems, err := itf.FilterVerbose(filters)
 	h.Ok(t, err)
 	h.Assert(t, len(results) == 0, "Should return 0 instance type with 4 vcpus")
+	h.Assert(t, truncatedItems == 0, "No items should be truncated, but "+strconv.Itoa(truncatedItems)+" items were truncated")
 }
 
 func TestFilterVerbose_Failure(t *testing.T) {
@@ -180,9 +182,10 @@ func TestFilterVerbose_Failure(t *testing.T) {
 	filters := selector.Filters{
 		VCpusRange: &selector.IntRangeFilter{LowerBound: 4, UpperBound: 4},
 	}
-	results, err := itf.FilterVerbose(filters)
+	results, truncatedItems, err := itf.FilterVerbose(filters)
 	h.Assert(t, results == nil, "Results should be nil")
 	h.Assert(t, err != nil, "An error should be returned")
+	h.Assert(t, truncatedItems == 0, "No items should be truncated, but "+strconv.Itoa(truncatedItems)+" items were truncated")
 }
 
 func TestFilterVerbose_AZFilteredIn(t *testing.T) {
@@ -196,10 +199,11 @@ func TestFilterVerbose_AZFilteredIn(t *testing.T) {
 		VCpusRange:        &selector.IntRangeFilter{LowerBound: 2, UpperBound: 2},
 		AvailabilityZones: &[]string{"us-east-2a"},
 	}
-	results, err := itf.FilterVerbose(filters)
+	results, truncatedItems, err := itf.FilterVerbose(filters)
 	h.Ok(t, err)
 	h.Assert(t, len(results) == 1, "Should only return 1 instance type with 2 vcpus but actually returned "+strconv.Itoa(len(results)))
 	h.Assert(t, *results[0].InstanceType == "t3.micro", "Should return t3.micro, got %s instead", results[0].InstanceType)
+	h.Assert(t, truncatedItems == 0, "No items should be truncated, but "+strconv.Itoa(truncatedItems)+" items were truncated")
 }
 
 func TestFilterVerbose_AZFilteredOut(t *testing.T) {
@@ -212,9 +216,10 @@ func TestFilterVerbose_AZFilteredOut(t *testing.T) {
 	filters := selector.Filters{
 		AvailabilityZones: &[]string{"us-east-2a"},
 	}
-	results, err := itf.FilterVerbose(filters)
+	results, truncatedItems, err := itf.FilterVerbose(filters)
 	h.Ok(t, err)
 	h.Assert(t, len(results) == 0, "Should return 0 instance types in us-east-2a but actually returned "+strconv.Itoa(len(results)))
+	h.Assert(t, truncatedItems == 0, "No items should be truncated, but "+strconv.Itoa(truncatedItems)+" items were truncated")
 }
 
 func TestFilterVerboseAZ_FilteredErr(t *testing.T) {
@@ -223,8 +228,9 @@ func TestFilterVerboseAZ_FilteredErr(t *testing.T) {
 		VCpusRange:        &selector.IntRangeFilter{LowerBound: 2, UpperBound: 2},
 		AvailabilityZones: &[]string{"blah"},
 	}
-	_, err := itf.FilterVerbose(filters)
+	_, truncatedItems, err := itf.FilterVerbose(filters)
 	h.Assert(t, err != nil, "Should error since bad zone was passed in")
+	h.Assert(t, truncatedItems == 0, "No items should be truncated, but "+strconv.Itoa(truncatedItems)+" items were truncated")
 }
 
 func TestFilterVerbose_Gpus(t *testing.T) {
@@ -238,10 +244,11 @@ func TestFilterVerbose_Gpus(t *testing.T) {
 			UpperBound: gpuMemory,
 		},
 	}
-	results, err := itf.FilterVerbose(filters)
+	results, truncatedItems, err := itf.FilterVerbose(filters)
 	h.Ok(t, err)
 	h.Assert(t, len(results) == 1, "Should only return 1 instance type with 2 vcpus but actually returned "+strconv.Itoa(len(results)))
 	h.Assert(t, *results[0].InstanceType == "p3.16xlarge", "Should return p3.16xlarge, got %s instead", *results[0].InstanceType)
+	h.Assert(t, truncatedItems == 0, "No items should be truncated, but "+strconv.Itoa(truncatedItems)+" items were truncated")
 }
 
 func TestFilter(t *testing.T) {

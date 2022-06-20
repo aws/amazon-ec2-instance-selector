@@ -99,6 +99,17 @@ const (
 	virtualizationTypePV          = "pv"
 
 	pricePerHour = "pricePerHour"
+
+	// Sorting costants
+
+	ODPriceSortFlag   = "on-demand-price"
+	SpotPriceSortFlag = "spot-price"
+	VcpuSortFlag      = "vcpu"
+	MemorySortFlag    = "memory"
+	NameSortFlag      = "instance-type-name"
+
+	SortAscendingFlag  = "ascending"
+	SortDescendingFlag = "descending"
 )
 
 // New creates an instance of Selector provided an aws session
@@ -134,8 +145,12 @@ func (itf Selector) Save() error {
 // matching the criteria within Filters and returns a simple list of instance type strings
 func (itf Selector) Filter(filters Filters) ([]string, error) {
 	outputFn := InstanceTypesOutputFn(outputs.SimpleInstanceTypeOutput)
-	output, _, err := itf.FilterWithOutput(filters, outputFn)
-	return output, err
+	instaceTypeDetails, _, err := itf.FilterVerbose(filters)
+	var formatedOutput []string = nil
+	if err == nil {
+		formatedOutput = outputFn(instaceTypeDetails)
+	}
+	return formatedOutput, err
 }
 
 // FilterVerbose accepts a Filters struct which is used to select the available instance types
@@ -150,16 +165,113 @@ func (itf Selector) FilterVerbose(filters Filters) ([]*instancetypes.Details, in
 	return instanceTypeInfoSlice, numOfItemsTruncated, nil
 }
 
-// FilterWithOutput accepts a Filters struct which is used to select the available instance types
-// matching the criteria within Filters and returns a list of strings based on the custom outputFn
-func (itf Selector) FilterWithOutput(filters Filters, outputFn InstanceTypesOutput) ([]string, int, error) {
+// FilterAndSort accepts a Filters struct, which is used to select the available instance types
+// matching the criteria within Filters, as well as a sortFilterFlag and a sortDirectionsFlag, which are used
+// to sort the instances, and returns a list of instanceTypeInfo along with the number of truncated items.
+// Acceptable sorting filters: on-demand-price, spot-price, vcpu, memory, instance-type-name.
+// Acceptable sorting directions: ascending, descending.
+func (itf Selector) FilterAndSort(filters Filters, sortFilterFlag *string, sortDirectionFlag *string) ([]*instancetypes.Details, int, error) {
+	// get instance types based on filter
 	instanceTypeInfoSlice, err := itf.rawFilter(filters)
 	if err != nil {
 		return nil, 0, err
 	}
+
+	// sort results
+	instanceTypeInfoSlice = sortInstanceTypes(sortFilterFlag, sortDirectionFlag, instanceTypeInfoSlice)
+
+	// truncate results
 	instanceTypeInfoSlice, numOfItemsTruncated := itf.truncateResults(filters.MaxResults, instanceTypeInfoSlice)
-	output := outputFn.Output(instanceTypeInfoSlice)
-	return output, numOfItemsTruncated, nil
+
+	return instanceTypeInfoSlice, numOfItemsTruncated, nil
+}
+
+// sorts the given list of instance type details based on the sorting filter flag and the sort direction flag
+func sortInstanceTypes(sortFilterFlag *string, sortDirectionFlag *string, instanceTypes []*instancetypes.Details) []*instancetypes.Details {
+	if len(instanceTypes) <= 1 {
+		return instanceTypes
+	}
+
+	// by default, sorted in ascending order.
+	shouldReverse := false
+	if sortDirectionFlag != nil && *sortDirectionFlag == SortDescendingFlag {
+		shouldReverse = true
+	}
+
+	// sort instance types based on filter flag and reverse list if the order should be descending
+	sort.Slice(instanceTypes, func(i, j int) bool {
+		firstType := instanceTypes[i]
+		secondType := instanceTypes[j]
+
+		// Determine which value to sort by.
+		// Handle nil values by making non nil values always less than the nil values. That way the
+		// nil values can be bubbled up to the end of the list.
+		switch *sortFilterFlag {
+		case ODPriceSortFlag:
+			if firstType.OndemandPricePerHour == nil {
+				return false
+			} else if secondType.OndemandPricePerHour == nil {
+				return true
+			}
+
+			if shouldReverse {
+				return *firstType.OndemandPricePerHour > *secondType.OndemandPricePerHour
+			} else {
+				return *firstType.OndemandPricePerHour <= *secondType.OndemandPricePerHour
+			}
+		case SpotPriceSortFlag:
+			if firstType.SpotPrice == nil {
+				return false
+			} else if secondType.SpotPrice == nil {
+				return true
+			}
+
+			if shouldReverse {
+				return *firstType.SpotPrice > *secondType.SpotPrice
+			} else {
+				return *firstType.SpotPrice <= *secondType.SpotPrice
+			}
+		case VcpuSortFlag:
+			if firstType.VCpuInfo == nil || firstType.VCpuInfo.DefaultVCpus == nil {
+				return false
+			} else if secondType.VCpuInfo == nil || secondType.VCpuInfo.DefaultVCpus == nil {
+				return true
+			}
+
+			if shouldReverse {
+				return *firstType.VCpuInfo.DefaultVCpus > *secondType.VCpuInfo.DefaultVCpus
+			} else {
+				return *firstType.VCpuInfo.DefaultVCpus <= *secondType.VCpuInfo.DefaultVCpus
+			}
+		case MemorySortFlag:
+			if firstType.MemoryInfo == nil || firstType.MemoryInfo.SizeInMiB == nil {
+				return false
+			} else if secondType.MemoryInfo == nil || secondType.MemoryInfo.SizeInMiB == nil {
+				return true
+			}
+
+			if shouldReverse {
+				return *firstType.MemoryInfo.SizeInMiB > *secondType.MemoryInfo.SizeInMiB
+			} else {
+				return *firstType.MemoryInfo.SizeInMiB <= *secondType.MemoryInfo.SizeInMiB
+			}
+		default:
+			if firstType.InstanceType == nil {
+				return false
+			} else if secondType.InstanceType == nil {
+				return true
+			}
+
+			// sort alphanumerically by the instace-type name
+			if shouldReverse {
+				return strings.Compare(aws.StringValue(secondType.InstanceType), aws.StringValue(firstType.InstanceType)) <= 0
+			} else {
+				return strings.Compare(aws.StringValue(firstType.InstanceType), aws.StringValue(secondType.InstanceType)) <= 0
+			}
+		}
+	})
+
+	return instanceTypes
 }
 
 func (itf Selector) truncateResults(maxResults *int, instanceTypeInfoSlice []*instancetypes.Details) ([]*instancetypes.Details, int) {
@@ -241,7 +353,8 @@ func (itf Selector) rawFilter(filters Filters) ([]*instancetypes.Details, error)
 	for it := range instanceTypes {
 		filteredInstanceTypes = append(filteredInstanceTypes, it)
 	}
-	return sortInstanceTypeInfo(filteredInstanceTypes), nil
+
+	return filteredInstanceTypes, nil
 }
 
 func (itf Selector) prepareFilter(filters Filters, instanceTypeInfo instancetypes.Details, availabilityZones []string, locationInstanceOfferings map[string]string) (*instancetypes.Details, error) {
@@ -341,19 +454,6 @@ func (itf Selector) prepareFilter(filters Filters, instanceTypeInfo instancetype
 		return nil, nil
 	}
 	return &instanceTypeInfo, nil
-}
-
-// sortInstanceTypeInfo will sort based on instance type info alpha-numerically
-func sortInstanceTypeInfo(instanceTypeInfoSlice []*instancetypes.Details) []*instancetypes.Details {
-	if len(instanceTypeInfoSlice) < 2 {
-		return instanceTypeInfoSlice
-	}
-	sort.Slice(instanceTypeInfoSlice, func(i, j int) bool {
-		iInstanceInfo := instanceTypeInfoSlice[i]
-		jInstanceInfo := instanceTypeInfoSlice[j]
-		return strings.Compare(aws.StringValue(iInstanceInfo.InstanceType), aws.StringValue(jInstanceInfo.InstanceType)) <= 0
-	})
-	return instanceTypeInfoSlice
 }
 
 // executeFilters accepts a mapping of filter name to filter pairs which are iterated through
