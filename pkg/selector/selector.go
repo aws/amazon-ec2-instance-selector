@@ -145,12 +145,8 @@ func (itf Selector) Save() error {
 // matching the criteria within Filters and returns a simple list of instance type strings
 func (itf Selector) Filter(filters Filters) ([]string, error) {
 	outputFn := InstanceTypesOutputFn(outputs.SimpleInstanceTypeOutput)
-	instaceTypeDetails, _, err := itf.FilterVerbose(filters)
-	var formatedOutput []string = nil
-	if err == nil {
-		formatedOutput = outputFn(instaceTypeDetails)
-	}
-	return formatedOutput, err
+	output, _, err := itf.FilterWithOutput(filters, outputFn)
+	return output, err
 }
 
 // FilterVerbose accepts a Filters struct which is used to select the available instance types
@@ -163,6 +159,18 @@ func (itf Selector) FilterVerbose(filters Filters) ([]*instancetypes.Details, in
 	}
 	instanceTypeInfoSlice, numOfItemsTruncated := itf.truncateResults(filters.MaxResults, instanceTypeInfoSlice)
 	return instanceTypeInfoSlice, numOfItemsTruncated, nil
+}
+
+// FilterWithOutput accepts a Filters struct which is used to select the available instance types
+// matching the criteria within Filters and returns a list of strings based on the custom outputFn
+func (itf Selector) FilterWithOutput(filters Filters, outputFn InstanceTypesOutput) ([]string, int, error) {
+	instanceTypeInfoSlice, err := itf.rawFilter(filters)
+	if err != nil {
+		return nil, 0, err
+	}
+	instanceTypeInfoSlice, numOfItemsTruncated := itf.truncateResults(filters.MaxResults, instanceTypeInfoSlice)
+	output := outputFn.Output(instanceTypeInfoSlice)
+	return output, numOfItemsTruncated, nil
 }
 
 // FilterAndSort accepts a Filters struct, which is used to select the available instance types
