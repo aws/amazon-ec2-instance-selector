@@ -26,7 +26,6 @@ import (
 	commandline "github.com/aws/amazon-ec2-instance-selector/v2/pkg/cli"
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/env"
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/selector"
-	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/selector/outputs"
 	"github.com/aws/aws-sdk-go/aws/session"
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
@@ -41,10 +40,6 @@ const (
 	defaultProfile      = "default"
 	awsConfigFile       = "~/.aws/config"
 	spotPricingDaysBack = 30
-
-	tableOutput     = "table"
-	tableWideOutput = "table-wide"
-	oneLine         = "one-line"
 )
 
 // Filter Flag Constants
@@ -138,11 +133,10 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	cli := commandline.New(binName, shortUsage, longUsage, examples, runFunc)
 
 	cliOutputTypes := []string{
-		tableOutput,
-		tableWideOutput,
-		oneLine,
+		selector.TableOutput,
+		selector.TableWideOutput,
+		selector.OneLineOutput,
 	}
-	resultsOutputFn := outputs.SimpleInstanceTypeOutput
 
 	cliSortCriteria := []string{
 		selector.ODPriceSortFlag,
@@ -255,7 +249,7 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	}
 	registerShutdown(shutdown)
 	outputFlag := cli.StringMe(flags[output])
-	if outputFlag != nil && *outputFlag == tableWideOutput {
+	if outputFlag != nil && *outputFlag == selector.TableWideOutput {
 		// If output type is `table-wide`, simply print both prices for better comparison,
 		//   even if the actual filter is applied on any one of those based on usage class
 		// Save time by hydrating all caches in parallel
@@ -305,7 +299,6 @@ Full docs can be found at github.com/aws/amazon-` + binName
 		Region:                           cli.StringMe(flags[region]),
 		AvailabilityZones:                cli.StringSliceMe(flags[availabilityZones]),
 		CurrentGeneration:                cli.BoolMe(flags[currentGeneration]),
-		MaxResults:                       cli.IntMe(flags[maxResults]),
 		NetworkInterfaces:                cli.IntRangeMe(flags[networkInterfaces]),
 		NetworkPerformance:               cli.IntRangeMe(flags[networkPerformance]),
 		NetworkEncryption:                cli.BoolMe(flags[networkEncryption]),
@@ -331,7 +324,7 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	}
 
 	if flags[verbose] != nil {
-		resultsOutputFn = outputs.VerboseInstanceTypeOutput
+		outputFlag = cli.StringMe(selector.VerboseOutput)
 		transformedFilters, err := instanceSelector.AggregateFilterTransform(filters)
 		if err != nil {
 			fmt.Printf("An error occurred while transforming the aggregate filters")
@@ -355,26 +348,36 @@ Full docs can be found at github.com/aws/amazon-` + binName
 		}
 	}
 
-	outputFn := getOutputFn(outputFlag, selector.InstanceTypesOutputFn(resultsOutputFn))
-
-	// get instance types based on filters and sort them based on sorting flags
-	sortFilterFlag := cli.StringMe(flags[sortFilter])
-	sortDirectionFlag := cli.StringMe(flags[sortDirection])
-	instanceTypesDetails, itemsTruncated, err := instanceSelector.FilterAndSort(filters, sortFilterFlag, sortDirectionFlag)
+	// get filtered instance types
+	instanceTypeDetails, err := instanceSelector.GetFilteredInstanceTypes(filters)
 	if err != nil {
 		fmt.Printf("An error occurred when filtering instance types: %v", err)
 		os.Exit(1)
 	}
-	if len(instanceTypesDetails) == 0 {
+
+	// sort instance types
+	sortFilterFlag := cli.StringMe(flags[sortFilter])
+	sortDirectionFlag := cli.StringMe(flags[sortDirection])
+	instanceTypeDetails, err = instanceSelector.SortInstanceTypes(instanceTypeDetails, sortFilterFlag, sortDirectionFlag)
+	if err != nil {
+		fmt.Printf("An error occurred when sorting instance types: %v", err)
+		os.Exit(1)
+	}
+
+	// format instance types as a string
+	maxOutputResults := cli.IntMe(flags[maxResults])
+	instanceTypesString, itemsTruncated, err := instanceSelector.OutputInstanceTypes(instanceTypeDetails, *maxOutputResults, outputFlag)
+	if err != nil {
+		fmt.Printf("An error occured ouputting instance types: %v", err)
+		os.Exit(1)
+	}
+	if len(instanceTypesString) == 0 {
 		log.Println("The criteria was too narrow and returned no valid instance types. Consider broadening your criteria so that more instance types are returned.")
 		os.Exit(1)
 	}
 
-	// format output
-	instanceTypes := outputFn(instanceTypesDetails)
-
 	// print output
-	for _, instanceType := range instanceTypes {
+	for _, instanceType := range instanceTypesString {
 		fmt.Println(instanceType)
 	}
 
@@ -421,21 +424,6 @@ func hydrateCaches(instanceSelector selector.Selector) (errs error) {
 	}
 	wg.Wait()
 	return errs
-}
-
-func getOutputFn(outputFlag *string, currentFn selector.InstanceTypesOutputFn) selector.InstanceTypesOutputFn {
-	outputFn := selector.InstanceTypesOutputFn(currentFn)
-	if outputFlag != nil {
-		switch *outputFlag {
-		case tableWideOutput:
-			return selector.InstanceTypesOutputFn(outputs.TableOutputWide)
-		case tableOutput:
-			return selector.InstanceTypesOutputFn(outputs.TableOutputShort)
-		case oneLine:
-			return selector.InstanceTypesOutputFn(outputs.OneLineOutput)
-		}
-	}
-	return outputFn
 }
 
 func getRegionAndProfileAWSSession(regionName *string, profileName *string) (*session.Session, error) {

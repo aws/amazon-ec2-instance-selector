@@ -46,12 +46,42 @@ func main() {
 		CPUArchitecture: &cpuArch,
 	}
 
-	// Pass the Filter struct to the Filter function of your selector instance
-	instanceTypesSlice, err := instanceSelector.Filter(filters)
+	// TODO: ask Austin if all of the 3 interfaces should be used in this example
+	// // Pass the Filter struct to the Filter function of your selector instance
+	// instanceTypesSlice, err := instanceSelector.Filter(filters)
+	// if err != nil {
+	// 	fmt.Printf("Oh no, there was an error :( %v", err)
+	// 	return
+	// }
+
+	// Pass the Filter struct to the GetFilteredInstanceTypes function of your
+	// selector instance to get a list of filtered instance types and their details
+	instanceTypesSlice, err := instanceSelector.GetFilteredInstanceTypes(filters)
 	if err != nil {
-		fmt.Printf("Oh no, there was an error :( %v", err)
+		fmt.Printf("Oh no, there was an error getting instance types: %v", err)
 		return
 	}
+
+	// Pass in the list of instance type details to the SortInstanceTypes if you
+	// wish to sort the instances based on set filters.
+	sortFilter := selector.SpotPriceSortFlag
+	sortDirection := selector.SortAscendingFlag
+	instanceTypesSlice, err = instanceSelector.SortInstanceTypes(instanceTypesSlice, &sortFilter, &sortDirection)
+	if err != nil {
+		fmt.Printf("Oh no, there was an error filtering instance types: %v", err)
+		return
+	}
+
+	// Pass in your list of instance type details to the OuputInstanceTypes function
+	// in order to format the instance types as a printable string.
+	outputFormat := selector.SimpleOutput
+	maxResults := 100
+	instanceTypesStrings, _, err := instanceSelector.OutputInstanceTypes(instanceTypesSlice, maxResults, &outputFormat)
+	if err != nil {
+		fmt.Printf("Oh no, there was an error outputting instance types: %v", err)
+		return
+	}
+
 	// Print the returned instance types slice
-	fmt.Println(instanceTypesSlice)
+	fmt.Println(instanceTypesStrings)
 }
