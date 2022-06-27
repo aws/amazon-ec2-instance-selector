@@ -149,60 +149,6 @@ func (itf Selector) Save() error {
 	return multierr.Append(itf.EC2Pricing.Save(), itf.InstanceTypesProvider.Save())
 }
 
-// TODO: remove these commented out methods
-// Filter accepts a Filters struct which is used to select the available instance types
-// matching the criteria within Filters and returns a simple list of instance type strings
-// func (itf Selector) Filter(filters Filters) ([]string, error) {
-// 	outputFn := InstanceTypesOutputFn(outputs.SimpleInstanceTypeOutput)
-// 	output, _, err := itf.FilterWithOutput(filters, outputFn)
-// 	return output, err
-// }
-
-// FilterVerbose accepts a Filters struct which is used to select the available instance types
-// matching the criteria within Filters and returns a list instanceTypeInfo along with the number
-// of truncated items.
-// func (itf Selector) FilterVerbose(filters Filters) ([]*instancetypes.Details, int, error) {
-// 	instanceTypeInfoSlice, err := itf.rawFilter(filters)
-// 	if err != nil {
-// 		return nil, 0, err
-// 	}
-// 	instanceTypeInfoSlice, numOfItemsTruncated := itf.truncateResults(filters.MaxResults, instanceTypeInfoSlice)
-// 	return instanceTypeInfoSlice, numOfItemsTruncated, nil
-// }
-
-// FilterWithOutput accepts a Filters struct which is used to select the available instance types
-// matching the criteria within Filters and returns a list of strings based on the custom outputFn
-// func (itf Selector) FilterWithOutput(filters Filters, outputFn InstanceTypesOutput) ([]string, int, error) {
-// 	instanceTypeInfoSlice, err := itf.rawFilter(filters)
-// 	if err != nil {
-// 		return nil, 0, err
-// 	}
-// 	instanceTypeInfoSlice, numOfItemsTruncated := itf.truncateResults(filters.MaxResults, instanceTypeInfoSlice)
-// 	output := outputFn.Output(instanceTypeInfoSlice)
-// 	return output, numOfItemsTruncated, nil
-// }
-
-// FilterAndSort accepts a Filters struct, which is used to select the available instance types
-// matching the criteria within Filters, as well as a sortFilterFlag and a sortDirectionsFlag, which are used
-// to sort the instances, and returns a list of instanceTypeInfo along with the number of truncated items.
-// Acceptable sorting filters: on-demand-price, spot-price, vcpu, memory, instance-type-name.
-// Acceptable sorting directions: ascending, descending.
-// func (itf Selector) FilterAndSort(filters Filters, sortFilterFlag *string, sortDirectionFlag *string) ([]*instancetypes.Details, int, error) {
-// 	// get instance types based on filter
-// 	instanceTypeInfoSlice, err := itf.rawFilter(filters)
-// 	if err != nil {
-// 		return nil, 0, err
-// 	}
-
-// 	// sort results
-// 	instanceTypeInfoSlice = sortInstanceTypes(sortFilterFlag, sortDirectionFlag, instanceTypeInfoSlice)
-
-// 	// truncate results
-// 	instanceTypeInfoSlice, numOfItemsTruncated := itf.truncateResults(filters.MaxResults, instanceTypeInfoSlice)
-
-// 	return instanceTypeInfoSlice, numOfItemsTruncated, nil
-// }
-
 // GetFilteredInstanceTypes accepts a Filters struct which is used to select the available instance types
 // matching the criteria within Filters and returns the detailed specs of matching instance types
 func (itf Selector) GetFilteredInstanceTypes(filters Filters) ([]*instancetypes.Details, error) {
@@ -258,8 +204,10 @@ func (itf Selector) GetFilteredInstanceTypes(filters Filters) ([]*instancetypes.
 	return filteredInstanceTypes, nil
 }
 
-// sorts the given list of instance type details based on the sorting filter flag and the sort direction flag
-// TODO: better method comment and regular comments
+// SortInstanceTypes acepts a list of instance type details, a sort filter flag, and a sort direction flag and
+// returns a sorted list of instance type details sorted based on the sort filter and sort direction.
+// Accepted sort filter flags: "on-demand-price", "spot-price", "vcpu", "memory" , "instance-type-name".
+// Accepted sort direction flags: "ascending", "descending".
 func (itf Selector) SortInstanceTypes(instanceTypes []*instancetypes.Details, sortFilterFlag *string, sortDirectionFlag *string) ([]*instancetypes.Details, error) {
 	if len(instanceTypes) <= 1 {
 		return instanceTypes, nil
@@ -275,9 +223,8 @@ func (itf Selector) SortInstanceTypes(instanceTypes []*instancetypes.Details, so
 		return nil, fmt.Errorf("invalid sort direction flag: %s", *sortDirectionFlag)
 	}
 
-	isSortingFlagValid := true
-
 	// sort instance types based on filter flag and reverse list if the order should be descending
+	isSortingFlagValid := true
 	sort.Slice(instanceTypes, func(i, j int) bool {
 		firstType := instanceTypes[i]
 		secondType := instanceTypes[j]
@@ -347,6 +294,7 @@ func (itf Selector) SortInstanceTypes(instanceTypes []*instancetypes.Details, so
 				return strings.Compare(aws.StringValue(firstType.InstanceType), aws.StringValue(secondType.InstanceType)) <= 0
 			}
 		default:
+			// invalid sorting flag. Do not sort.
 			isSortingFlagValid = false
 			return true
 		}
@@ -358,17 +306,19 @@ func (itf Selector) SortInstanceTypes(instanceTypes []*instancetypes.Details, so
 	return instanceTypes, nil
 }
 
-// TODO: add method comment and comment inside method
+// OutputInstanceTypes accepts a list of instance types details, a number of max results, and an output flag
+// and returns a list of formatted strings representing the passed in intance types with at most maxResults number
+// of results. The format of the strings is determined by the output flag. The number of truncated results
+// is also returned.
+// Accepted output flags: "table", "table-wide", "one-line", "simple", "verbose".
 func (itf Selector) OutputInstanceTypes(instanceTypes []*instancetypes.Details, maxResults int, outputFlag *string) ([]string, int, error) {
 	if outputFlag == nil {
-		// TODO: check to see how string errors should be formatted
 		return nil, 0, fmt.Errorf("output flag is nil")
 	}
 
 	instanceTypes, numOfItemsTruncated := itf.truncateResults(&maxResults, instanceTypes)
-	_ = numOfItemsTruncated
 
-	// TODO: switch statement to see which output to use
+	// See which output format to use
 	var outputString []string
 	switch *outputFlag {
 	case SimpleOutput:
@@ -382,7 +332,6 @@ func (itf Selector) OutputInstanceTypes(instanceTypes []*instancetypes.Details, 
 	case VerboseOutput:
 		outputString = outputs.VerboseInstanceTypeOutput(instanceTypes)
 	default:
-		// TODO: check to see how string errors should be formatted
 		return nil, 0, fmt.Errorf("invalid output flag")
 	}
 
