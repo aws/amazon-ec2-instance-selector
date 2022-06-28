@@ -46,6 +46,7 @@ const (
 	zoneNameLocationType   = "availability-zone"
 	regionNameLocationType = "region"
 	sdkName                = "instance-selector"
+	spotPricingDaysBack    = 30
 
 	// Filter Keys
 
@@ -152,6 +153,11 @@ func (itf Selector) Save() error {
 // GetFilteredInstanceTypes accepts a Filters struct which is used to select the available instance types
 // matching the criteria within Filters and returns the detailed specs of matching instance types
 func (itf Selector) GetFilteredInstanceTypes(filters Filters) ([]*instancetypes.Details, error) {
+	// refresh OD and Spot pricing caches
+	if err := hydrateCaches(itf); err != nil {
+		log.Printf("%v", err)
+	}
+
 	filters, err := itf.AggregateFilterTransform(filters)
 	if err != nil {
 		return nil, err
@@ -314,6 +320,9 @@ func (itf Selector) SortInstanceTypes(instanceTypes []*instancetypes.Details, so
 func (itf Selector) OutputInstanceTypes(instanceTypes []*instancetypes.Details, maxResults int, outputFlag *string) ([]string, int, error) {
 	if outputFlag == nil {
 		return nil, 0, fmt.Errorf("output flag is nil")
+	}
+	if maxResults < 0 {
+		return nil, 0, fmt.Errorf("negative maxResults")
 	}
 
 	instanceTypes, numOfItemsTruncated := itf.truncateResults(&maxResults, instanceTypes)
@@ -722,4 +731,43 @@ func userAgentWith(sess *session.Session) *session.Session {
 	userAgentHandler := request.MakeAddToUserAgentFreeFormHandler(fmt.Sprintf("%s-%s", sdkName, versionID))
 	sess.Handlers.Build.PushBack(userAgentHandler)
 	return sess
+}
+
+func hydrateCaches(instanceSelector Selector) (errs error) {
+	wg := &sync.WaitGroup{}
+	hydrateTasks := []func(*sync.WaitGroup) error{
+		func(waitGroup *sync.WaitGroup) error {
+			defer waitGroup.Done()
+			if instanceSelector.EC2Pricing.OnDemandCacheCount() == 0 {
+				if err := instanceSelector.EC2Pricing.RefreshOnDemandCache(); err != nil {
+					return multierr.Append(errs, fmt.Errorf("There was a problem refreshing the on-demand pricing cache: %w", err))
+				}
+			}
+			return nil
+		},
+		func(waitGroup *sync.WaitGroup) error {
+			defer waitGroup.Done()
+			if instanceSelector.EC2Pricing.SpotCacheCount() == 0 {
+				if err := instanceSelector.EC2Pricing.RefreshSpotCache(spotPricingDaysBack); err != nil {
+					return multierr.Append(errs, fmt.Errorf("There was a problem refreshing the spot pricing cache: %w", err))
+				}
+			}
+			return nil
+		},
+		func(waitGroup *sync.WaitGroup) error {
+			defer waitGroup.Done()
+			if instanceSelector.InstanceTypesProvider.CacheCount() == 0 {
+				if _, err := instanceSelector.InstanceTypesProvider.Get(nil); err != nil {
+					return multierr.Append(errs, fmt.Errorf("There was a problem refreshing the instance types cache: %w", err))
+				}
+			}
+			return nil
+		},
+	}
+	wg.Add(len(hydrateTasks))
+	for _, task := range hydrateTasks {
+		go task(wg)
+	}
+	wg.Wait()
+	return errs
 }

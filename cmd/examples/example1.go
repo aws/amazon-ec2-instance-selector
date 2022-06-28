@@ -46,14 +46,6 @@ func main() {
 		CPUArchitecture: &cpuArch,
 	}
 
-	// TODO: ask Austin if all of the 3 interfaces should be used in this example
-	// // Pass the Filter struct to the Filter function of your selector instance
-	// instanceTypesSlice, err := instanceSelector.Filter(filters)
-	// if err != nil {
-	// 	fmt.Printf("Oh no, there was an error :( %v", err)
-	// 	return
-	// }
-
 	// Pass the Filter struct to the GetFilteredInstanceTypes function of your
 	// selector instance to get a list of filtered instance types and their details
 	instanceTypesSlice, err := instanceSelector.GetFilteredInstanceTypes(filters)
@@ -61,6 +53,8 @@ func main() {
 		fmt.Printf("Oh no, there was an error getting instance types: %v", err)
 		return
 	}
+
+	fmt.Println(*instanceTypesSlice[0].SpotPrice)
 
 	// Pass in the list of instance type details to the SortInstanceTypes if you
 	// wish to sort the instances based on set filters.
