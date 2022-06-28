@@ -33,14 +33,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/ec2/ec2iface"
 )
 
-// TODO: remove this
-func blahBlah() {
-	_ = errors.New("fd")
-	regexp.MatchString("fdas", "fda")
-	strconv.Itoa(3)
-	bytequantity.FromMiB(432)
-}
-
 const (
 	describeInstanceTypesPages    = "DescribeInstanceTypesPages"
 	describeInstanceTypes         = "DescribeInstanceTypes"
@@ -479,8 +471,6 @@ func TestGetFilteredInstanceTypes_PricePerHour_Spot(t *testing.T) {
 	h.Ok(t, err)
 	h.Assert(t, len(results) == 1, fmt.Sprintf("Should return 1 instance type; got %d", len(results)))
 }
-
-// TODO: SortInstanceTypes tests
 
 func TestOutputInstanceTypes_TruncateToMaxResults(t *testing.T) {
 	itf := getSelector(setupMock(t, describeInstanceTypesPages, "25_instances.json"))

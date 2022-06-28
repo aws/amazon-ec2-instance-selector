@@ -101,17 +101,6 @@ const (
 
 	pricePerHour = "pricePerHour"
 
-	// Sorting constants
-
-	ODPriceSortFlag   = "on-demand-price"
-	SpotPriceSortFlag = "spot-price"
-	VcpuSortFlag      = "vcpu"
-	MemorySortFlag    = "memory"
-	NameSortFlag      = "instance-type-name"
-
-	SortAscendingFlag  = "ascending"
-	SortDescendingFlag = "descending"
-
 	// Output constants
 
 	TableOutput     = "table"
@@ -207,109 +196,20 @@ func (itf Selector) GetFilteredInstanceTypes(filters Filters) ([]*instancetypes.
 		filteredInstanceTypes = append(filteredInstanceTypes, it)
 	}
 
-	return filteredInstanceTypes, nil
+	return sortInstanceTypeInfo(filteredInstanceTypes), nil
 }
 
-// SortInstanceTypes acepts a list of instance type details, a sort filter flag, and a sort direction flag and
-// returns a sorted list of instance type details sorted based on the sort filter and sort direction.
-// Accepted sort filter flags: "on-demand-price", "spot-price", "vcpu", "memory" , "instance-type-name".
-// Accepted sort direction flags: "ascending", "descending".
-func (itf Selector) SortInstanceTypes(instanceTypes []*instancetypes.Details, sortFilterFlag *string, sortDirectionFlag *string) ([]*instancetypes.Details, error) {
-	if len(instanceTypes) <= 1 {
-		return instanceTypes, nil
+// sortInstanceTypeInfo will sort based on instance type info alpha-numerically
+func sortInstanceTypeInfo(instanceTypeInfoSlice []*instancetypes.Details) []*instancetypes.Details {
+	if len(instanceTypeInfoSlice) < 2 {
+		return instanceTypeInfoSlice
 	}
-
-	// by default, sorted in ascending order.
-	var shouldReverse bool
-	if sortDirectionFlag != nil && *sortDirectionFlag == SortDescendingFlag {
-		shouldReverse = true
-	} else if sortDirectionFlag != nil && *sortDirectionFlag == SortAscendingFlag {
-		shouldReverse = false
-	} else {
-		return nil, fmt.Errorf("invalid sort direction flag: %s", *sortDirectionFlag)
-	}
-
-	// sort instance types based on filter flag and reverse list if the order should be descending
-	isSortingFlagValid := true
-	sort.Slice(instanceTypes, func(i, j int) bool {
-		firstType := instanceTypes[i]
-		secondType := instanceTypes[j]
-
-		// Determine which value to sort by.
-		// Handle nil values by making non nil values always less than the nil values. That way the
-		// nil values can be bubbled up to the end of the list.
-		switch *sortFilterFlag {
-		case ODPriceSortFlag:
-			if firstType.OndemandPricePerHour == nil {
-				return false
-			} else if secondType.OndemandPricePerHour == nil {
-				return true
-			}
-
-			if shouldReverse {
-				return *firstType.OndemandPricePerHour > *secondType.OndemandPricePerHour
-			} else {
-				return *firstType.OndemandPricePerHour <= *secondType.OndemandPricePerHour
-			}
-		case SpotPriceSortFlag:
-			if firstType.SpotPrice == nil {
-				return false
-			} else if secondType.SpotPrice == nil {
-				return true
-			}
-
-			if shouldReverse {
-				return *firstType.SpotPrice > *secondType.SpotPrice
-			} else {
-				return *firstType.SpotPrice <= *secondType.SpotPrice
-			}
-		case VcpuSortFlag:
-			if firstType.VCpuInfo == nil || firstType.VCpuInfo.DefaultVCpus == nil {
-				return false
-			} else if secondType.VCpuInfo == nil || secondType.VCpuInfo.DefaultVCpus == nil {
-				return true
-			}
-
-			if shouldReverse {
-				return *firstType.VCpuInfo.DefaultVCpus > *secondType.VCpuInfo.DefaultVCpus
-			} else {
-				return *firstType.VCpuInfo.DefaultVCpus <= *secondType.VCpuInfo.DefaultVCpus
-			}
-		case MemorySortFlag:
-			if firstType.MemoryInfo == nil || firstType.MemoryInfo.SizeInMiB == nil {
-				return false
-			} else if secondType.MemoryInfo == nil || secondType.MemoryInfo.SizeInMiB == nil {
-				return true
-			}
-
-			if shouldReverse {
-				return *firstType.MemoryInfo.SizeInMiB > *secondType.MemoryInfo.SizeInMiB
-			} else {
-				return *firstType.MemoryInfo.SizeInMiB <= *secondType.MemoryInfo.SizeInMiB
-			}
-		case NameSortFlag:
-			if firstType.InstanceType == nil {
-				return false
-			} else if secondType.InstanceType == nil {
-				return true
-			}
-
-			if shouldReverse {
-				return strings.Compare(aws.StringValue(secondType.InstanceType), aws.StringValue(firstType.InstanceType)) <= 0
-			} else {
-				return strings.Compare(aws.StringValue(firstType.InstanceType), aws.StringValue(secondType.InstanceType)) <= 0
-			}
-		default:
-			// invalid sorting flag. Do not sort.
-			isSortingFlagValid = false
-			return true
-		}
+	sort.Slice(instanceTypeInfoSlice, func(i, j int) bool {
+		iInstanceInfo := instanceTypeInfoSlice[i]
+		jInstanceInfo := instanceTypeInfoSlice[j]
+		return strings.Compare(aws.StringValue(iInstanceInfo.InstanceType), aws.StringValue(jInstanceInfo.InstanceType)) <= 0
 	})
-
-	if !isSortingFlagValid {
-		return nil, fmt.Errorf("invalid sort filter flag: %s", *sortFilterFlag)
-	}
-	return instanceTypes, nil
+	return instanceTypeInfoSlice
 }
 
 // OutputInstanceTypes accepts a list of instance types details, a number of max results, and an output flag
