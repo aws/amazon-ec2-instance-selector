@@ -30,7 +30,7 @@ import (
 // in the list to have at most maxResults elements. Returns the truncated list of instance types and
 // the number of truncated items.
 func TruncateResults(maxResults *int, instanceTypeInfoSlice []*instancetypes.Details) ([]*instancetypes.Details, int) {
-	if maxResults == nil || *maxResults < 0 {
+	if maxResults == nil || *maxResults <= 0 {
 		return instanceTypeInfoSlice, 0
 	}
 	upperIndex := *maxResults
@@ -49,7 +49,7 @@ func SimpleInstanceTypeOutput(instanceTypeInfoSlice []*instancetypes.Details) []
 	return instanceTypeStrings
 }
 
-// VerboseInstanceTypeOutput is an OutputFn which outputs a slice of instance type names
+// VerboseInstanceTypeOutput is an OutputFn which returns a list of full instance specs
 func VerboseInstanceTypeOutput(instanceTypeInfoSlice []*instancetypes.Details) []string {
 	output, err := json.MarshalIndent(instanceTypeInfoSlice, "", "    ")
 	if err != nil {

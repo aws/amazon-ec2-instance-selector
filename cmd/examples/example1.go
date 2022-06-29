@@ -47,7 +47,7 @@ func main() {
 		CPUArchitecture: &cpuArch,
 	}
 
-	// Pass the Filter struct to the GetFilteredInstanceTypes function of your
+	// Pass the Filter struct to the FilteredInstanceTypes function of your
 	// selector instance to get a list of filtered instance types and their details
 	instanceTypesSlice, err := instanceSelector.FilterInstanceTypes(filters)
 	if err != nil {
