@@ -429,7 +429,7 @@ func formatInstanceTypes(instanceTypes []*instancetypes.Details, maxResults int,
 	if outputFlag == nil {
 		return nil, 0, fmt.Errorf("output flag is nil")
 	}
-	if maxResults < 0 {
+	if maxResults <= 0 {
 		return nil, 0, fmt.Errorf("negative maxResults")
 	}
 
