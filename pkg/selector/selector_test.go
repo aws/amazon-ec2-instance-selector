@@ -20,7 +20,6 @@ import (
 	"io/ioutil"
 	"regexp"
 	"strconv"
-	"strings"
 	"testing"
 
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/bytequantity"
@@ -155,13 +154,13 @@ func TestNew(t *testing.T) {
 	h.Assert(t, itf != nil, "selector instance created without error")
 }
 
-func TestGetFilteredInstanceTypes(t *testing.T) {
+func TestFilterInstanceTypes(t *testing.T) {
 	itf := getSelector(setupMock(t, describeInstanceTypesPages, "t3_micro.json"))
 	filter := selector.Filters{
 		VCpusRange: &selector.IntRangeFilter{LowerBound: 2, UpperBound: 2},
 	}
 
-	results, err := itf.GetFilteredInstanceTypes(filter)
+	results, err := itf.FilterInstanceTypes(filter)
 
 	h.Ok(t, err)
 	h.Assert(t, len(results) == 1, "Should only return 1 intance type with 2 vcpus")
@@ -170,19 +169,19 @@ func TestGetFilteredInstanceTypes(t *testing.T) {
 	h.Assert(t, *instanceTypeName == "t3.micro", "Should return t3.micro, got %s instead", results[0])
 }
 
-func TestGetFilteredInstanceTypes_NoResults(t *testing.T) {
+func TestFilterInstanceTypes_NoResults(t *testing.T) {
 	itf := getSelector(setupMock(t, describeInstanceTypesPages, "t3_micro.json"))
 	filters := selector.Filters{
 		VCpusRange: &selector.IntRangeFilter{LowerBound: 4, UpperBound: 4},
 	}
 
-	results, err := itf.GetFilteredInstanceTypes(filters)
+	results, err := itf.FilterInstanceTypes(filters)
 
 	h.Ok(t, err)
 	h.Assert(t, len(results) == 0, "Should return 0 instance type with 4 vcpus")
 }
 
-func TestGetFilteredInstanceTypes_AZFilteredIn(t *testing.T) {
+func TestFilterInstanceTypes_AZFilteredIn(t *testing.T) {
 	ec2Mock := mockedEC2{
 		DescribeInstanceTypesPagesResp:    setupMock(t, describeInstanceTypesPages, "t3_micro.json").DescribeInstanceTypesPagesResp,
 		DescribeInstanceTypeOfferingsResp: setupMock(t, describeInstanceTypeOfferings, "us-east-2a.json").DescribeInstanceTypeOfferingsResp,
@@ -194,7 +193,7 @@ func TestGetFilteredInstanceTypes_AZFilteredIn(t *testing.T) {
 		AvailabilityZones: &[]string{"us-east-2a"},
 	}
 
-	results, err := itf.GetFilteredInstanceTypes(filters)
+	results, err := itf.FilterInstanceTypes(filters)
 
 	h.Ok(t, err)
 	h.Assert(t, len(results) == 1, "Should only return 1 instance type with 2 vcpus but actually returned "+strconv.Itoa(len(results)))
@@ -203,7 +202,7 @@ func TestGetFilteredInstanceTypes_AZFilteredIn(t *testing.T) {
 	h.Assert(t, *instanceTypeName == "t3.micro", "Should return t3.micro, got %s instead", results[0])
 }
 
-func TestGetFilteredInstanceTypes_AZFilteredOut(t *testing.T) {
+func TestFilterInstanceTypes_AZFilteredOut(t *testing.T) {
 	ec2Mock := mockedEC2{
 		DescribeInstanceTypesPagesResp:    setupMock(t, describeInstanceTypesPages, "t3_micro.json").DescribeInstanceTypesPagesResp,
 		DescribeInstanceTypeOfferingsResp: setupMock(t, describeInstanceTypeOfferings, "us-east-2a_only_c5d12x.json").DescribeInstanceTypeOfferingsResp,
@@ -214,25 +213,25 @@ func TestGetFilteredInstanceTypes_AZFilteredOut(t *testing.T) {
 		AvailabilityZones: &[]string{"us-east-2a"},
 	}
 
-	results, err := itf.GetFilteredInstanceTypes(filters)
+	results, err := itf.FilterInstanceTypes(filters)
 
 	h.Ok(t, err)
 	h.Assert(t, len(results) == 0, "Should return 0 instance types in us-east-2a but actually returned "+strconv.Itoa(len(results)))
 }
 
-func TestGetFilteredInstanceTypes_AZFilteredErr(t *testing.T) {
+func TestFilterInstanceTypes_AZFilteredErr(t *testing.T) {
 	itf := getSelector(mockedEC2{})
 	filters := selector.Filters{
 		VCpusRange:        &selector.IntRangeFilter{LowerBound: 2, UpperBound: 2},
 		AvailabilityZones: &[]string{"blah"},
 	}
 
-	_, err := itf.GetFilteredInstanceTypes(filters)
+	_, err := itf.FilterInstanceTypes(filters)
 
 	h.Assert(t, err != nil, "Should error since bad zone was passed in")
 }
 
-func TestGetFilteredInstanceTypes_Gpus(t *testing.T) {
+func TestFilterInstanceTypes_Gpus(t *testing.T) {
 	itf := getSelector(setupMock(t, describeInstanceTypesPages, "t3_micro_and_p3_16xl.json"))
 	gpuMemory, err := bytequantity.ParseToByteQuantity("128g")
 	h.Ok(t, err)
@@ -244,7 +243,7 @@ func TestGetFilteredInstanceTypes_Gpus(t *testing.T) {
 		},
 	}
 
-	results, err := itf.GetFilteredInstanceTypes(filters)
+	results, err := itf.FilterInstanceTypes(filters)
 
 	h.Ok(t, err)
 	h.Assert(t, len(results) == 1, "Should only return 1 instance type with 2 vcpus but actually returned "+strconv.Itoa(len(results)))
@@ -253,7 +252,7 @@ func TestGetFilteredInstanceTypes_Gpus(t *testing.T) {
 	h.Assert(t, *instanceTypeName == "p3.16xlarge", "Should return p3.16xlarge, got %s instead", *results[0].InstanceType)
 }
 
-func TestGetFilteredInstanceTypes_MoreFilters(t *testing.T) {
+func TestFilterInstanceTypes_MoreFilters(t *testing.T) {
 	itf := getSelector(setupMock(t, describeInstanceTypesPages, "t3_micro.json"))
 	filters := selector.Filters{
 		VCpusRange:      &selector.IntRangeFilter{LowerBound: 2, UpperBound: 2},
@@ -263,7 +262,7 @@ func TestGetFilteredInstanceTypes_MoreFilters(t *testing.T) {
 		EnaSupport:      aws.Bool(true),
 	}
 
-	results, err := itf.GetFilteredInstanceTypes(filters)
+	results, err := itf.FilterInstanceTypes(filters)
 
 	h.Ok(t, err)
 	h.Assert(t, len(results) == 1, "Should only return 1 instance type with 2 vcpus")
@@ -272,19 +271,19 @@ func TestGetFilteredInstanceTypes_MoreFilters(t *testing.T) {
 	h.Assert(t, *instanceTypeName == "t3.micro", "Should return t3.micro, got %s instead", results[0])
 }
 
-func TestGetFilteredInstanceTypes_Failure(t *testing.T) {
+func TestFilterInstanceTypes_Failure(t *testing.T) {
 	itf := getSelector(mockedEC2{DescribeInstanceTypesPagesErr: errors.New("error")})
 	filters := selector.Filters{
 		VCpusRange: &selector.IntRangeFilter{LowerBound: 4, UpperBound: 4},
 	}
 
-	results, err := itf.GetFilteredInstanceTypes(filters)
+	results, err := itf.FilterInstanceTypes(filters)
 
 	h.Assert(t, results == nil, "Results should be nil")
 	h.Assert(t, err != nil, "An error should be returned")
 }
 
-func TestGetFilteredInstanceTypes_InstanceTypeBase(t *testing.T) {
+func TestFilterInstanceTypes_InstanceTypeBase(t *testing.T) {
 	ec2Mock := mockedEC2{
 		DescribeInstanceTypesResp:         setupMock(t, describeInstanceTypes, "c4_large.json").DescribeInstanceTypesResp,
 		DescribeInstanceTypesPagesResp:    setupMock(t, describeInstanceTypesPages, "25_instances.json").DescribeInstanceTypesPagesResp,
@@ -296,13 +295,13 @@ func TestGetFilteredInstanceTypes_InstanceTypeBase(t *testing.T) {
 		InstanceTypeBase: &c4Large,
 	}
 
-	results, err := itf.GetFilteredInstanceTypes(filters)
+	results, err := itf.FilterInstanceTypes(filters)
 
 	h.Ok(t, err)
 	h.Assert(t, len(results) == 3, "c4.large should return 3 similar instance types")
 }
 
-func TestGetFilteredInstanceTypes_AllowList(t *testing.T) {
+func TestFilterInstanceTypes_AllowList(t *testing.T) {
 	ec2Mock := mockedEC2{
 		DescribeInstanceTypesPagesResp:    setupMock(t, describeInstanceTypesPages, "25_instances.json").DescribeInstanceTypesPagesResp,
 		DescribeInstanceTypeOfferingsResp: setupMock(t, describeInstanceTypeOfferings, "us-east-2a.json").DescribeInstanceTypeOfferingsResp,
@@ -314,13 +313,13 @@ func TestGetFilteredInstanceTypes_AllowList(t *testing.T) {
 		AllowList: allowRegex,
 	}
 
-	results, err := itf.GetFilteredInstanceTypes(filters)
+	results, err := itf.FilterInstanceTypes(filters)
 
 	h.Ok(t, err)
 	h.Assert(t, len(results) == 1, "Allow List Regex: 'c4.large' should return 1 instance type")
 }
 
-func TestGetFilteredInstanceTypes_DenyList(t *testing.T) {
+func TestFilterInstanceTypes_DenyList(t *testing.T) {
 	ec2Mock := mockedEC2{
 		DescribeInstanceTypesPagesResp:    setupMock(t, describeInstanceTypesPages, "25_instances.json").DescribeInstanceTypesPagesResp,
 		DescribeInstanceTypeOfferingsResp: setupMock(t, describeInstanceTypeOfferings, "us-east-2a.json").DescribeInstanceTypeOfferingsResp,
@@ -332,13 +331,13 @@ func TestGetFilteredInstanceTypes_DenyList(t *testing.T) {
 		DenyList: denyRegex,
 	}
 
-	results, err := itf.GetFilteredInstanceTypes(filters)
+	results, err := itf.FilterInstanceTypes(filters)
 
 	h.Ok(t, err)
 	h.Assert(t, len(results) == 24, "Deny List Regex: 'c4.large' should return 24 instance type matching regex but returned %d", len(results))
 }
 
-func TestGetFilteredInstanceTypes_AllowAndDenyList(t *testing.T) {
+func TestFilterInstanceTypes_AllowAndDenyList(t *testing.T) {
 	ec2Mock := mockedEC2{
 		DescribeInstanceTypesPagesResp:    setupMock(t, describeInstanceTypesPages, "25_instances.json").DescribeInstanceTypesPagesResp,
 		DescribeInstanceTypeOfferingsResp: setupMock(t, describeInstanceTypeOfferings, "us-east-2a.json").DescribeInstanceTypeOfferingsResp,
@@ -353,18 +352,18 @@ func TestGetFilteredInstanceTypes_AllowAndDenyList(t *testing.T) {
 		DenyList:  denyRegex,
 	}
 
-	results, err := itf.GetFilteredInstanceTypes(filters)
+	results, err := itf.FilterInstanceTypes(filters)
 
 	h.Ok(t, err)
 	h.Assert(t, len(results) == 4, "Allow/Deny List Regex: 'c4.large' should return 4 instance types matching the regex but returned %d", len(results))
 }
 
-func TestGetFilteredInstanceTypes_X8664_AMD64(t *testing.T) {
+func TestFilterInstanceTypes_X8664_AMD64(t *testing.T) {
 	itf := getSelector(setupMock(t, describeInstanceTypesPages, "t3_micro.json"))
 	filters := selector.Filters{
 		CPUArchitecture: aws.String("amd64"),
 	}
-	results, err := itf.GetFilteredInstanceTypes(filters)
+	results, err := itf.FilterInstanceTypes(filters)
 	h.Ok(t, err)
 	h.Assert(t, len(results) == 1, "Should only return 1 instance type with x86_64/amd64 cpu architecture")
 	instanceTypeName := results[0].InstanceType
@@ -373,13 +372,13 @@ func TestGetFilteredInstanceTypes_X8664_AMD64(t *testing.T) {
 
 }
 
-func TestGetFilteredInstanceTypes_VirtType_PV(t *testing.T) {
+func TestFilterInstanceTypes_VirtType_PV(t *testing.T) {
 	itf := getSelector(setupMock(t, describeInstanceTypesPages, "pv_instances.json"))
 	filters := selector.Filters{
 		VirtualizationType: aws.String("pv"),
 	}
 
-	results, err := itf.GetFilteredInstanceTypes(filters)
+	results, err := itf.FilterInstanceTypes(filters)
 
 	h.Ok(t, err)
 	h.Assert(t, len(results) > 0, "Should return at least 1 instance type when filtering with VirtualizationType: pv")
@@ -388,13 +387,13 @@ func TestGetFilteredInstanceTypes_VirtType_PV(t *testing.T) {
 		VirtualizationType: aws.String("paravirtual"),
 	}
 
-	results, err = itf.GetFilteredInstanceTypes(filters)
+	results, err = itf.FilterInstanceTypes(filters)
 
 	h.Ok(t, err)
 	h.Assert(t, len(results) > 0, "Should return at least 1 instance type when filtering with VirtualizationType: paravirtual")
 }
 
-func TestGetFilteredInstanceTypes_PricePerHour(t *testing.T) {
+func TestFilterInstanceTypes_PricePerHour(t *testing.T) {
 	itf := getSelector(setupMock(t, describeInstanceTypesPages, "t3_micro.json"))
 	itf.EC2Pricing = &ec2PricingMock{
 		GetOndemandInstanceTypeCostResp: 0.0104,
@@ -407,13 +406,13 @@ func TestGetFilteredInstanceTypes_PricePerHour(t *testing.T) {
 		},
 	}
 
-	results, err := itf.GetFilteredInstanceTypes(filters)
+	results, err := itf.FilterInstanceTypes(filters)
 
 	h.Ok(t, err)
 	h.Assert(t, len(results) == 1, fmt.Sprintf("Should return 1 instance type; got %d", len(results)))
 }
 
-func TestGetFilteredInstanceTypes_PricePerHour_NoResults(t *testing.T) {
+func TestFilterInstanceTypes_PricePerHour_NoResults(t *testing.T) {
 	itf := getSelector(setupMock(t, describeInstanceTypesPages, "t3_micro.json"))
 	itf.EC2Pricing = &ec2PricingMock{
 		GetOndemandInstanceTypeCostResp: 0.0104,
@@ -426,13 +425,13 @@ func TestGetFilteredInstanceTypes_PricePerHour_NoResults(t *testing.T) {
 		},
 	}
 
-	results, err := itf.GetFilteredInstanceTypes(filters)
+	results, err := itf.FilterInstanceTypes(filters)
 
 	h.Ok(t, err)
 	h.Assert(t, len(results) == 0, "Should return 0 instance types")
 }
 
-func TestGetFilteredInstanceTypes_PricePerHour_OD(t *testing.T) {
+func TestFilterInstanceTypes_PricePerHour_OD(t *testing.T) {
 	itf := getSelector(setupMock(t, describeInstanceTypesPages, "t3_micro.json"))
 	itf.EC2Pricing = &ec2PricingMock{
 		GetOndemandInstanceTypeCostResp: 0.0104,
@@ -446,13 +445,13 @@ func TestGetFilteredInstanceTypes_PricePerHour_OD(t *testing.T) {
 		UsageClass: aws.String("on-demand"),
 	}
 
-	results, err := itf.GetFilteredInstanceTypes(filters)
+	results, err := itf.FilterInstanceTypes(filters)
 
 	h.Ok(t, err)
 	h.Assert(t, len(results) == 1, fmt.Sprintf("Should return 1 instance type; got %d", len(results)))
 }
 
-func TestGetFilteredInstanceTypes_PricePerHour_Spot(t *testing.T) {
+func TestFilterInstanceTypes_PricePerHour_Spot(t *testing.T) {
 	itf := getSelector(setupMock(t, describeInstanceTypesPages, "t3_micro.json"))
 	itf.EC2Pricing = &ec2PricingMock{
 		GetSpotInstanceTypeNDayAvgCostResp: 0.0104,
@@ -466,75 +465,10 @@ func TestGetFilteredInstanceTypes_PricePerHour_Spot(t *testing.T) {
 		UsageClass: aws.String("spot"),
 	}
 
-	results, err := itf.GetFilteredInstanceTypes(filters)
+	results, err := itf.FilterInstanceTypes(filters)
 
 	h.Ok(t, err)
 	h.Assert(t, len(results) == 1, fmt.Sprintf("Should return 1 instance type; got %d", len(results)))
-}
-
-func TestOutputInstanceTypes_TruncateToMaxResults(t *testing.T) {
-	itf := getSelector(setupMock(t, describeInstanceTypesPages, "25_instances.json"))
-	filters := selector.Filters{
-		VCpusRange: &selector.IntRangeFilter{LowerBound: 0, UpperBound: 100},
-	}
-	results, err := itf.GetFilteredInstanceTypes(filters)
-	h.Ok(t, err)
-
-	outputFlag := selector.SimpleOutput
-
-	// test 1 for max results
-	maxResults := aws.Int(1)
-	formattedResult, numTrucated, err := itf.OutputInstanceTypes(results, *maxResults, &outputFlag)
-	h.Ok(t, err)
-	h.Assert(t, len(formattedResult) == 1, fmt.Sprintf("Should return 1 instance type since max results is set to 1, but only %d are returned in total", len(formattedResult)))
-	h.Assert(t, numTrucated == 24, "Should truncate 24 results, but actually truncated: "+strconv.Itoa(numTrucated)+" results")
-
-	// test 30 for max results
-	maxResults = aws.Int(30)
-	formattedResult, numTrucated, err = itf.OutputInstanceTypes(results, *maxResults, &outputFlag)
-	h.Ok(t, err)
-	h.Assert(t, len(formattedResult) == 25, fmt.Sprintf("Should return 25 instance types since max results is set to 30 but only %d are returned in total", len(formattedResult)))
-	h.Assert(t, numTrucated == 0, "Should truncate 0 results, but actually truncated: "+strconv.Itoa(numTrucated)+" results")
-}
-
-func TestOutputInstanceTypes_InvalidOutputFlag(t *testing.T) {
-	itf := getSelector(setupMock(t, describeInstanceTypesPages, "25_instances.json"))
-	filters := selector.Filters{
-		VCpusRange: &selector.IntRangeFilter{LowerBound: 0, UpperBound: 100},
-	}
-	results, err := itf.GetFilteredInstanceTypes(filters)
-	h.Ok(t, err)
-
-	outputFlag := "blah blah blah"
-	maxResults := aws.Int(30)
-	formattedResult, numTrucated, err := itf.OutputInstanceTypes(results, *maxResults, &outputFlag)
-
-	h.Assert(t, err != nil, "An error should be returned")
-	h.Assert(t, formattedResult == nil, "Returned innstance types details should be nil, but instead got: ("+fmt.Sprintf(strings.Join(formattedResult[:], ","))+")")
-	h.Assert(t, numTrucated == 0, "No results should be truncated, but "+strconv.Itoa(numTrucated)+" results were truncated")
-
-	var outputFlagNil *string = nil
-	formattedResult, numTrucated, err = itf.OutputInstanceTypes(results, *maxResults, outputFlagNil)
-	h.Assert(t, err != nil, "An error should be returned")
-	h.Assert(t, formattedResult == nil, "Returned innstance types details should be nil, but instead got: ("+fmt.Sprintf(strings.Join(formattedResult[:], ","))+")")
-	h.Assert(t, numTrucated == 0, "No results should be truncated, but "+strconv.Itoa(numTrucated)+" results were truncated")
-}
-
-func TestOutputInstanceTypes_InvalidMaxResults(t *testing.T) {
-	itf := getSelector(setupMock(t, describeInstanceTypesPages, "25_instances.json"))
-	filters := selector.Filters{
-		VCpusRange: &selector.IntRangeFilter{LowerBound: 0, UpperBound: 100},
-	}
-	results, err := itf.GetFilteredInstanceTypes(filters)
-	h.Ok(t, err)
-
-	outputFlag := selector.SimpleOutput
-	maxResults := aws.Int(-1)
-	formattedResult, numTrucated, err := itf.OutputInstanceTypes(results, *maxResults, &outputFlag)
-
-	h.Assert(t, err != nil, "An error should be returned")
-	h.Assert(t, formattedResult == nil, "Returned innstance types details should be nil, but instead got: ("+fmt.Sprintf(strings.Join(formattedResult[:], ","))+")")
-	h.Assert(t, numTrucated == 0, "No results should be truncated, but "+strconv.Itoa(numTrucated)+" results were truncated")
 }
 
 func TestRetrieveInstanceTypesSupportedInAZ_WithZoneName(t *testing.T) {

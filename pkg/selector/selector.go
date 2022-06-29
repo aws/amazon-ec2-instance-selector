@@ -27,7 +27,6 @@ import (
 
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/ec2pricing"
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/instancetypes"
-	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/selector/outputs"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -100,14 +99,6 @@ const (
 	virtualizationTypePV          = "pv"
 
 	pricePerHour = "pricePerHour"
-
-	// Output constants
-
-	TableOutput     = "table"
-	TableWideOutput = "table-wide"
-	OneLineOutput   = "one-line"
-	SimpleOutput    = "simple"
-	VerboseOutput   = "verbose"
 )
 
 // New creates an instance of Selector provided an aws session
@@ -139,9 +130,9 @@ func (itf Selector) Save() error {
 	return multierr.Append(itf.EC2Pricing.Save(), itf.InstanceTypesProvider.Save())
 }
 
-// GetFilteredInstanceTypes accepts a Filters struct which is used to select the available instance types
+// FilterInstanceTypes accepts a Filters struct which is used to select the available instance types
 // matching the criteria within Filters and returns the detailed specs of matching instance types
-func (itf Selector) GetFilteredInstanceTypes(filters Filters) ([]*instancetypes.Details, error) {
+func (itf Selector) FilterInstanceTypes(filters Filters) ([]*instancetypes.Details, error) {
 	// refresh OD and Spot pricing caches
 	if err := hydrateCaches(itf); err != nil {
 		log.Printf("%v", err)
@@ -210,52 +201,6 @@ func sortInstanceTypeInfo(instanceTypeInfoSlice []*instancetypes.Details) []*ins
 		return strings.Compare(aws.StringValue(iInstanceInfo.InstanceType), aws.StringValue(jInstanceInfo.InstanceType)) <= 0
 	})
 	return instanceTypeInfoSlice
-}
-
-// OutputInstanceTypes accepts a list of instance types details, a number of max results, and an output flag
-// and returns a list of formatted strings representing the passed in intance types with at most maxResults number
-// of results. The format of the strings is determined by the output flag. The number of truncated results
-// is also returned.
-// Accepted output flags: "table", "table-wide", "one-line", "simple", "verbose".
-func (itf Selector) OutputInstanceTypes(instanceTypes []*instancetypes.Details, maxResults int, outputFlag *string) ([]string, int, error) {
-	if outputFlag == nil {
-		return nil, 0, fmt.Errorf("output flag is nil")
-	}
-	if maxResults < 0 {
-		return nil, 0, fmt.Errorf("negative maxResults")
-	}
-
-	instanceTypes, numOfItemsTruncated := itf.truncateResults(&maxResults, instanceTypes)
-
-	// See which output format to use
-	var outputString []string
-	switch *outputFlag {
-	case SimpleOutput:
-		outputString = outputs.SimpleInstanceTypeOutput(instanceTypes)
-	case OneLineOutput:
-		outputString = outputs.OneLineOutput(instanceTypes)
-	case TableOutput:
-		outputString = outputs.TableOutputShort(instanceTypes)
-	case TableWideOutput:
-		outputString = outputs.TableOutputWide(instanceTypes)
-	case VerboseOutput:
-		outputString = outputs.VerboseInstanceTypeOutput(instanceTypes)
-	default:
-		return nil, 0, fmt.Errorf("invalid output flag")
-	}
-
-	return outputString, numOfItemsTruncated, nil
-}
-
-func (itf Selector) truncateResults(maxResults *int, instanceTypeInfoSlice []*instancetypes.Details) ([]*instancetypes.Details, int) {
-	if maxResults == nil {
-		return instanceTypeInfoSlice, 0
-	}
-	upperIndex := *maxResults
-	if *maxResults > len(instanceTypeInfoSlice) {
-		upperIndex = len(instanceTypeInfoSlice)
-	}
-	return instanceTypeInfoSlice[0:upperIndex], len(instanceTypeInfoSlice) - upperIndex
 }
 
 // AggregateFilterTransform takes higher level filters which are used to affect multiple raw filters in an opinionated way.

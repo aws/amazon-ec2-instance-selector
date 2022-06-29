@@ -26,6 +26,20 @@ import (
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/instancetypes"
 )
 
+// TruncateResults is used to prepare a list of details for output by truncating the number of results
+// in the list to have at most maxResults elements. Returns the truncated list of instance types and
+// the number of truncated items.
+func TruncateResults(maxResults *int, instanceTypeInfoSlice []*instancetypes.Details) ([]*instancetypes.Details, int) {
+	if maxResults == nil || *maxResults < 0 {
+		return instanceTypeInfoSlice, 0
+	}
+	upperIndex := *maxResults
+	if *maxResults > len(instanceTypeInfoSlice) {
+		upperIndex = len(instanceTypeInfoSlice)
+	}
+	return instanceTypeInfoSlice[0:upperIndex], len(instanceTypeInfoSlice) - upperIndex
+}
+
 // SimpleInstanceTypeOutput is an OutputFn which outputs a slice of instance type names
 func SimpleInstanceTypeOutput(instanceTypeInfoSlice []*instancetypes.Details) []string {
 	instanceTypeStrings := []string{}
@@ -174,7 +188,7 @@ func TableOutputWide(instanceTypeInfoSlice []*instancetypes.Details) []string {
 	return []string{buf.String()}
 }
 
-// OneLineOutput is an output function which prints the instance type names on a single line separated by commas
+// OneLineOutput is an output function which returns the instance type names on a single line separated by commas
 func OneLineOutput(instanceTypeInfoSlice []*instancetypes.Details) []string {
 	instanceTypeNames := []string{}
 	for _, instanceType := range instanceTypeInfoSlice {

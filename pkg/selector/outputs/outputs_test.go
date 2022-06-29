@@ -17,12 +17,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"strconv"
 	"strings"
 	"testing"
 
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/instancetypes"
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/selector/outputs"
 	h "github.com/aws/amazon-ec2-instance-selector/v2/pkg/test"
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ec2"
 )
 
@@ -118,4 +120,30 @@ func TestOneLineOutput(t *testing.T) {
 
 	instanceTypeOut = outputs.OneLineOutput(nil)
 	h.Assert(t, len(instanceTypeOut) == 0, "Should return 0 instance types when passed nil")
+}
+
+func TestTruncateResults(t *testing.T) {
+	instanceTypes := getInstanceTypes(t, "25_instances.json")
+
+	// test 1 for max results
+	maxResults := aws.Int(1)
+	truncatedResult, numTrucated := outputs.TruncateResults(maxResults, instanceTypes)
+	h.Assert(t, len(truncatedResult) == 1, fmt.Sprintf("Should return 1 instance type since max results is set to 1, but only %d are returned in total", len(truncatedResult)))
+	h.Assert(t, numTrucated == 24, "Should truncate 24 results, but actually truncated: "+strconv.Itoa(numTrucated)+" results")
+
+	// test 30 for max results
+	maxResults = aws.Int(30)
+	truncatedResult, numTrucated = outputs.TruncateResults(maxResults, instanceTypes)
+	h.Assert(t, len(truncatedResult) == 25, fmt.Sprintf("Should return 25 instance types since max results is set to 30 but only %d are returned in total", len(truncatedResult)))
+	h.Assert(t, numTrucated == 0, "Should truncate 0 results, but actually truncated: "+strconv.Itoa(numTrucated)+" results")
+}
+
+func TestFormatInstanceTypes_InvalidMaxResults(t *testing.T) {
+	instanceTypes := getInstanceTypes(t, "25_instances.json")
+
+	maxResults := aws.Int(-1)
+	formattedResult, numTrucated := outputs.TruncateResults(maxResults, instanceTypes)
+
+	h.Assert(t, len(formattedResult) == len(instanceTypes), "Returned innstance types details should be the same length, but has length: "+strconv.Itoa(len(formattedResult)))
+	h.Assert(t, numTrucated == 0, "No results should be truncated, but "+strconv.Itoa(numTrucated)+" results were truncated")
 }

@@ -5,6 +5,7 @@ import (
 
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/bytequantity"
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/selector"
+	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/selector/outputs"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 )
@@ -48,22 +49,18 @@ func main() {
 
 	// Pass the Filter struct to the GetFilteredInstanceTypes function of your
 	// selector instance to get a list of filtered instance types and their details
-	instanceTypesSlice, err := instanceSelector.GetFilteredInstanceTypes(filters)
+	instanceTypesSlice, err := instanceSelector.FilterInstanceTypes(filters)
 	if err != nil {
 		fmt.Printf("Oh no, there was an error getting instance types: %v", err)
 		return
 	}
 
-	// Pass in your list of instance type details to the OuputInstanceTypes function
-	// in order to format the instance types as a printable string.
-	outputFormat := selector.SimpleOutput
+	// Pass in your list of instance type details to the appropriate output function
+	// in order to format the instance types as printable strings.
 	maxResults := 100
-	instanceTypesStrings, _, err := instanceSelector.OutputInstanceTypes(instanceTypesSlice, maxResults, &outputFormat)
-	if err != nil {
-		fmt.Printf("Oh no, there was an error outputting instance types: %v", err)
-		return
-	}
+	instanceTypesSlice, _ = outputs.TruncateResults(&maxResults, instanceTypesSlice)
+	instanceTypes := outputs.SimpleInstanceTypeOutput(instanceTypesSlice)
 
 	// Print the returned instance types slice
-	fmt.Println(instanceTypesStrings)
+	fmt.Println(instanceTypes)
 }

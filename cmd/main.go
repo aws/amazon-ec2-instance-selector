@@ -24,7 +24,9 @@ import (
 
 	commandline "github.com/aws/amazon-ec2-instance-selector/v2/pkg/cli"
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/env"
+	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/instancetypes"
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/selector"
+	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/selector/outputs"
 	"github.com/aws/aws-sdk-go/aws/session"
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
@@ -105,6 +107,14 @@ const (
 	output     = "output"
 	cacheTTL   = "cache-ttl"
 	cacheDir   = "cache-dir"
+
+	// Output constants
+
+	tableOutput     = "table"
+	tableWideOutput = "table-wide"
+	oneLineOutput   = "one-line"
+	simpleOutput    = "simple"
+	verboseOutput   = "verbose"
 )
 
 var (
@@ -129,9 +139,9 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	cli := commandline.New(binName, shortUsage, longUsage, examples, runFunc)
 
 	cliOutputTypes := []string{
-		selector.TableOutput,
-		selector.TableWideOutput,
-		selector.OneLineOutput,
+		tableOutput,
+		tableWideOutput,
+		oneLineOutput,
 	}
 
 	// Registers flags with specific input types from the cli pkg
@@ -192,7 +202,7 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	cli.ConfigIntFlag(maxResults, nil, env.WithDefaultInt("EC2_INSTANCE_SELECTOR_MAX_RESULTS", 20), "The maximum number of instance types that match your criteria to return")
 	cli.ConfigStringFlag(profile, nil, nil, "AWS CLI profile to use for credentials and config", nil)
 	cli.ConfigStringFlag(region, cli.StringMe("r"), nil, "AWS Region to use for API requests (NOTE: if not passed in, uses AWS SDK default precedence)", nil)
-	cli.ConfigStringFlag(output, cli.StringMe("o"), cli.StringMe(selector.SimpleOutput), fmt.Sprintf("Specify the output format (%s)", strings.Join(cliOutputTypes, ", ")), nil)
+	cli.ConfigStringFlag(output, cli.StringMe("o"), cli.StringMe(simpleOutput), fmt.Sprintf("Specify the output format (%s)", strings.Join(cliOutputTypes, ", ")), nil)
 	cli.ConfigIntFlag(cacheTTL, nil, env.WithDefaultInt("EC2_INSTANCE_SELECTOR_CACHE_TTL", 168), "Cache TTLs in hours for pricing and instance type caches. Setting the cache to 0 will turn off caching and cleanup any on-disk caches.")
 	cli.ConfigPathFlag(cacheDir, nil, env.WithDefaultString("EC2_INSTANCE_SELECTOR_CACHE_DIR", "~/.ec2-instance-selector/"), "Directory to save the pricing and instance type caches")
 	cli.ConfigBoolFlag(verbose, cli.StringMe("v"), nil, "Verbose - will print out full instance specs")
@@ -282,7 +292,7 @@ Full docs can be found at github.com/aws/amazon-` + binName
 
 	outputFlag := cli.StringMe(flags[output])
 	if flags[verbose] != nil {
-		outputFlag = cli.StringMe(selector.VerboseOutput)
+		outputFlag = cli.StringMe(verboseOutput)
 		transformedFilters, err := instanceSelector.AggregateFilterTransform(filters)
 		if err != nil {
 			fmt.Printf("An error occurred while transforming the aggregate filters")
@@ -307,26 +317,26 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	}
 
 	// get filtered instance types
-	instanceTypeDetails, err := instanceSelector.GetFilteredInstanceTypes(filters)
+	instanceTypeDetails, err := instanceSelector.FilterInstanceTypes(filters)
 	if err != nil {
 		fmt.Printf("An error occurred when filtering instance types: %v", err)
 		os.Exit(1)
 	}
 
-	// format instance types as a string
+	// format instance types as strings
 	maxOutputResults := cli.IntMe(flags[maxResults])
-	instanceTypesString, itemsTruncated, err := instanceSelector.OutputInstanceTypes(instanceTypeDetails, *maxOutputResults, outputFlag)
+	instanceTypes, itemsTruncated, err := formatInstanceTypes(instanceTypeDetails, *maxOutputResults, outputFlag)
 	if err != nil {
-		fmt.Printf("An error occured ouputting instance types: %v", err)
+		fmt.Printf("An error occured outputting instance types: %v", err)
 		os.Exit(1)
 	}
-	if len(instanceTypesString) == 0 {
+	if len(instanceTypes) == 0 {
 		log.Println("The criteria was too narrow and returned no valid instance types. Consider broadening your criteria so that more instance types are returned.")
 		os.Exit(1)
 	}
 
 	// print output
-	for _, instanceType := range instanceTypesString {
+	for _, instanceType := range instanceTypes {
 		fmt.Println(instanceType)
 	}
 
@@ -408,4 +418,39 @@ func registerShutdown(shutdown func()) {
 		<-sigs
 		shutdown()
 	}()
+}
+
+// formatInstanceTypes accepts a list of instance types details, a number of max results, and an output flag
+// and returns a list of formatted strings representing the passed in intance types with at most maxResults number
+// of results. The format of the strings is determined by the output flag. The number of truncated results
+// is also returned.
+// Accepted output flags: "table", "table-wide", "one-line", "simple", "verbose".
+func formatInstanceTypes(instanceTypes []*instancetypes.Details, maxResults int, outputFlag *string) ([]string, int, error) {
+	if outputFlag == nil {
+		return nil, 0, fmt.Errorf("output flag is nil")
+	}
+	if maxResults < 0 {
+		return nil, 0, fmt.Errorf("negative maxResults")
+	}
+
+	instanceTypes, numOfItemsTruncated := outputs.TruncateResults(&maxResults, instanceTypes)
+
+	// See which output format to use
+	var outputString []string
+	switch *outputFlag {
+	case simpleOutput:
+		outputString = outputs.SimpleInstanceTypeOutput(instanceTypes)
+	case oneLineOutput:
+		outputString = outputs.OneLineOutput(instanceTypes)
+	case tableOutput:
+		outputString = outputs.TableOutputShort(instanceTypes)
+	case tableWideOutput:
+		outputString = outputs.TableOutputWide(instanceTypes)
+	case verboseOutput:
+		outputString = outputs.VerboseInstanceTypeOutput(instanceTypes)
+	default:
+		return nil, 0, fmt.Errorf("invalid output flag")
+	}
+
+	return outputString, numOfItemsTruncated, nil
 }
