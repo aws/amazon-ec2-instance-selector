@@ -58,7 +58,11 @@ func main() {
 	// Pass in your list of instance type details to the appropriate output function
 	// in order to format the instance types as printable strings.
 	maxResults := 100
-	instanceTypesSlice, _ = outputs.TruncateResults(&maxResults, instanceTypesSlice)
+	instanceTypesSlice, _, err = outputs.TruncateResults(&maxResults, instanceTypesSlice)
+	if err != nil {
+		fmt.Printf("Oh no, there was an error truncating instnace types: %v", err)
+		return
+	}
 	instanceTypes := outputs.SimpleInstanceTypeOutput(instanceTypesSlice)
 
 	// Print the returned instance types slice

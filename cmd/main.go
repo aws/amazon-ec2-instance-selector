@@ -325,7 +325,7 @@ Full docs can be found at github.com/aws/amazon-` + binName
 
 	// format instance types as strings
 	maxOutputResults := cli.IntMe(flags[maxResults])
-	instanceTypes, itemsTruncated, err := formatInstanceTypes(instanceTypeDetails, *maxOutputResults, outputFlag)
+	instanceTypes, itemsTruncated, err := formatInstanceTypes(instanceTypeDetails, maxOutputResults, outputFlag)
 	if err != nil {
 		fmt.Printf("An error occured outputting instance types: %v", err)
 		os.Exit(1)
@@ -425,15 +425,15 @@ func registerShutdown(shutdown func()) {
 // of results. The format of the strings is determined by the output flag. The number of truncated results
 // is also returned.
 // Accepted output flags: "table", "table-wide", "one-line", "simple", "verbose".
-func formatInstanceTypes(instanceTypes []*instancetypes.Details, maxResults int, outputFlag *string) ([]string, int, error) {
+func formatInstanceTypes(instanceTypes []*instancetypes.Details, maxResults *int, outputFlag *string) ([]string, int, error) {
 	if outputFlag == nil {
 		return nil, 0, fmt.Errorf("output flag is nil")
 	}
-	if maxResults <= 0 {
-		return nil, 0, fmt.Errorf("negative maxResults")
-	}
 
-	instanceTypes, numOfItemsTruncated := outputs.TruncateResults(&maxResults, instanceTypes)
+	instanceTypes, numOfItemsTruncated, err := outputs.TruncateResults(maxResults, instanceTypes)
+	if err != nil {
+		return nil, 0, err
+	}
 
 	// See which output format to use
 	var outputString []string

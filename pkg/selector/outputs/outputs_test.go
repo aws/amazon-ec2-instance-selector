@@ -17,7 +17,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"strconv"
 	"strings"
 	"testing"
 
@@ -125,25 +124,46 @@ func TestOneLineOutput(t *testing.T) {
 func TestTruncateResults(t *testing.T) {
 	instanceTypes := getInstanceTypes(t, "25_instances.json")
 
+	// test 0 for max results
+	maxResults := aws.Int(0)
+	truncatedResult, numTrucated, err := outputs.TruncateResults(maxResults, instanceTypes)
+	h.Ok(t, err)
+	h.Assert(t, len(truncatedResult) == 0, fmt.Sprintf("Should return 0 instance types since max results is set to %d, but only %d are returned in total", *maxResults, len(truncatedResult)))
+	h.Assert(t, numTrucated == 25, fmt.Sprintf("Should truncate 25 results, but actually truncated: %d results", numTrucated))
+
 	// test 1 for max results
-	maxResults := aws.Int(1)
-	truncatedResult, numTrucated := outputs.TruncateResults(maxResults, instanceTypes)
-	h.Assert(t, len(truncatedResult) == 1, fmt.Sprintf("Should return 1 instance type since max results is set to 1, but only %d are returned in total", len(truncatedResult)))
-	h.Assert(t, numTrucated == 24, "Should truncate 24 results, but actually truncated: "+strconv.Itoa(numTrucated)+" results")
+	maxResults = aws.Int(1)
+	truncatedResult, numTrucated, err = outputs.TruncateResults(maxResults, instanceTypes)
+	h.Ok(t, err)
+	h.Assert(t, len(truncatedResult) == 1, fmt.Sprintf("Should return 1 instance type since max results is set to %d, but only %d are returned in total", *maxResults, len(truncatedResult)))
+	h.Assert(t, numTrucated == 24, fmt.Sprintf("Should truncate 24 results, but actually truncated: %d results", numTrucated))
 
 	// test 30 for max results
 	maxResults = aws.Int(30)
-	truncatedResult, numTrucated = outputs.TruncateResults(maxResults, instanceTypes)
-	h.Assert(t, len(truncatedResult) == 25, fmt.Sprintf("Should return 25 instance types since max results is set to 30 but only %d are returned in total", len(truncatedResult)))
-	h.Assert(t, numTrucated == 0, "Should truncate 0 results, but actually truncated: "+strconv.Itoa(numTrucated)+" results")
+	truncatedResult, numTrucated, err = outputs.TruncateResults(maxResults, instanceTypes)
+	h.Ok(t, err)
+	h.Assert(t, len(truncatedResult) == 25, fmt.Sprintf("Should return 25 instance types since max results is set to %d but only %d are returned in total", *maxResults, len(truncatedResult)))
+	h.Assert(t, numTrucated == 0, fmt.Sprintf("Should truncate 0 results, but actually truncated: %d results", numTrucated))
 }
 
-func TestFormatInstanceTypes_InvalidMaxResults(t *testing.T) {
+func TestFormatInstanceTypes_NegativeMaxResults(t *testing.T) {
 	instanceTypes := getInstanceTypes(t, "25_instances.json")
 
 	maxResults := aws.Int(-1)
-	formattedResult, numTrucated := outputs.TruncateResults(maxResults, instanceTypes)
+	formattedResult, numTrucated, err := outputs.TruncateResults(maxResults, instanceTypes)
 
-	h.Assert(t, len(formattedResult) == len(instanceTypes), "Returned innstance types details should be the same length, but has length: "+strconv.Itoa(len(formattedResult)))
-	h.Assert(t, numTrucated == 0, "No results should be truncated, but "+strconv.Itoa(numTrucated)+" results were truncated")
+	h.Assert(t, err != nil, "An error should be returned")
+	h.Assert(t, formattedResult == nil, fmt.Sprintf("returned list should be nil, but it is actually: %s", outputs.OneLineOutput(formattedResult)))
+	h.Assert(t, numTrucated == 0, fmt.Sprintf("No results should be truncated, but %d results were truncated", numTrucated))
+}
+
+func TestFormatInstanceTypes_NilMaxResults(t *testing.T) {
+	instanceTypes := getInstanceTypes(t, "25_instances.json")
+
+	var maxResults *int = nil
+	formattedResult, numTrucated, err := outputs.TruncateResults(maxResults, instanceTypes)
+
+	h.Ok(t, err)
+	h.Assert(t, len(formattedResult) == 25, fmt.Sprintf("Should return 25 instance types since max results is set to nil but only %d are returned in total", len(formattedResult)))
+	h.Assert(t, numTrucated == 0, fmt.Sprintf("No results should be truncated, but actually truncated: %d results", numTrucated))
 }

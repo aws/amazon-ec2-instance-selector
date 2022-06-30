@@ -29,15 +29,19 @@ import (
 // TruncateResults is used to prepare a list of details for output by truncating the number of results
 // in the list to have at most maxResults elements. Returns the truncated list of instance types and
 // the number of truncated items.
-func TruncateResults(maxResults *int, instanceTypeInfoSlice []*instancetypes.Details) ([]*instancetypes.Details, int) {
-	if maxResults == nil || *maxResults <= 0 {
-		return instanceTypeInfoSlice, 0
+func TruncateResults(maxResults *int, instanceTypeInfoSlice []*instancetypes.Details) ([]*instancetypes.Details, int, error) {
+	if maxResults == nil {
+		return instanceTypeInfoSlice, 0, nil
+	} else if *maxResults < 0 {
+		return nil, 0, fmt.Errorf("negative max results value")
 	}
+
 	upperIndex := *maxResults
 	if *maxResults > len(instanceTypeInfoSlice) {
 		upperIndex = len(instanceTypeInfoSlice)
 	}
-	return instanceTypeInfoSlice[0:upperIndex], len(instanceTypeInfoSlice) - upperIndex
+
+	return instanceTypeInfoSlice[0:upperIndex], len(instanceTypeInfoSlice) - upperIndex, nil
 }
 
 // SimpleInstanceTypeOutput is an OutputFn which outputs a slice of instance type names
