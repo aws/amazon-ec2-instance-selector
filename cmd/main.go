@@ -327,7 +327,7 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	maxOutputResults := cli.IntMe(flags[maxResults])
 	instanceTypes, itemsTruncated, err := formatInstanceTypes(instanceTypeDetails, maxOutputResults, outputFlag)
 	if err != nil {
-		fmt.Printf("An error occured outputting instance types: %v", err)
+		fmt.Printf("An error occured formatting instance types: %v", err)
 		os.Exit(1)
 	}
 	if len(instanceTypes) == 0 {
