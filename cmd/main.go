@@ -292,7 +292,7 @@ Full docs can be found at github.com/aws/amazon-` + binName
 		DedicatedHosts:                   cli.BoolMe(flags[dedicatedHosts]),
 	}
 
-	// If output type is `table-wide`, simply print both prices for better comparison,
+	// If output type is `table-wide`, cache both prices for better comparison in output,
 	//   even if the actual filter is applied on any one of those based on usage class
 	// Save time by hydrating all caches in parallel
 	outputFlag := cli.StringMe(flags[output])

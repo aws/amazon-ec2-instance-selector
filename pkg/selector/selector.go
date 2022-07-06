@@ -134,9 +134,9 @@ func (itf Selector) Save() error {
 // matching the criteria within Filters and returns the detailed specs of matching instance types
 func (itf Selector) FilterInstanceTypes(filters Filters) ([]*instancetypes.Details, error) {
 	// refresh OD or Spot pricing caches if pricing filters are used depending on
-	// which usage class is selected (default = on demand)
+	// which usage class is selected (default usage class is on demand)
 	if filters.PricePerHour != nil {
-		// Else, if price filters are applied, only hydrate the respective cache as we don't have to print the prices
+		// If price filters are applied, only hydrate the respective cache as we don't have to print the prices
 		if filters.UsageClass == nil || *filters.UsageClass == "on-demand" {
 			if itf.EC2Pricing.OnDemandCacheCount() == 0 {
 				if err := itf.EC2Pricing.RefreshOnDemandCache(); err != nil {
