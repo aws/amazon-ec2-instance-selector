@@ -154,38 +154,34 @@ func TestNew(t *testing.T) {
 	h.Assert(t, itf != nil, "selector instance created without error")
 }
 
-func TestFilterVerbose(t *testing.T) {
+func TestFilterInstanceTypes(t *testing.T) {
 	itf := getSelector(setupMock(t, describeInstanceTypesPages, "t3_micro.json"))
-	filters := selector.Filters{
+	filter := selector.Filters{
 		VCpusRange: &selector.IntRangeFilter{LowerBound: 2, UpperBound: 2},
 	}
-	results, err := itf.FilterVerbose(filters)
+
+	results, err := itf.FilterInstanceTypes(filter)
+
 	h.Ok(t, err)
-	h.Assert(t, len(results) == 1, "Should only return 1 instance type with 2 vcpus but actually returned "+strconv.Itoa(len(results)))
-	h.Assert(t, *results[0].InstanceType == "t3.micro", "Should return t3.micro, got %s instead", results[0].InstanceType)
+	h.Assert(t, len(results) == 1, "Should only return 1 intance type with 2 vcpus")
+	instanceTypeName := results[0].InstanceType
+	h.Assert(t, instanceTypeName != nil, "Instance type name should not be nil")
+	h.Assert(t, *instanceTypeName == "t3.micro", "Should return t3.micro, got %s instead", results[0])
 }
 
-func TestFilterVerbose_NoResults(t *testing.T) {
+func TestFilterInstanceTypes_NoResults(t *testing.T) {
 	itf := getSelector(setupMock(t, describeInstanceTypesPages, "t3_micro.json"))
 	filters := selector.Filters{
 		VCpusRange: &selector.IntRangeFilter{LowerBound: 4, UpperBound: 4},
 	}
-	results, err := itf.FilterVerbose(filters)
+
+	results, err := itf.FilterInstanceTypes(filters)
+
 	h.Ok(t, err)
 	h.Assert(t, len(results) == 0, "Should return 0 instance type with 4 vcpus")
 }
 
-func TestFilterVerbose_Failure(t *testing.T) {
-	itf := getSelector(mockedEC2{DescribeInstanceTypesPagesErr: errors.New("error")})
-	filters := selector.Filters{
-		VCpusRange: &selector.IntRangeFilter{LowerBound: 4, UpperBound: 4},
-	}
-	results, err := itf.FilterVerbose(filters)
-	h.Assert(t, results == nil, "Results should be nil")
-	h.Assert(t, err != nil, "An error should be returned")
-}
-
-func TestFilterVerbose_AZFilteredIn(t *testing.T) {
+func TestFilterInstanceTypes_AZFilteredIn(t *testing.T) {
 	ec2Mock := mockedEC2{
 		DescribeInstanceTypesPagesResp:    setupMock(t, describeInstanceTypesPages, "t3_micro.json").DescribeInstanceTypesPagesResp,
 		DescribeInstanceTypeOfferingsResp: setupMock(t, describeInstanceTypeOfferings, "us-east-2a.json").DescribeInstanceTypeOfferingsResp,
@@ -196,13 +192,17 @@ func TestFilterVerbose_AZFilteredIn(t *testing.T) {
 		VCpusRange:        &selector.IntRangeFilter{LowerBound: 2, UpperBound: 2},
 		AvailabilityZones: &[]string{"us-east-2a"},
 	}
-	results, err := itf.FilterVerbose(filters)
+
+	results, err := itf.FilterInstanceTypes(filters)
+
 	h.Ok(t, err)
 	h.Assert(t, len(results) == 1, "Should only return 1 instance type with 2 vcpus but actually returned "+strconv.Itoa(len(results)))
-	h.Assert(t, *results[0].InstanceType == "t3.micro", "Should return t3.micro, got %s instead", results[0].InstanceType)
+	instanceTypeName := results[0].InstanceType
+	h.Assert(t, instanceTypeName != nil, "Instance type name should not be nil")
+	h.Assert(t, *instanceTypeName == "t3.micro", "Should return t3.micro, got %s instead", results[0])
 }
 
-func TestFilterVerbose_AZFilteredOut(t *testing.T) {
+func TestFilterInstanceTypes_AZFilteredOut(t *testing.T) {
 	ec2Mock := mockedEC2{
 		DescribeInstanceTypesPagesResp:    setupMock(t, describeInstanceTypesPages, "t3_micro.json").DescribeInstanceTypesPagesResp,
 		DescribeInstanceTypeOfferingsResp: setupMock(t, describeInstanceTypeOfferings, "us-east-2a_only_c5d12x.json").DescribeInstanceTypeOfferingsResp,
@@ -212,22 +212,26 @@ func TestFilterVerbose_AZFilteredOut(t *testing.T) {
 	filters := selector.Filters{
 		AvailabilityZones: &[]string{"us-east-2a"},
 	}
-	results, err := itf.FilterVerbose(filters)
+
+	results, err := itf.FilterInstanceTypes(filters)
+
 	h.Ok(t, err)
 	h.Assert(t, len(results) == 0, "Should return 0 instance types in us-east-2a but actually returned "+strconv.Itoa(len(results)))
 }
 
-func TestFilterVerboseAZ_FilteredErr(t *testing.T) {
+func TestFilterInstanceTypes_AZFilteredErr(t *testing.T) {
 	itf := getSelector(mockedEC2{})
 	filters := selector.Filters{
 		VCpusRange:        &selector.IntRangeFilter{LowerBound: 2, UpperBound: 2},
 		AvailabilityZones: &[]string{"blah"},
 	}
-	_, err := itf.FilterVerbose(filters)
+
+	_, err := itf.FilterInstanceTypes(filters)
+
 	h.Assert(t, err != nil, "Should error since bad zone was passed in")
 }
 
-func TestFilterVerbose_Gpus(t *testing.T) {
+func TestFilterInstanceTypes_Gpus(t *testing.T) {
 	itf := getSelector(setupMock(t, describeInstanceTypesPages, "t3_micro_and_p3_16xl.json"))
 	gpuMemory, err := bytequantity.ParseToByteQuantity("128g")
 	h.Ok(t, err)
@@ -238,24 +242,17 @@ func TestFilterVerbose_Gpus(t *testing.T) {
 			UpperBound: gpuMemory,
 		},
 	}
-	results, err := itf.FilterVerbose(filters)
+
+	results, err := itf.FilterInstanceTypes(filters)
+
 	h.Ok(t, err)
 	h.Assert(t, len(results) == 1, "Should only return 1 instance type with 2 vcpus but actually returned "+strconv.Itoa(len(results)))
-	h.Assert(t, *results[0].InstanceType == "p3.16xlarge", "Should return p3.16xlarge, got %s instead", *results[0].InstanceType)
+	instanceTypeName := results[0].InstanceType
+	h.Assert(t, instanceTypeName != nil, "Instance type name should not be nil")
+	h.Assert(t, *instanceTypeName == "p3.16xlarge", "Should return p3.16xlarge, got %s instead", *results[0].InstanceType)
 }
 
-func TestFilter(t *testing.T) {
-	itf := getSelector(setupMock(t, describeInstanceTypesPages, "t3_micro.json"))
-	filters := selector.Filters{
-		VCpusRange: &selector.IntRangeFilter{LowerBound: 2, UpperBound: 2},
-	}
-	results, err := itf.Filter(filters)
-	h.Ok(t, err)
-	h.Assert(t, len(results) == 1, "Should only return 1 instance type with 2 vcpus")
-	h.Assert(t, results[0] == "t3.micro", "Should return t3.micro, got %s instead", results[0])
-}
-
-func TestFilter_MoreFilters(t *testing.T) {
+func TestFilterInstanceTypes_MoreFilters(t *testing.T) {
 	itf := getSelector(setupMock(t, describeInstanceTypesPages, "t3_micro.json"))
 	filters := selector.Filters{
 		VCpusRange:      &selector.IntRangeFilter{LowerBound: 2, UpperBound: 2},
@@ -264,46 +261,214 @@ func TestFilter_MoreFilters(t *testing.T) {
 		Hypervisor:      aws.String("nitro"),
 		EnaSupport:      aws.Bool(true),
 	}
-	results, err := itf.Filter(filters)
+
+	results, err := itf.FilterInstanceTypes(filters)
+
 	h.Ok(t, err)
 	h.Assert(t, len(results) == 1, "Should only return 1 instance type with 2 vcpus")
-	h.Assert(t, results[0] == "t3.micro", "Should return t3.micro, got %s instead", results[0])
+	instanceTypeName := results[0].InstanceType
+	h.Assert(t, instanceTypeName != nil, "Instance type name should not be nil")
+	h.Assert(t, *instanceTypeName == "t3.micro", "Should return t3.micro, got %s instead", results[0])
 }
 
-func TestFilter_TruncateToMaxResults(t *testing.T) {
-	itf := getSelector(setupMock(t, describeInstanceTypesPages, "25_instances.json"))
-	filters := selector.Filters{
-		VCpusRange: &selector.IntRangeFilter{LowerBound: 0, UpperBound: 100},
-	}
-	results, err := itf.Filter(filters)
-	h.Ok(t, err)
-	h.Assert(t, len(results) > 1, "Should return > 1 instance types since max results is not set")
-
-	filters = selector.Filters{
-		VCpusRange: &selector.IntRangeFilter{LowerBound: 0, UpperBound: 100},
-		MaxResults: aws.Int(1),
-	}
-	results, err = itf.Filter(filters)
-	h.Ok(t, err)
-	h.Assert(t, len(results) == 1, "Should return 1 instance types since max results is set")
-
-	filters = selector.Filters{
-		VCpusRange: &selector.IntRangeFilter{LowerBound: 0, UpperBound: 100},
-		MaxResults: aws.Int(30),
-	}
-	results, err = itf.Filter(filters)
-	h.Ok(t, err)
-	h.Assert(t, len(results) == 25, fmt.Sprintf("Should return 25 instance types since max results is set to 30 but only %d are returned in total", len(results)))
-}
-
-func TestFilter_Failure(t *testing.T) {
+func TestFilterInstanceTypes_Failure(t *testing.T) {
 	itf := getSelector(mockedEC2{DescribeInstanceTypesPagesErr: errors.New("error")})
 	filters := selector.Filters{
 		VCpusRange: &selector.IntRangeFilter{LowerBound: 4, UpperBound: 4},
 	}
-	results, err := itf.Filter(filters)
+
+	results, err := itf.FilterInstanceTypes(filters)
+
 	h.Assert(t, results == nil, "Results should be nil")
 	h.Assert(t, err != nil, "An error should be returned")
+}
+
+func TestFilterInstanceTypes_InstanceTypeBase(t *testing.T) {
+	ec2Mock := mockedEC2{
+		DescribeInstanceTypesResp:         setupMock(t, describeInstanceTypes, "c4_large.json").DescribeInstanceTypesResp,
+		DescribeInstanceTypesPagesResp:    setupMock(t, describeInstanceTypesPages, "25_instances.json").DescribeInstanceTypesPagesResp,
+		DescribeInstanceTypeOfferingsResp: setupMock(t, describeInstanceTypeOfferings, "us-east-2a.json").DescribeInstanceTypeOfferingsResp,
+	}
+	itf := getSelector(ec2Mock)
+	c4Large := "c4.large"
+	filters := selector.Filters{
+		InstanceTypeBase: &c4Large,
+	}
+
+	results, err := itf.FilterInstanceTypes(filters)
+
+	h.Ok(t, err)
+	h.Assert(t, len(results) == 3, "c4.large should return 3 similar instance types")
+}
+
+func TestFilterInstanceTypes_AllowList(t *testing.T) {
+	ec2Mock := mockedEC2{
+		DescribeInstanceTypesPagesResp:    setupMock(t, describeInstanceTypesPages, "25_instances.json").DescribeInstanceTypesPagesResp,
+		DescribeInstanceTypeOfferingsResp: setupMock(t, describeInstanceTypeOfferings, "us-east-2a.json").DescribeInstanceTypeOfferingsResp,
+	}
+	itf := getSelector(ec2Mock)
+	allowRegex, err := regexp.Compile("c4.large")
+	h.Ok(t, err)
+	filters := selector.Filters{
+		AllowList: allowRegex,
+	}
+
+	results, err := itf.FilterInstanceTypes(filters)
+
+	h.Ok(t, err)
+	h.Assert(t, len(results) == 1, "Allow List Regex: 'c4.large' should return 1 instance type")
+}
+
+func TestFilterInstanceTypes_DenyList(t *testing.T) {
+	ec2Mock := mockedEC2{
+		DescribeInstanceTypesPagesResp:    setupMock(t, describeInstanceTypesPages, "25_instances.json").DescribeInstanceTypesPagesResp,
+		DescribeInstanceTypeOfferingsResp: setupMock(t, describeInstanceTypeOfferings, "us-east-2a.json").DescribeInstanceTypeOfferingsResp,
+	}
+	itf := getSelector(ec2Mock)
+	denyRegex, err := regexp.Compile("c4.large")
+	h.Ok(t, err)
+	filters := selector.Filters{
+		DenyList: denyRegex,
+	}
+
+	results, err := itf.FilterInstanceTypes(filters)
+
+	h.Ok(t, err)
+	h.Assert(t, len(results) == 24, "Deny List Regex: 'c4.large' should return 24 instance type matching regex but returned %d", len(results))
+}
+
+func TestFilterInstanceTypes_AllowAndDenyList(t *testing.T) {
+	ec2Mock := mockedEC2{
+		DescribeInstanceTypesPagesResp:    setupMock(t, describeInstanceTypesPages, "25_instances.json").DescribeInstanceTypesPagesResp,
+		DescribeInstanceTypeOfferingsResp: setupMock(t, describeInstanceTypeOfferings, "us-east-2a.json").DescribeInstanceTypeOfferingsResp,
+	}
+	itf := getSelector(ec2Mock)
+	allowRegex, err := regexp.Compile("c4.*")
+	h.Ok(t, err)
+	denyRegex, err := regexp.Compile("c4.large")
+	h.Ok(t, err)
+	filters := selector.Filters{
+		AllowList: allowRegex,
+		DenyList:  denyRegex,
+	}
+
+	results, err := itf.FilterInstanceTypes(filters)
+
+	h.Ok(t, err)
+	h.Assert(t, len(results) == 4, "Allow/Deny List Regex: 'c4.large' should return 4 instance types matching the regex but returned %d", len(results))
+}
+
+func TestFilterInstanceTypes_X8664_AMD64(t *testing.T) {
+	itf := getSelector(setupMock(t, describeInstanceTypesPages, "t3_micro.json"))
+	filters := selector.Filters{
+		CPUArchitecture: aws.String("amd64"),
+	}
+	results, err := itf.FilterInstanceTypes(filters)
+	h.Ok(t, err)
+	h.Assert(t, len(results) == 1, "Should only return 1 instance type with x86_64/amd64 cpu architecture")
+	instanceTypeName := results[0].InstanceType
+	h.Assert(t, instanceTypeName != nil, "Instance type name should not be nil")
+	h.Assert(t, *instanceTypeName == "t3.micro", "Should return t3.micro, got %s instead", results[0])
+
+}
+
+func TestFilterInstanceTypes_VirtType_PV(t *testing.T) {
+	itf := getSelector(setupMock(t, describeInstanceTypesPages, "pv_instances.json"))
+	filters := selector.Filters{
+		VirtualizationType: aws.String("pv"),
+	}
+
+	results, err := itf.FilterInstanceTypes(filters)
+
+	h.Ok(t, err)
+	h.Assert(t, len(results) > 0, "Should return at least 1 instance type when filtering with VirtualizationType: pv")
+
+	filters = selector.Filters{
+		VirtualizationType: aws.String("paravirtual"),
+	}
+
+	results, err = itf.FilterInstanceTypes(filters)
+
+	h.Ok(t, err)
+	h.Assert(t, len(results) > 0, "Should return at least 1 instance type when filtering with VirtualizationType: paravirtual")
+}
+
+func TestFilterInstanceTypes_PricePerHour(t *testing.T) {
+	itf := getSelector(setupMock(t, describeInstanceTypesPages, "t3_micro.json"))
+	itf.EC2Pricing = &ec2PricingMock{
+		GetOndemandInstanceTypeCostResp: 0.0104,
+		onDemandCacheCount:              1,
+	}
+	filters := selector.Filters{
+		PricePerHour: &selector.Float64RangeFilter{
+			LowerBound: 0.0104,
+			UpperBound: 0.0104,
+		},
+	}
+
+	results, err := itf.FilterInstanceTypes(filters)
+
+	h.Ok(t, err)
+	h.Assert(t, len(results) == 1, fmt.Sprintf("Should return 1 instance type; got %d", len(results)))
+}
+
+func TestFilterInstanceTypes_PricePerHour_NoResults(t *testing.T) {
+	itf := getSelector(setupMock(t, describeInstanceTypesPages, "t3_micro.json"))
+	itf.EC2Pricing = &ec2PricingMock{
+		GetOndemandInstanceTypeCostResp: 0.0104,
+		onDemandCacheCount:              1,
+	}
+	filters := selector.Filters{
+		PricePerHour: &selector.Float64RangeFilter{
+			LowerBound: 0.0105,
+			UpperBound: 0.0105,
+		},
+	}
+
+	results, err := itf.FilterInstanceTypes(filters)
+
+	h.Ok(t, err)
+	h.Assert(t, len(results) == 0, "Should return 0 instance types")
+}
+
+func TestFilterInstanceTypes_PricePerHour_OD(t *testing.T) {
+	itf := getSelector(setupMock(t, describeInstanceTypesPages, "t3_micro.json"))
+	itf.EC2Pricing = &ec2PricingMock{
+		GetOndemandInstanceTypeCostResp: 0.0104,
+		onDemandCacheCount:              1,
+	}
+	filters := selector.Filters{
+		PricePerHour: &selector.Float64RangeFilter{
+			LowerBound: 0.0104,
+			UpperBound: 0.0104,
+		},
+		UsageClass: aws.String("on-demand"),
+	}
+
+	results, err := itf.FilterInstanceTypes(filters)
+
+	h.Ok(t, err)
+	h.Assert(t, len(results) == 1, fmt.Sprintf("Should return 1 instance type; got %d", len(results)))
+}
+
+func TestFilterInstanceTypes_PricePerHour_Spot(t *testing.T) {
+	itf := getSelector(setupMock(t, describeInstanceTypesPages, "t3_micro.json"))
+	itf.EC2Pricing = &ec2PricingMock{
+		GetSpotInstanceTypeNDayAvgCostResp: 0.0104,
+		spotCacheCount:                     1,
+	}
+	filters := selector.Filters{
+		PricePerHour: &selector.Float64RangeFilter{
+			LowerBound: 0.0104,
+			UpperBound: 0.0104,
+		},
+		UsageClass: aws.String("spot"),
+	}
+
+	results, err := itf.FilterInstanceTypes(filters)
+
+	h.Ok(t, err)
+	h.Assert(t, len(results) == 1, fmt.Sprintf("Should return 1 instance type; got %d", len(results)))
 }
 
 func TestRetrieveInstanceTypesSupportedInAZ_WithZoneName(t *testing.T) {
@@ -377,22 +542,6 @@ func TestAggregateFilterTransform_InvalidInstanceType(t *testing.T) {
 	h.Nok(t, err)
 }
 
-func TestFilter_InstanceTypeBase(t *testing.T) {
-	ec2Mock := mockedEC2{
-		DescribeInstanceTypesResp:         setupMock(t, describeInstanceTypes, "c4_large.json").DescribeInstanceTypesResp,
-		DescribeInstanceTypesPagesResp:    setupMock(t, describeInstanceTypesPages, "25_instances.json").DescribeInstanceTypesPagesResp,
-		DescribeInstanceTypeOfferingsResp: setupMock(t, describeInstanceTypeOfferings, "us-east-2a.json").DescribeInstanceTypeOfferingsResp,
-	}
-	itf := getSelector(ec2Mock)
-	c4Large := "c4.large"
-	filters := selector.Filters{
-		InstanceTypeBase: &c4Large,
-	}
-	results, err := itf.Filter(filters)
-	h.Ok(t, err)
-	h.Assert(t, len(results) == 3, "c4.large should return 3 similar instance types")
-}
-
 func TestRetrieveInstanceTypesSupportedInAZs_Intersection(t *testing.T) {
 	ec2Mock := mockMultiRespDescribeInstanceTypesOfferings(t, map[string]string{
 		"us-east-2a": "us-east-2a.json",
@@ -437,85 +586,6 @@ func TestRetrieveInstanceTypesSupportedInAZs_DescribeAZErr(t *testing.T) {
 	h.Nok(t, err)
 }
 
-func TestFilter_AllowList(t *testing.T) {
-	ec2Mock := mockedEC2{
-		DescribeInstanceTypesPagesResp:    setupMock(t, describeInstanceTypesPages, "25_instances.json").DescribeInstanceTypesPagesResp,
-		DescribeInstanceTypeOfferingsResp: setupMock(t, describeInstanceTypeOfferings, "us-east-2a.json").DescribeInstanceTypeOfferingsResp,
-	}
-	itf := getSelector(ec2Mock)
-	allowRegex, err := regexp.Compile("c4.large")
-	h.Ok(t, err)
-	filters := selector.Filters{
-		AllowList: allowRegex,
-	}
-	results, err := itf.Filter(filters)
-	h.Ok(t, err)
-	h.Assert(t, len(results) == 1, "Allow List Regex: 'c4.large' should return 1 instance type")
-}
-
-func TestFilter_DenyList(t *testing.T) {
-	ec2Mock := mockedEC2{
-		DescribeInstanceTypesPagesResp:    setupMock(t, describeInstanceTypesPages, "25_instances.json").DescribeInstanceTypesPagesResp,
-		DescribeInstanceTypeOfferingsResp: setupMock(t, describeInstanceTypeOfferings, "us-east-2a.json").DescribeInstanceTypeOfferingsResp,
-	}
-	itf := getSelector(ec2Mock)
-	denyRegex, err := regexp.Compile("c4.large")
-	h.Ok(t, err)
-	filters := selector.Filters{
-		DenyList: denyRegex,
-	}
-	results, err := itf.Filter(filters)
-	h.Ok(t, err)
-	h.Assert(t, len(results) == 24, "Deny List Regex: 'c4.large' should return 24 instance type matching regex but returned %d", len(results))
-}
-
-func TestFilter_AllowAndDenyList(t *testing.T) {
-	ec2Mock := mockedEC2{
-		DescribeInstanceTypesPagesResp:    setupMock(t, describeInstanceTypesPages, "25_instances.json").DescribeInstanceTypesPagesResp,
-		DescribeInstanceTypeOfferingsResp: setupMock(t, describeInstanceTypeOfferings, "us-east-2a.json").DescribeInstanceTypeOfferingsResp,
-	}
-	itf := getSelector(ec2Mock)
-	allowRegex, err := regexp.Compile("c4.*")
-	h.Ok(t, err)
-	denyRegex, err := regexp.Compile("c4.large")
-	h.Ok(t, err)
-	filters := selector.Filters{
-		AllowList: allowRegex,
-		DenyList:  denyRegex,
-	}
-	results, err := itf.Filter(filters)
-	h.Ok(t, err)
-	h.Assert(t, len(results) == 4, "Allow/Deny List Regex: 'c4.large' should return 4 instance types matching the regex but returned %d", len(results))
-}
-
-func TestFilter_X8664_AMD64(t *testing.T) {
-	itf := getSelector(setupMock(t, describeInstanceTypesPages, "t3_micro.json"))
-	filters := selector.Filters{
-		CPUArchitecture: aws.String("amd64"),
-	}
-	results, err := itf.Filter(filters)
-	h.Ok(t, err)
-	h.Assert(t, len(results) == 1, "Should only return 1 instance type with x86_64/amd64 cpu architecture")
-	h.Assert(t, results[0] == "t3.micro", "Should return t3.micro, got %s instead", results[0])
-}
-
-func TestFilter_VirtType_PV(t *testing.T) {
-	itf := getSelector(setupMock(t, describeInstanceTypesPages, "pv_instances.json"))
-	filters := selector.Filters{
-		VirtualizationType: aws.String("pv"),
-	}
-	results, err := itf.Filter(filters)
-	h.Ok(t, err)
-	h.Assert(t, len(results) > 0, "Should return at least 1 instance type when filtering with VirtualizationType: pv")
-
-	filters = selector.Filters{
-		VirtualizationType: aws.String("paravirtual"),
-	}
-	results, err = itf.Filter(filters)
-	h.Ok(t, err)
-	h.Assert(t, len(results) > 0, "Should return at least 1 instance type when filtering with VirtualizationType: paravirtual")
-}
-
 type ec2PricingMock struct {
 	GetOndemandInstanceTypeCostResp    float64
 	GetOndemandInstanceTypeCostErr     error
@@ -553,74 +623,4 @@ func (p *ec2PricingMock) SpotCacheCount() int {
 
 func (p *ec2PricingMock) Save() error {
 	return nil
-}
-
-func TestFilter_PricePerHour(t *testing.T) {
-	itf := getSelector(setupMock(t, describeInstanceTypesPages, "t3_micro.json"))
-	itf.EC2Pricing = &ec2PricingMock{
-		GetOndemandInstanceTypeCostResp: 0.0104,
-		onDemandCacheCount:              1,
-	}
-	filters := selector.Filters{
-		PricePerHour: &selector.Float64RangeFilter{
-			LowerBound: 0.0104,
-			UpperBound: 0.0104,
-		},
-	}
-	results, err := itf.Filter(filters)
-	h.Ok(t, err)
-	h.Assert(t, len(results) == 1, fmt.Sprintf("Should return 1 instance type; got %d", len(results)))
-}
-
-func TestFilter_PricePerHour_NoResults(t *testing.T) {
-	itf := getSelector(setupMock(t, describeInstanceTypesPages, "t3_micro.json"))
-	itf.EC2Pricing = &ec2PricingMock{
-		GetOndemandInstanceTypeCostResp: 0.0104,
-		onDemandCacheCount:              1,
-	}
-	filters := selector.Filters{
-		PricePerHour: &selector.Float64RangeFilter{
-			LowerBound: 0.0105,
-			UpperBound: 0.0105,
-		},
-	}
-	results, err := itf.Filter(filters)
-	h.Ok(t, err)
-	h.Assert(t, len(results) == 0, "Should return 0 instance types")
-}
-
-func TestFilter_PricePerHour_OD(t *testing.T) {
-	itf := getSelector(setupMock(t, describeInstanceTypesPages, "t3_micro.json"))
-	itf.EC2Pricing = &ec2PricingMock{
-		GetOndemandInstanceTypeCostResp: 0.0104,
-		onDemandCacheCount:              1,
-	}
-	filters := selector.Filters{
-		PricePerHour: &selector.Float64RangeFilter{
-			LowerBound: 0.0104,
-			UpperBound: 0.0104,
-		},
-		UsageClass: aws.String("on-demand"),
-	}
-	results, err := itf.Filter(filters)
-	h.Ok(t, err)
-	h.Assert(t, len(results) == 1, fmt.Sprintf("Should return 1 instance type; got %d", len(results)))
-}
-
-func TestFilter_PricePerHour_Spot(t *testing.T) {
-	itf := getSelector(setupMock(t, describeInstanceTypesPages, "t3_micro.json"))
-	itf.EC2Pricing = &ec2PricingMock{
-		GetSpotInstanceTypeNDayAvgCostResp: 0.0104,
-		spotCacheCount:                     1,
-	}
-	filters := selector.Filters{
-		PricePerHour: &selector.Float64RangeFilter{
-			LowerBound: 0.0104,
-			UpperBound: 0.0104,
-		},
-		UsageClass: aws.String("spot"),
-	}
-	results, err := itf.Filter(filters)
-	h.Ok(t, err)
-	h.Assert(t, len(results) == 1, fmt.Sprintf("Should return 1 instance type; got %d", len(results)))
 }

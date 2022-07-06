@@ -169,9 +169,6 @@ type Filters struct {
 	// Possibly values are: xen or nitro
 	Hypervisor *string
 
-	// MaxResults is the maximum number of instance types to return that match the filter criteria
-	MaxResults *int
-
 	// MemoryRange filter is a range of acceptable DRAM memory in Gibibytes (GiB) for the instance type
 	MemoryRange *ByteQuantityRangeFilter
 

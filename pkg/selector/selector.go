@@ -27,7 +27,6 @@ import (
 
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/ec2pricing"
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/instancetypes"
-	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/selector/outputs"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -46,6 +45,7 @@ const (
 	zoneNameLocationType   = "availability-zone"
 	regionNameLocationType = "region"
 	sdkName                = "instance-selector"
+	spotPricingDaysBack    = 30
 
 	// Filter Keys
 
@@ -130,77 +130,28 @@ func (itf Selector) Save() error {
 	return multierr.Append(itf.EC2Pricing.Save(), itf.InstanceTypesProvider.Save())
 }
 
-// Filter accepts a Filters struct which is used to select the available instance types
-// matching the criteria within Filters and returns a simple list of instance type strings
-//
-// Deprecated: This function will be replaced with GetFilteredInstanceTypes() and
-// OutputInstanceTypes() in the next major version.
-func (itf Selector) Filter(filters Filters) ([]string, error) {
-	outputFn := InstanceTypesOutputFn(outputs.SimpleInstanceTypeOutput)
-	output, _, err := itf.FilterWithOutput(filters, outputFn)
-	return output, err
-}
-
-// FilterVerbose accepts a Filters struct which is used to select the available instance types
-// matching the criteria within Filters and returns a list instanceTypeInfo
-//
-// Deprecated: This function will be replaced with GetFilteredInstanceTypes() in the next
-// major version.
-func (itf Selector) FilterVerbose(filters Filters) ([]*instancetypes.Details, error) {
-	instanceTypeInfoSlice, err := itf.rawFilter(filters)
-	if err != nil {
-		return nil, err
-	}
-	instanceTypeInfoSlice, _ = itf.truncateResults(filters.MaxResults, instanceTypeInfoSlice)
-	return instanceTypeInfoSlice, nil
-}
-
-// FilterWithOutput accepts a Filters struct which is used to select the available instance types
-// matching the criteria within Filters and returns a list of strings based on the custom outputFn
-//
-// Deprecated: This function will be replaced with GetFilteredInstanceTypes() and
-// OutputInstanceTypes() in the next major version.
-func (itf Selector) FilterWithOutput(filters Filters, outputFn InstanceTypesOutput) ([]string, int, error) {
-	instanceTypeInfoSlice, err := itf.rawFilter(filters)
-	if err != nil {
-		return nil, 0, err
-	}
-	instanceTypeInfoSlice, numOfItemsTruncated := itf.truncateResults(filters.MaxResults, instanceTypeInfoSlice)
-	output := outputFn.Output(instanceTypeInfoSlice)
-	return output, numOfItemsTruncated, nil
-}
-
-func (itf Selector) truncateResults(maxResults *int, instanceTypeInfoSlice []*instancetypes.Details) ([]*instancetypes.Details, int) {
-	if maxResults == nil {
-		return instanceTypeInfoSlice, 0
-	}
-	upperIndex := *maxResults
-	if *maxResults > len(instanceTypeInfoSlice) {
-		upperIndex = len(instanceTypeInfoSlice)
-	}
-	return instanceTypeInfoSlice[0:upperIndex], len(instanceTypeInfoSlice) - upperIndex
-}
-
-// AggregateFilterTransform takes higher level filters which are used to affect multiple raw filters in an opinionated way.
-func (itf Selector) AggregateFilterTransform(filters Filters) (Filters, error) {
-	transforms := []FiltersTransform{
-		TransformFn(itf.TransformBaseInstanceType),
-		TransformFn(itf.TransformFlexible),
-		TransformFn(itf.TransformForService),
-	}
-	var err error
-	for _, transform := range transforms {
-		filters, err = transform.Transform(filters)
-		if err != nil {
-			return filters, err
+// FilterInstanceTypes accepts a Filters struct which is used to select the available instance types
+// matching the criteria within Filters and returns the detailed specs of matching instance types
+func (itf Selector) FilterInstanceTypes(filters Filters) ([]*instancetypes.Details, error) {
+	// refresh OD or Spot pricing caches if pricing filters are used depending on
+	// which usage class is selected (default usage class is on demand)
+	if filters.PricePerHour != nil {
+		// If price filters are applied, only hydrate the respective cache as we don't have to print the prices
+		if filters.UsageClass == nil || *filters.UsageClass == "on-demand" {
+			if itf.EC2Pricing.OnDemandCacheCount() == 0 {
+				if err := itf.EC2Pricing.RefreshOnDemandCache(); err != nil {
+					return nil, fmt.Errorf("there was a problem refreshing the on-demand pricing cache: %v", err)
+				}
+			}
+		} else {
+			if itf.EC2Pricing.SpotCacheCount() == 0 {
+				if err := itf.EC2Pricing.RefreshSpotCache(spotPricingDaysBack); err != nil {
+					return nil, fmt.Errorf("there was a problem refreshing the spot pricing cache: %v", err)
+				}
+			}
 		}
 	}
-	return filters, nil
-}
 
-// rawFilter accepts a Filters struct which is used to select the available instance types
-// matching the criteria within Filters and returns the detailed specs of matching instance types
-func (itf Selector) rawFilter(filters Filters) ([]*instancetypes.Details, error) {
 	filters, err := itf.AggregateFilterTransform(filters)
 	if err != nil {
 		return nil, err
@@ -249,7 +200,38 @@ func (itf Selector) rawFilter(filters Filters) ([]*instancetypes.Details, error)
 	for it := range instanceTypes {
 		filteredInstanceTypes = append(filteredInstanceTypes, it)
 	}
+
 	return sortInstanceTypeInfo(filteredInstanceTypes), nil
+}
+
+// sortInstanceTypeInfo will sort based on instance type info alpha-numerically
+func sortInstanceTypeInfo(instanceTypeInfoSlice []*instancetypes.Details) []*instancetypes.Details {
+	if len(instanceTypeInfoSlice) < 2 {
+		return instanceTypeInfoSlice
+	}
+	sort.Slice(instanceTypeInfoSlice, func(i, j int) bool {
+		iInstanceInfo := instanceTypeInfoSlice[i]
+		jInstanceInfo := instanceTypeInfoSlice[j]
+		return strings.Compare(aws.StringValue(iInstanceInfo.InstanceType), aws.StringValue(jInstanceInfo.InstanceType)) <= 0
+	})
+	return instanceTypeInfoSlice
+}
+
+// AggregateFilterTransform takes higher level filters which are used to affect multiple raw filters in an opinionated way.
+func (itf Selector) AggregateFilterTransform(filters Filters) (Filters, error) {
+	transforms := []FiltersTransform{
+		TransformFn(itf.TransformBaseInstanceType),
+		TransformFn(itf.TransformFlexible),
+		TransformFn(itf.TransformForService),
+	}
+	var err error
+	for _, transform := range transforms {
+		filters, err = transform.Transform(filters)
+		if err != nil {
+			return filters, err
+		}
+	}
+	return filters, nil
 }
 
 func (itf Selector) prepareFilter(filters Filters, instanceTypeInfo instancetypes.Details, availabilityZones []string, locationInstanceOfferings map[string]string) (*instancetypes.Details, error) {
@@ -349,19 +331,6 @@ func (itf Selector) prepareFilter(filters Filters, instanceTypeInfo instancetype
 		return nil, nil
 	}
 	return &instanceTypeInfo, nil
-}
-
-// sortInstanceTypeInfo will sort based on instance type info alpha-numerically
-func sortInstanceTypeInfo(instanceTypeInfoSlice []*instancetypes.Details) []*instancetypes.Details {
-	if len(instanceTypeInfoSlice) < 2 {
-		return instanceTypeInfoSlice
-	}
-	sort.Slice(instanceTypeInfoSlice, func(i, j int) bool {
-		iInstanceInfo := instanceTypeInfoSlice[i]
-		jInstanceInfo := instanceTypeInfoSlice[j]
-		return strings.Compare(aws.StringValue(iInstanceInfo.InstanceType), aws.StringValue(jInstanceInfo.InstanceType)) <= 0
-	})
-	return instanceTypeInfoSlice
 }
 
 // executeFilters accepts a mapping of filter name to filter pairs which are iterated through

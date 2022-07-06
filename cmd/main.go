@@ -25,6 +25,7 @@ import (
 
 	commandline "github.com/aws/amazon-ec2-instance-selector/v2/pkg/cli"
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/env"
+	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/instancetypes"
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/selector"
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/selector/outputs"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -41,10 +42,6 @@ const (
 	defaultProfile      = "default"
 	awsConfigFile       = "~/.aws/config"
 	spotPricingDaysBack = 30
-
-	tableOutput     = "table"
-	tableWideOutput = "table-wide"
-	oneLine         = "one-line"
 )
 
 // Filter Flag Constants
@@ -112,6 +109,14 @@ const (
 	output     = "output"
 	cacheTTL   = "cache-ttl"
 	cacheDir   = "cache-dir"
+
+	// Output constants
+
+	tableOutput     = "table"
+	tableWideOutput = "table-wide"
+	oneLineOutput   = "one-line"
+	simpleOutput    = "simple"
+	verboseOutput   = "verbose"
 )
 
 var (
@@ -138,9 +143,8 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	cliOutputTypes := []string{
 		tableOutput,
 		tableWideOutput,
-		oneLine,
+		oneLineOutput,
 	}
-	resultsOutputFn := outputs.SimpleInstanceTypeOutput
 
 	// Registers flags with specific input types from the cli pkg
 	// Filter Flags - These will be grouped at the top of the help flags
@@ -200,7 +204,7 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	cli.ConfigIntFlag(maxResults, nil, env.WithDefaultInt("EC2_INSTANCE_SELECTOR_MAX_RESULTS", 20), "The maximum number of instance types that match your criteria to return")
 	cli.ConfigStringFlag(profile, nil, nil, "AWS CLI profile to use for credentials and config", nil)
 	cli.ConfigStringFlag(region, cli.StringMe("r"), nil, "AWS Region to use for API requests (NOTE: if not passed in, uses AWS SDK default precedence)", nil)
-	cli.ConfigStringFlag(output, cli.StringMe("o"), nil, fmt.Sprintf("Specify the output format (%s)", strings.Join(cliOutputTypes, ", ")), nil)
+	cli.ConfigStringFlag(output, cli.StringMe("o"), cli.StringMe(simpleOutput), fmt.Sprintf("Specify the output format (%s)", strings.Join(cliOutputTypes, ", ")), nil)
 	cli.ConfigIntFlag(cacheTTL, nil, env.WithDefaultInt("EC2_INSTANCE_SELECTOR_CACHE_TTL", 168), "Cache TTLs in hours for pricing and instance type caches. Setting the cache to 0 will turn off caching and cleanup any on-disk caches.")
 	cli.ConfigPathFlag(cacheDir, nil, env.WithDefaultString("EC2_INSTANCE_SELECTOR_CACHE_DIR", "~/.ec2-instance-selector/"), "Directory to save the pricing and instance type caches")
 	cli.ConfigBoolFlag(verbose, cli.StringMe("v"), nil, "Verbose - will print out full instance specs")
@@ -237,30 +241,6 @@ Full docs can be found at github.com/aws/amazon-` + binName
 		}
 	}
 	registerShutdown(shutdown)
-	outputFlag := cli.StringMe(flags[output])
-	if outputFlag != nil && *outputFlag == tableWideOutput {
-		// If output type is `table-wide`, simply print both prices for better comparison,
-		//   even if the actual filter is applied on any one of those based on usage class
-		// Save time by hydrating all caches in parallel
-		if err := hydrateCaches(*instanceSelector); err != nil {
-			log.Printf("%v", err)
-		}
-	} else if flags[pricePerHour] != nil {
-		// Else, if price filters are applied, only hydrate the respective cache as we don't have to print the prices
-		if flags[usageClass] == nil || *cli.StringMe(flags[usageClass]) == "on-demand" {
-			if instanceSelector.EC2Pricing.OnDemandCacheCount() == 0 {
-				if err := instanceSelector.EC2Pricing.RefreshOnDemandCache(); err != nil {
-					log.Printf("There was a problem refreshing the on-demand pricing cache: %v", err)
-				}
-			}
-		} else {
-			if instanceSelector.EC2Pricing.SpotCacheCount() == 0 {
-				if err := instanceSelector.EC2Pricing.RefreshSpotCache(spotPricingDaysBack); err != nil {
-					log.Printf("There was a problem refreshing the spot pricing cache: %v", err)
-				}
-			}
-		}
-	}
 
 	filters := selector.Filters{
 		VCpusRange:                       cli.IntRangeMe(flags[vcpus]),
@@ -288,7 +268,6 @@ Full docs can be found at github.com/aws/amazon-` + binName
 		Region:                           cli.StringMe(flags[region]),
 		AvailabilityZones:                cli.StringSliceMe(flags[availabilityZones]),
 		CurrentGeneration:                cli.BoolMe(flags[currentGeneration]),
-		MaxResults:                       cli.IntMe(flags[maxResults]),
 		NetworkInterfaces:                cli.IntRangeMe(flags[networkInterfaces]),
 		NetworkPerformance:               cli.IntRangeMe(flags[networkPerformance]),
 		NetworkEncryption:                cli.BoolMe(flags[networkEncryption]),
@@ -313,8 +292,18 @@ Full docs can be found at github.com/aws/amazon-` + binName
 		DedicatedHosts:                   cli.BoolMe(flags[dedicatedHosts]),
 	}
 
+	// If output type is `table-wide`, cache both prices for better comparison in output,
+	//   even if the actual filter is applied on any one of those based on usage class
+	// Save time by hydrating all caches in parallel
+	outputFlag := cli.StringMe(flags[output])
+	if outputFlag != nil && *outputFlag == tableWideOutput {
+		if err := hydrateCaches(*instanceSelector); err != nil {
+			log.Printf("%v", err)
+		}
+	}
+
 	if flags[verbose] != nil {
-		resultsOutputFn = outputs.VerboseInstanceTypeOutput
+		outputFlag = cli.StringMe(verboseOutput)
 		transformedFilters, err := instanceSelector.AggregateFilterTransform(filters)
 		if err != nil {
 			fmt.Printf("An error occurred while transforming the aggregate filters")
@@ -338,11 +327,18 @@ Full docs can be found at github.com/aws/amazon-` + binName
 		}
 	}
 
-	outputFn := getOutputFn(outputFlag, selector.InstanceTypesOutputFn(resultsOutputFn))
-
-	instanceTypes, itemsTruncated, err := instanceSelector.FilterWithOutput(filters, outputFn)
+	// get filtered instance types
+	instanceTypeDetails, err := instanceSelector.FilterInstanceTypes(filters)
 	if err != nil {
 		fmt.Printf("An error occurred when filtering instance types: %v", err)
+		os.Exit(1)
+	}
+
+	// format instance types as strings
+	maxOutputResults := cli.IntMe(flags[maxResults])
+	instanceTypes, itemsTruncated, err := formatInstanceTypes(instanceTypeDetails, maxOutputResults, outputFlag)
+	if err != nil {
+		fmt.Printf("An error occured formatting instance types: %v", err)
 		os.Exit(1)
 	}
 	if len(instanceTypes) == 0 {
@@ -350,6 +346,7 @@ Full docs can be found at github.com/aws/amazon-` + binName
 		os.Exit(1)
 	}
 
+	// print output
 	for _, instanceType := range instanceTypes {
 		fmt.Println(instanceType)
 	}
@@ -358,60 +355,6 @@ Full docs can be found at github.com/aws/amazon-` + binName
 		log.Printf("%d entries were truncated, increase --%s to see more", itemsTruncated, maxResults)
 	}
 	shutdown()
-}
-
-func hydrateCaches(instanceSelector selector.Selector) (errs error) {
-	wg := &sync.WaitGroup{}
-	hydrateTasks := []func(*sync.WaitGroup) error{
-		func(waitGroup *sync.WaitGroup) error {
-			defer waitGroup.Done()
-			if instanceSelector.EC2Pricing.OnDemandCacheCount() == 0 {
-				if err := instanceSelector.EC2Pricing.RefreshOnDemandCache(); err != nil {
-					return multierr.Append(errs, fmt.Errorf("There was a problem refreshing the on-demand pricing cache: %w", err))
-				}
-			}
-			return nil
-		},
-		func(waitGroup *sync.WaitGroup) error {
-			defer waitGroup.Done()
-			if instanceSelector.EC2Pricing.SpotCacheCount() == 0 {
-				if err := instanceSelector.EC2Pricing.RefreshSpotCache(spotPricingDaysBack); err != nil {
-					return multierr.Append(errs, fmt.Errorf("There was a problem refreshing the spot pricing cache: %w", err))
-				}
-			}
-			return nil
-		},
-		func(waitGroup *sync.WaitGroup) error {
-			defer waitGroup.Done()
-			if instanceSelector.InstanceTypesProvider.CacheCount() == 0 {
-				if _, err := instanceSelector.InstanceTypesProvider.Get(nil); err != nil {
-					return multierr.Append(errs, fmt.Errorf("There was a problem refreshing the instance types cache: %w", err))
-				}
-			}
-			return nil
-		},
-	}
-	wg.Add(len(hydrateTasks))
-	for _, task := range hydrateTasks {
-		go task(wg)
-	}
-	wg.Wait()
-	return errs
-}
-
-func getOutputFn(outputFlag *string, currentFn selector.InstanceTypesOutputFn) selector.InstanceTypesOutputFn {
-	outputFn := selector.InstanceTypesOutputFn(currentFn)
-	if outputFlag != nil {
-		switch *outputFlag {
-		case tableWideOutput:
-			return selector.InstanceTypesOutputFn(outputs.TableOutputWide)
-		case tableOutput:
-			return selector.InstanceTypesOutputFn(outputs.TableOutputShort)
-		case oneLine:
-			return selector.InstanceTypesOutputFn(outputs.OneLineOutput)
-		}
-	}
-	return outputFn
 }
 
 func getRegionAndProfileAWSSession(regionName *string, profileName *string) (*session.Session, error) {
@@ -486,4 +429,78 @@ func registerShutdown(shutdown func()) {
 		<-sigs
 		shutdown()
 	}()
+}
+
+// formatInstanceTypes accepts a list of instance types details, a number of max results, and an output flag
+// and returns a list of formatted strings representing the passed in intance types with at most maxResults number
+// of results. The format of the strings is determined by the output flag. The number of truncated results
+// is also returned.
+// Accepted output flags: "table", "table-wide", "one-line", "simple", "verbose".
+func formatInstanceTypes(instanceTypes []*instancetypes.Details, maxResults *int, outputFlag *string) ([]string, int, error) {
+	if outputFlag == nil {
+		return nil, 0, fmt.Errorf("output flag is nil")
+	}
+
+	instanceTypes, numOfItemsTruncated, err := outputs.TruncateResults(maxResults, instanceTypes)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// See which output format to use
+	var outputString []string
+	switch *outputFlag {
+	case simpleOutput:
+		outputString = outputs.SimpleInstanceTypeOutput(instanceTypes)
+	case oneLineOutput:
+		outputString = outputs.OneLineOutput(instanceTypes)
+	case tableOutput:
+		outputString = outputs.TableOutputShort(instanceTypes)
+	case tableWideOutput:
+		outputString = outputs.TableOutputWide(instanceTypes)
+	case verboseOutput:
+		outputString = outputs.VerboseInstanceTypeOutput(instanceTypes)
+	default:
+		return nil, 0, fmt.Errorf("invalid output flag")
+	}
+
+	return outputString, numOfItemsTruncated, nil
+}
+
+func hydrateCaches(instanceSelector selector.Selector) (errs error) {
+	wg := &sync.WaitGroup{}
+	hydrateTasks := []func(*sync.WaitGroup) error{
+		func(waitGroup *sync.WaitGroup) error {
+			defer waitGroup.Done()
+			if instanceSelector.EC2Pricing.OnDemandCacheCount() == 0 {
+				if err := instanceSelector.EC2Pricing.RefreshOnDemandCache(); err != nil {
+					return multierr.Append(errs, fmt.Errorf("There was a problem refreshing the on-demand pricing cache: %w", err))
+				}
+			}
+			return nil
+		},
+		func(waitGroup *sync.WaitGroup) error {
+			defer waitGroup.Done()
+			if instanceSelector.EC2Pricing.SpotCacheCount() == 0 {
+				if err := instanceSelector.EC2Pricing.RefreshSpotCache(spotPricingDaysBack); err != nil {
+					return multierr.Append(errs, fmt.Errorf("There was a problem refreshing the spot pricing cache: %w", err))
+				}
+			}
+			return nil
+		},
+		func(waitGroup *sync.WaitGroup) error {
+			defer waitGroup.Done()
+			if instanceSelector.InstanceTypesProvider.CacheCount() == 0 {
+				if _, err := instanceSelector.InstanceTypesProvider.Get(nil); err != nil {
+					return multierr.Append(errs, fmt.Errorf("There was a problem refreshing the instance types cache: %w", err))
+				}
+			}
+			return nil
+		},
+	}
+	wg.Add(len(hydrateTasks))
+	for _, task := range hydrateTasks {
+		go task(wg)
+	}
+	wg.Wait()
+	return errs
 }
