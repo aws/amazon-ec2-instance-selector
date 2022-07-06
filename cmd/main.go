@@ -19,6 +19,7 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -30,6 +31,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
+	"go.uber.org/multierr"
 	"gopkg.in/ini.v1"
 )
 
@@ -290,7 +292,16 @@ Full docs can be found at github.com/aws/amazon-` + binName
 		DedicatedHosts:                   cli.BoolMe(flags[dedicatedHosts]),
 	}
 
+	// If output type is `table-wide`, simply print both prices for better comparison,
+	//   even if the actual filter is applied on any one of those based on usage class
+	// Save time by hydrating all caches in parallel
 	outputFlag := cli.StringMe(flags[output])
+	if outputFlag != nil && *outputFlag == tableWideOutput {
+		if err := hydrateCaches(*instanceSelector); err != nil {
+			log.Printf("%v", err)
+		}
+	}
+
 	if flags[verbose] != nil {
 		outputFlag = cli.StringMe(verboseOutput)
 		transformedFilters, err := instanceSelector.AggregateFilterTransform(filters)
@@ -453,4 +464,43 @@ func formatInstanceTypes(instanceTypes []*instancetypes.Details, maxResults *int
 	}
 
 	return outputString, numOfItemsTruncated, nil
+}
+
+func hydrateCaches(instanceSelector selector.Selector) (errs error) {
+	wg := &sync.WaitGroup{}
+	hydrateTasks := []func(*sync.WaitGroup) error{
+		func(waitGroup *sync.WaitGroup) error {
+			defer waitGroup.Done()
+			if instanceSelector.EC2Pricing.OnDemandCacheCount() == 0 {
+				if err := instanceSelector.EC2Pricing.RefreshOnDemandCache(); err != nil {
+					return multierr.Append(errs, fmt.Errorf("There was a problem refreshing the on-demand pricing cache: %w", err))
+				}
+			}
+			return nil
+		},
+		func(waitGroup *sync.WaitGroup) error {
+			defer waitGroup.Done()
+			if instanceSelector.EC2Pricing.SpotCacheCount() == 0 {
+				if err := instanceSelector.EC2Pricing.RefreshSpotCache(spotPricingDaysBack); err != nil {
+					return multierr.Append(errs, fmt.Errorf("There was a problem refreshing the spot pricing cache: %w", err))
+				}
+			}
+			return nil
+		},
+		func(waitGroup *sync.WaitGroup) error {
+			defer waitGroup.Done()
+			if instanceSelector.InstanceTypesProvider.CacheCount() == 0 {
+				if _, err := instanceSelector.InstanceTypesProvider.Get(nil); err != nil {
+					return multierr.Append(errs, fmt.Errorf("There was a problem refreshing the instance types cache: %w", err))
+				}
+			}
+			return nil
+		},
+	}
+	wg.Add(len(hydrateTasks))
+	for _, task := range hydrateTasks {
+		go task(wg)
+	}
+	wg.Wait()
+	return errs
 }
