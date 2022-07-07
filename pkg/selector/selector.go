@@ -99,6 +99,17 @@ const (
 	virtualizationTypePV          = "pv"
 
 	pricePerHour = "pricePerHour"
+
+	// Sorting constants
+
+	ODPriceSortFlag   = "on-demand-price"
+	SpotPriceSortFlag = "spot-price"
+	VcpuSortFlag      = "vcpu"
+	MemorySortFlag    = "memory"
+	NameSortFlag      = "instance-type-name"
+
+	SortAscendingFlag  = "ascending"
+	SortDescendingFlag = "descending"
 )
 
 // New creates an instance of Selector provided an aws session
@@ -201,20 +212,128 @@ func (itf Selector) FilterInstanceTypes(filters Filters) ([]*instancetypes.Detai
 		filteredInstanceTypes = append(filteredInstanceTypes, it)
 	}
 
-	return sortInstanceTypeInfo(filteredInstanceTypes), nil
+	return filteredInstanceTypes, nil
 }
 
-// sortInstanceTypeInfo will sort based on instance type info alpha-numerically
-func sortInstanceTypeInfo(instanceTypeInfoSlice []*instancetypes.Details) []*instancetypes.Details {
-	if len(instanceTypeInfoSlice) < 2 {
-		return instanceTypeInfoSlice
+// SortInstanceTypes acepts a list of instance type details, a sort filter flag, and a sort direction flag and
+// returns a sorted list of instance type details sorted based on the sort filter and sort direction.
+// Accepted sort filter flags: "on-demand-price", "spot-price", "vcpu", "memory" , "instance-type-name".
+// Accepted sort direction flags: "ascending", "descending".
+func (itf Selector) SortInstanceTypes(instanceTypes []*instancetypes.Details, sortFilterFlag *string, sortDirectionFlag *string) ([]*instancetypes.Details, error) {
+	if len(instanceTypes) <= 1 {
+		return instanceTypes, nil
 	}
-	sort.Slice(instanceTypeInfoSlice, func(i, j int) bool {
-		iInstanceInfo := instanceTypeInfoSlice[i]
-		jInstanceInfo := instanceTypeInfoSlice[j]
-		return strings.Compare(aws.StringValue(iInstanceInfo.InstanceType), aws.StringValue(jInstanceInfo.InstanceType)) <= 0
+
+	var isDescending bool
+	if sortDirectionFlag != nil {
+		switch *sortDirectionFlag {
+		case SortDescendingFlag:
+			isDescending = true
+		case SortAscendingFlag:
+			isDescending = false
+		default:
+			return nil, fmt.Errorf("invalid sort direction flag: %s", *sortDirectionFlag)
+		}
+	} else {
+		return nil, fmt.Errorf("sort direction flag is nil")
+	}
+
+	// if sorting based on either on demand or spot price, ensure the appropriate cache
+	// has been refreshed.
+	if sortFilterFlag != nil {
+		if *sortFilterFlag == ODPriceSortFlag {
+			if err := itf.EC2Pricing.RefreshOnDemandCache(); err != nil {
+				return nil, fmt.Errorf("there was a problem refreshing the on-demand pricing cache: %v", err)
+			}
+		} else if *sortFilterFlag == SpotPriceSortFlag {
+			if err := itf.EC2Pricing.RefreshSpotCache(spotPricingDaysBack); err != nil {
+				return nil, fmt.Errorf("there was a problem refreshing the spot pricing cache: %v", err)
+			}
+		}
+	}
+
+	// sort instance types based on filter flag and isDescending
+	isSortingFlagValid := true
+	sort.Slice(instanceTypes, func(i, j int) bool {
+		firstType := instanceTypes[i]
+		secondType := instanceTypes[j]
+
+		// Determine which value to sort by.
+		// Handle nil values by making non nil values always less than the nil values. That way the
+		// nil values can be bubbled up to the end of the list.
+		switch *sortFilterFlag {
+		case ODPriceSortFlag:
+			if firstType.OndemandPricePerHour == nil {
+				return false
+			} else if secondType.OndemandPricePerHour == nil {
+				return true
+			}
+
+			if isDescending {
+				return *firstType.OndemandPricePerHour > *secondType.OndemandPricePerHour
+			} else {
+				return *firstType.OndemandPricePerHour <= *secondType.OndemandPricePerHour
+			}
+		case SpotPriceSortFlag:
+			if firstType.SpotPrice == nil {
+				return false
+			} else if secondType.SpotPrice == nil {
+				return true
+			}
+
+			if isDescending {
+				return *firstType.SpotPrice > *secondType.SpotPrice
+			} else {
+				return *firstType.SpotPrice <= *secondType.SpotPrice
+			}
+		case VcpuSortFlag:
+			if firstType.VCpuInfo == nil || firstType.VCpuInfo.DefaultVCpus == nil {
+				return false
+			} else if secondType.VCpuInfo == nil || secondType.VCpuInfo.DefaultVCpus == nil {
+				return true
+			}
+
+			if isDescending {
+				return *firstType.VCpuInfo.DefaultVCpus > *secondType.VCpuInfo.DefaultVCpus
+			} else {
+				return *firstType.VCpuInfo.DefaultVCpus <= *secondType.VCpuInfo.DefaultVCpus
+			}
+		case MemorySortFlag:
+			if firstType.MemoryInfo == nil || firstType.MemoryInfo.SizeInMiB == nil {
+				return false
+			} else if secondType.MemoryInfo == nil || secondType.MemoryInfo.SizeInMiB == nil {
+				return true
+			}
+
+			if isDescending {
+				return *firstType.MemoryInfo.SizeInMiB > *secondType.MemoryInfo.SizeInMiB
+			} else {
+				return *firstType.MemoryInfo.SizeInMiB <= *secondType.MemoryInfo.SizeInMiB
+			}
+		case NameSortFlag:
+			if firstType.InstanceType == nil {
+				return false
+			} else if secondType.InstanceType == nil {
+				return true
+			}
+
+			if isDescending {
+				return strings.Compare(aws.StringValue(secondType.InstanceType), aws.StringValue(firstType.InstanceType)) <= 0
+			} else {
+				return strings.Compare(aws.StringValue(firstType.InstanceType), aws.StringValue(secondType.InstanceType)) <= 0
+			}
+		default:
+			// invalid sorting flag. Do not sort.
+			isSortingFlagValid = false
+			return true
+		}
 	})
-	return instanceTypeInfoSlice
+
+	if !isSortingFlagValid {
+		return nil, fmt.Errorf("invalid sort filter flag: %s", *sortFilterFlag)
+	}
+
+	return instanceTypes, nil
 }
 
 // AggregateFilterTransform takes higher level filters which are used to affect multiple raw filters in an opinionated way.

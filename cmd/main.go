@@ -100,15 +100,17 @@ const (
 
 // Configuration Flag Constants
 const (
-	maxResults = "max-results"
-	profile    = "profile"
-	help       = "help"
-	verbose    = "verbose"
-	version    = "version"
-	region     = "region"
-	output     = "output"
-	cacheTTL   = "cache-ttl"
-	cacheDir   = "cache-dir"
+	maxResults    = "max-results"
+	profile       = "profile"
+	help          = "help"
+	verbose       = "verbose"
+	version       = "version"
+	region        = "region"
+	output        = "output"
+	cacheTTL      = "cache-ttl"
+	cacheDir      = "cache-dir"
+	sortDirection = "sort-direction"
+	sortFilter    = "sort-filter"
 
 	// Output constants
 
@@ -145,6 +147,19 @@ Full docs can be found at github.com/aws/amazon-` + binName
 		tableWideOutput,
 		oneLineOutput,
 		simpleOutput,
+	}
+
+	cliSortCriteria := []string{
+		selector.ODPriceSortFlag,
+		selector.SpotPriceSortFlag,
+		selector.VcpuSortFlag,
+		selector.MemorySortFlag,
+		selector.NameSortFlag,
+	}
+
+	cliSortDirections := []string{
+		selector.SortAscendingFlag,
+		selector.SortDescendingFlag,
 	}
 
 	// Registers flags with specific input types from the cli pkg
@@ -211,6 +226,8 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	cli.ConfigBoolFlag(verbose, cli.StringMe("v"), nil, "Verbose - will print out full instance specs")
 	cli.ConfigBoolFlag(help, cli.StringMe("h"), nil, "Help")
 	cli.ConfigBoolFlag(version, nil, nil, "Prints CLI version")
+	cli.ConfigStringOptionsFlag(sortDirection, nil, cli.StringMe(selector.SortAscendingFlag), fmt.Sprintf("Specify the direction to sort in (%s)", strings.Join(cliSortDirections, ", ")), cliSortDirections)
+	cli.ConfigStringOptionsFlag(sortFilter, nil, cli.StringMe(selector.NameSortFlag), fmt.Sprintf("Specify the field to sort by (%s)", strings.Join(cliSortCriteria, ", ")), cliSortCriteria)
 
 	// Parses the user input with the registered flags and runs type specific validation on the user input
 	flags, err := cli.ParseAndValidateFlags()
@@ -333,6 +350,14 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	if err != nil {
 		fmt.Printf("An error occurred when filtering instance types: %v", err)
 		os.Exit(1)
+	}
+
+	// sort instance types
+	sortFilterFlag := cli.StringMe(flags[sortFilter])
+	sortDirectionFlag := cli.StringMe(flags[sortDirection])
+	instanceTypeDetails, err = instanceSelector.SortInstanceTypes(instanceTypeDetails, sortFilterFlag, sortDirectionFlag)
+	if err != nil {
+		fmt.Printf("An error occurred when sorting instance types: %v", err)
 	}
 
 	// format instance types as strings
