@@ -269,7 +269,6 @@ import (
 
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/bytequantity"
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/selector"
-	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/selector/outputs"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 )
@@ -305,12 +304,10 @@ func main() {
 	// Create a Filter struct with criteria you would like to filter
 	// The full struct definition can be found here for all of the supported filters:
 	// https://github.com/aws/amazon-ec2-instance-selector/blob/main/pkg/selector/types.go
-	maxResults := -10
 	filters := selector.Filters{
 		VCpusRange:      &vcpusRange,
 		MemoryRange:     &memoryRange,
 		CPUArchitecture: &cpuArch,
-		MaxResults:      &maxResults,
 	}
 
 	// Pass the Filter struct to the Filter function of your selector instance
@@ -319,7 +316,6 @@ func main() {
 		fmt.Printf("Oh no, there was an error :( %v", err)
 		return
 	}
-	
 	// Print the returned instance types slice
 	fmt.Println(instanceTypesSlice)
 }
