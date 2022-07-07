@@ -319,19 +319,10 @@ func main() {
 		fmt.Printf("Oh no, there was an error :( %v", err)
 		return
 	}
-
-	instanceTypesStr, _, _ := instanceSelector.FilterWithOutput(filters, selector.InstanceTypesOutputFn(outputs.TableOutputWide))
-	if err != nil {
-		fmt.Printf("Oh no, there was an error :( %v", err)
-		return
-	}
-
-	fmt.Println(instanceTypesStr[0])
+	
 	// Print the returned instance types slice
 	fmt.Println(instanceTypesSlice)
 }
-
-	
   ```
 </details>
 
