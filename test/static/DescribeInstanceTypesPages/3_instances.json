@@ -1,0 +1,187 @@
+{
+    "InstanceTypes": [
+        {
+            "AutoRecoverySupported": true,
+            "BareMetal": false,
+            "BurstablePerformanceSupported": false,
+            "CurrentGeneration": true,
+            "DedicatedHostsSupported": true,
+            "EbsInfo": {
+                "EbsOptimizedSupport": "default",
+                "EncryptionSupport": "supported"
+            },
+            "FpgaInfo": null,
+            "FreeTierEligible": false,
+            "GpuInfo": null,
+            "HibernationSupported": false,
+            "Hypervisor": "nitro",
+            "InferenceAcceleratorInfo": null,
+            "InstanceStorageInfo": null,
+            "InstanceStorageSupported": false,
+            "InstanceType": "a1.2xlarge",
+            "MemoryInfo": {
+                "SizeInMiB": 16384
+            },
+            "NetworkInfo": {
+                "EnaSupport": "required",
+                "Ipv4AddressesPerInterface": 15,
+                "Ipv6AddressesPerInterface": 15,
+                "Ipv6Supported": true,
+                "MaximumNetworkInterfaces": 4,
+                "NetworkPerformance": "Up to 10 Gigabit"
+            },
+            "PlacementGroupInfo": {
+                "SupportedStrategies": [
+                    "cluster",
+                    "partition",
+                    "spread"
+                ]
+            },
+            "ProcessorInfo": {
+                "SupportedArchitectures": [
+                    "arm64"
+                ],
+                "SustainedClockSpeedInGhz": 2.3
+            },
+            "SupportedRootDeviceTypes": [
+                "ebs"
+            ],
+            "SupportedUsageClasses": [
+                "on-demand"
+            ],
+            "VCpuInfo": {
+                "DefaultCores": 8,
+                "DefaultThreadsPerCore": 1,
+                "DefaultVCpus": 8,
+                "ValidCores": [
+                    8
+                ],
+                "ValidThreadsPerCore": [
+                    1
+                ]
+            }
+        },
+        {
+            "AutoRecoverySupported": true,
+            "BareMetal": false,
+            "BurstablePerformanceSupported": false,
+            "CurrentGeneration": true,
+            "DedicatedHostsSupported": true,
+            "EbsInfo": {
+                "EbsOptimizedSupport": "default",
+                "EncryptionSupport": "supported"
+            },
+            "FpgaInfo": null,
+            "FreeTierEligible": false,
+            "GpuInfo": null,
+            "HibernationSupported": false,
+            "Hypervisor": "nitro",
+            "InferenceAcceleratorInfo": null,
+            "InstanceStorageInfo": null,
+            "InstanceStorageSupported": false,
+            "InstanceType": "a1.4xlarge",
+            "MemoryInfo": {
+                "SizeInMiB": 32768
+            },
+            "NetworkInfo": {
+                "EnaSupport": "required",
+                "Ipv4AddressesPerInterface": 30,
+                "Ipv6AddressesPerInterface": 30,
+                "Ipv6Supported": true,
+                "MaximumNetworkInterfaces": 8,
+                "NetworkPerformance": "Up to 10 Gigabit"
+            },
+            "PlacementGroupInfo": {
+                "SupportedStrategies": [
+                    "cluster",
+                    "partition",
+                    "spread"
+                ]
+            },
+            "ProcessorInfo": {
+                "SupportedArchitectures": [
+                    "arm64"
+                ],
+                "SustainedClockSpeedInGhz": 2.3
+            },
+            "SupportedRootDeviceTypes": [
+                "ebs"
+            ],
+            "SupportedUsageClasses": [
+                "on-demand"
+            ],
+            "VCpuInfo": {
+                "DefaultCores": 16,
+                "DefaultThreadsPerCore": 1,
+                "DefaultVCpus": 16,
+                "ValidCores": [
+                    16
+                ],
+                "ValidThreadsPerCore": [
+                    1
+                ]
+            }
+        },
+        {
+            "AutoRecoverySupported": true,
+            "BareMetal": false,
+            "BurstablePerformanceSupported": false,
+            "CurrentGeneration": true,
+            "DedicatedHostsSupported": true,
+            "EbsInfo": {
+                "EbsOptimizedSupport": "default",
+                "EncryptionSupport": "supported"
+            },
+            "FpgaInfo": null,
+            "FreeTierEligible": false,
+            "GpuInfo": null,
+            "HibernationSupported": false,
+            "Hypervisor": "nitro",
+            "InferenceAcceleratorInfo": null,
+            "InstanceStorageInfo": null,
+            "InstanceStorageSupported": false,
+            "InstanceType": "a1.large",
+            "MemoryInfo": {
+                "SizeInMiB": 4096
+            },
+            "NetworkInfo": {
+                "EnaSupport": "required",
+                "Ipv4AddressesPerInterface": 10,
+                "Ipv6AddressesPerInterface": 10,
+                "Ipv6Supported": true,
+                "MaximumNetworkInterfaces": 3,
+                "NetworkPerformance": "Up to 10 Gigabit"
+            },
+            "PlacementGroupInfo": {
+                "SupportedStrategies": [
+                    "cluster",
+                    "partition",
+                    "spread"
+                ]
+            },
+            "ProcessorInfo": {
+                "SupportedArchitectures": [
+                    "arm64"
+                ],
+                "SustainedClockSpeedInGhz": 2.3
+            },
+            "SupportedRootDeviceTypes": [
+                "ebs"
+            ],
+            "SupportedUsageClasses": [
+                "on-demand"
+            ],
+            "VCpuInfo": {
+                "DefaultCores": 2,
+                "DefaultThreadsPerCore": 1,
+                "DefaultVCpus": 2,
+                "ValidCores": [
+                    2
+                ],
+                "ValidThreadsPerCore": [
+                    1
+                ]
+            }
+        }
+    ]
+}
