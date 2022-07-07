@@ -146,7 +146,7 @@ func TestTruncateResults(t *testing.T) {
 	h.Assert(t, numTrucated == 0, fmt.Sprintf("Should truncate 0 results, but actually truncated: %d results", numTrucated))
 }
 
-func TestFormatInstanceTypes_NegativeMaxResults(t *testing.T) {
+func TestTruncateResults_NegativeMaxResults(t *testing.T) {
 	instanceTypes := getInstanceTypes(t, "25_instances.json")
 
 	maxResults := aws.Int(-1)
@@ -157,7 +157,7 @@ func TestFormatInstanceTypes_NegativeMaxResults(t *testing.T) {
 	h.Assert(t, numTrucated == 0, fmt.Sprintf("No results should be truncated, but %d results were truncated", numTrucated))
 }
 
-func TestFormatInstanceTypes_NilMaxResults(t *testing.T) {
+func TestTrucateResults_NilMaxResults(t *testing.T) {
 	instanceTypes := getInstanceTypes(t, "25_instances.json")
 
 	var maxResults *int = nil
