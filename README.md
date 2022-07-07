@@ -241,86 +241,23 @@ Suite Flags:
 
 
 Global Flags:
-      --cache-dir string   Directory to save the pricing and instance type caches (default "~/.ec2-instance-selector/")
-      --cache-ttl int      Cache TTLs in hours for pricing and instance type caches. Setting the cache to 0 will turn off caching and cleanup any on-disk caches. (default 168)
-  -h, --help               Help
-      --max-results int    The maximum number of instance types that match your criteria to return (default 20)
-  -o, --output string      Specify the output format (table, table-wide, one-line, simple) (default "simple")
-      --profile string     AWS CLI profile to use for credentials and config
-  -r, --region string      AWS Region to use for API requests (NOTE: if not passed in, uses AWS SDK default precedence)
-  -v, --verbose            Verbose - will print out full instance specs
-      --version            Prints CLI version
+      --cache-dir string        Directory to save the pricing and instance type caches (default "~/.ec2-instance-selector/")
+      --cache-ttl int           Cache TTLs in hours for pricing and instance type caches. Setting the cache to 0 will turn off caching and cleanup any on-disk caches. (default 168)
+  -h, --help                    Help
+      --max-results int         The maximum number of instance types that match your criteria to return (default 20)
+  -o, --output string           Specify the output format (table, table-wide, one-line, simple) (default "simple")
+      --profile string          AWS CLI profile to use for credentials and config
+  -r, --region string           AWS Region to use for API requests (NOTE: if not passed in, uses AWS SDK default precedence)
+      --sort-direction string   Specify the direction to sort in (ascending, descending) (default "ascending")
+      --sort-filter string      Specify the field to sort by (on-demand-price, spot-price, vcpu, memory, instance-type-name) (default "instance-type-name")
+  -v, --verbose                 Verbose - will print out full instance specs
+      --version                 Prints CLI version
 ```
 
 
 ### Go Library
 
 This is a minimal example of using the instance selector go package directly:
-
-**NOTE:** The example below is intended for `v3+`. For versions `v2.3.1` and earlier, refer to the following dropdown:
-<details>
-  <summary>Example for v2.3.1</summary>
-  
-  ```go
-package main
-
-import (
-	"fmt"
-
-	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/bytequantity"
-	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/selector"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-)
-
-func main() {
-	// Load an AWS session by looking at shared credentials or environment variables
-	// https://docs.aws.amazon.com/sdk-for-go/api/aws/session/
-	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String("us-east-2"),
-	})
-	if err != nil {
-		fmt.Printf("Oh no, AWS session credentials cannot be found: %v", err)
-		return
-	}
-
-	// Instantiate a new instance of a selector with the AWS session
-	instanceSelector := selector.New(sess)
-
-	// Instantiate an int range filter to specify min and max vcpus
-	vcpusRange := selector.IntRangeFilter{
-		LowerBound: 2,
-		UpperBound: 4,
-	}
-	// Instantiate a byte quantity range filter to specify min and max memory in GiB
-	memoryRange := selector.ByteQuantityRangeFilter{
-		LowerBound: bytequantity.FromGiB(2),
-		UpperBound: bytequantity.FromGiB(4),
-	}
-	// Create a string for the CPU Architecture so that it can be passed as a pointer
-	// when creating the Filter struct
-	cpuArch := "x86_64"
-
-	// Create a Filter struct with criteria you would like to filter
-	// The full struct definition can be found here for all of the supported filters:
-	// https://github.com/aws/amazon-ec2-instance-selector/blob/main/pkg/selector/types.go
-	filters := selector.Filters{
-		VCpusRange:      &vcpusRange,
-		MemoryRange:     &memoryRange,
-		CPUArchitecture: &cpuArch,
-	}
-
-	// Pass the Filter struct to the Filter function of your selector instance
-	instanceTypesSlice, err := instanceSelector.Filter(filters)
-	if err != nil {
-		fmt.Printf("Oh no, there was an error :( %v", err)
-		return
-	}
-	// Print the returned instance types slice
-	fmt.Println(instanceTypesSlice)
-}
-  ```
-</details>
 
 **cmd/examples/example1.go**
 ```go#cmd/examples/example1.go
@@ -374,16 +311,25 @@ func main() {
 	}
 
 	// Pass the Filter struct to the FilteredInstanceTypes function of your
-	// selector instance to get a list of filtered instance types and their details
+	// selector instance to get a list of filtered instance types and their details.
 	instanceTypesSlice, err := instanceSelector.FilterInstanceTypes(filters)
 	if err != nil {
 		fmt.Printf("Oh no, there was an error getting instance types: %v", err)
 		return
 	}
 
-	// Pass in your list of instance type details to the appropriate output function
-	// in order to format the instance types as printable strings.
-	maxResults := 100
+	// Pass in the list of instance type details to the SortInstanceTypes if you
+	// wish to sort the instances based on set filters.
+	sortFilter := selector.NameSortFlag
+	sortDirection := selector.SortAscendingFlag
+	instanceTypesSlice, err = instanceSelector.SortInstanceTypes(instanceTypesSlice, &sortFilter, &sortDirection)
+	if err != nil {
+		fmt.Printf("Oh no, there was an error filtering instance types: %v", err)
+		return
+	}
+
+	// Truncate results and format them for output with your desired formatting function.
+	maxResults := 10
 	instanceTypesSlice, _, err = outputs.TruncateResults(&maxResults, instanceTypesSlice)
 	if err != nil {
 		fmt.Printf("Oh no, there was an error truncating instnace types: %v", err)
@@ -403,7 +349,7 @@ func main() {
 $ git clone https://github.com/aws/amazon-ec2-instance-selector.git
 $ cd amazon-ec2-instance-selector/
 $ go run cmd/examples/example1.go
-[c4.large c5.large c5a.large c5ad.large c5d.large c6i.large t2.medium t3.medium t3.small t3a.medium t3a.small]
+[c4.large c5.large c5a.large c5ad.large c5d.large c6a.large c6i.large c6id.large t2.medium t3.medium]
 ```
 
 ## Building

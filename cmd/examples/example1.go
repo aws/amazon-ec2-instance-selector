@@ -57,7 +57,7 @@ func main() {
 
 	// Pass in the list of instance type details to the SortInstanceTypes if you
 	// wish to sort the instances based on set filters.
-	sortFilter := selector.SpotPriceSortFlag
+	sortFilter := selector.NameSortFlag
 	sortDirection := selector.SortAscendingFlag
 	instanceTypesSlice, err = instanceSelector.SortInstanceTypes(instanceTypesSlice, &sortFilter, &sortDirection)
 	if err != nil {
@@ -66,7 +66,7 @@ func main() {
 	}
 
 	// Truncate results and format them for output with your desired formatting function.
-	maxResults := 100
+	maxResults := 10
 	instanceTypesSlice, _, err = outputs.TruncateResults(&maxResults, instanceTypesSlice)
 	if err != nil {
 		fmt.Printf("Oh no, there was an error truncating instnace types: %v", err)
