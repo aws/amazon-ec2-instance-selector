@@ -245,7 +245,7 @@ Global Flags:
       --cache-ttl int      Cache TTLs in hours for pricing and instance type caches. Setting the cache to 0 will turn off caching and cleanup any on-disk caches. (default 168)
   -h, --help               Help
       --max-results int    The maximum number of instance types that match your criteria to return (default 20)
-  -o, --output string      Specify the output format (table, table-wide, one-line) (default "simple")
+  -o, --output string      Specify the output format (table, table-wide, one-line, simple) (default "simple")
       --profile string     AWS CLI profile to use for credentials and config
   -r, --region string      AWS Region to use for API requests (NOTE: if not passed in, uses AWS SDK default precedence)
   -v, --verbose            Verbose - will print out full instance specs

@@ -144,6 +144,7 @@ Full docs can be found at github.com/aws/amazon-` + binName
 		tableOutput,
 		tableWideOutput,
 		oneLineOutput,
+		simpleOutput,
 	}
 
 	// Registers flags with specific input types from the cli pkg
