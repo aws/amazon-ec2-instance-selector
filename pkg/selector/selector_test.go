@@ -475,7 +475,7 @@ func TestFilterInstanceTypes_PricePerHour_Spot(t *testing.T) {
 
 // checkSortResults is a helper function for comparing the results of sorting tests. Returns true if
 // the order of instance types in the instanceTypes list matches the the order of instance type names
-// in the expectedResullt list, and returns false otherwise.
+// in the expectedResult list, and returns false otherwise.
 func checkSortResults(instaceTypes []*instancetypes.Details, expectedResult []string) bool {
 	if len(instaceTypes) != len(expectedResult) {
 		return false
