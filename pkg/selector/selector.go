@@ -215,37 +215,37 @@ func (itf Selector) FilterInstanceTypes(filters Filters) ([]*instancetypes.Detai
 	return filteredInstanceTypes, nil
 }
 
-// SortInstanceTypes acepts a list of instance type details, a sort filter flag, and a sort direction flag and
-// returns a sorted list of instance type details sorted based on the sort filter and sort direction.
-// Accepted sort filter flags: "on-demand-price", "spot-price", "vcpu", "memory" , "instance-type-name".
-// Accepted sort direction flags: "ascending", "descending".
-func (itf Selector) SortInstanceTypes(instanceTypes []*instancetypes.Details, sortFilterFlag *string, sortDirectionFlag *string) ([]*instancetypes.Details, error) {
+// SortInstanceTypes accepts a list of instance type details, a sort filter flag, and a sort direction flag and
+// returns a list of instance type details sorted based on the sort filter and sort direction.
+// Sort filter options: "on-demand-price", "spot-price", "vcpu", "memory" , "instance-type-name".
+// Sort direction options: "ascending", "descending".
+func (itf Selector) SortInstanceTypes(instanceTypes []*instancetypes.Details, sortFilter *string, sortDirection *string) ([]*instancetypes.Details, error) {
 	if len(instanceTypes) <= 1 {
 		return instanceTypes, nil
 	}
 
 	var isDescending bool
-	if sortDirectionFlag != nil {
-		switch *sortDirectionFlag {
+	if sortDirection != nil {
+		switch *sortDirection {
 		case sortDescending:
 			isDescending = true
 		case sortAscending:
 			isDescending = false
 		default:
-			return nil, fmt.Errorf("invalid sort direction flag: %s", *sortDirectionFlag)
+			return nil, fmt.Errorf("invalid sort direction: %s", *sortDirection)
 		}
 	} else {
-		return nil, fmt.Errorf("sort direction flag is nil")
+		return nil, fmt.Errorf("sort direction is nil")
 	}
 
 	// if sorting based on either on demand or spot price, ensure the appropriate cache
 	// has been refreshed.
-	if sortFilterFlag != nil {
-		if *sortFilterFlag == sortODPrice {
+	if sortFilter != nil {
+		if *sortFilter == sortODPrice {
 			if err := itf.EC2Pricing.RefreshOnDemandCache(); err != nil {
 				return nil, fmt.Errorf("there was a problem refreshing the on-demand pricing cache: %v", err)
 			}
-		} else if *sortFilterFlag == sortSpotPrice {
+		} else if *sortFilter == sortSpotPrice {
 			if err := itf.EC2Pricing.RefreshSpotCache(spotPricingDaysBack); err != nil {
 				return nil, fmt.Errorf("there was a problem refreshing the spot pricing cache: %v", err)
 			}
@@ -261,7 +261,7 @@ func (itf Selector) SortInstanceTypes(instanceTypes []*instancetypes.Details, so
 		// Determine which value to sort by.
 		// Handle nil values by making non nil values always less than the nil values. That way the
 		// nil values can be bubbled up to the end of the list.
-		switch *sortFilterFlag {
+		switch *sortFilter {
 		case sortODPrice:
 			if firstType.OndemandPricePerHour == nil {
 				return false
@@ -330,7 +330,7 @@ func (itf Selector) SortInstanceTypes(instanceTypes []*instancetypes.Details, so
 	})
 
 	if !isSortingFlagValid {
-		return nil, fmt.Errorf("invalid sort filter flag: %s", *sortFilterFlag)
+		return nil, fmt.Errorf("invalid sort filter: %s", *sortFilter)
 	}
 
 	return instanceTypes, nil

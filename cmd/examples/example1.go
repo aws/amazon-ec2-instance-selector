@@ -55,8 +55,8 @@ func main() {
 		return
 	}
 
-	// Pass in the list of instance type details to the SortInstanceTypes if you
-	// wish to sort the instances based on set filters.
+	// Pass in the list of instance type details to the SortInstanceTypes function
+	// if you wish to sort the instances based on set filters.
 	sortFilter := "instance-type-name"
 	sortDirection := "ascending"
 	instanceTypesSlice, err = instanceSelector.SortInstanceTypes(instanceTypesSlice, &sortFilter, &sortDirection)
