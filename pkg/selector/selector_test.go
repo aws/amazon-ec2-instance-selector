@@ -499,8 +499,8 @@ func TestSortInstanceTypes_OneElement(t *testing.T) {
 	results, err := itf.FilterInstanceTypes(filters)
 	h.Ok(t, err)
 
-	sortFilter := selector.NameSortFlag
-	sortDirection := selector.SortAscendingFlag
+	sortFilter := "instance-type-name"
+	sortDirection := "ascending"
 	results, err = itf.SortInstanceTypes(results, &sortFilter, &sortDirection)
 
 	h.Ok(t, err)
@@ -513,8 +513,8 @@ func TestSortInstanceTypes_Emptylist(t *testing.T) {
 	results, err := itf.FilterInstanceTypes(filters)
 	h.Ok(t, err)
 
-	sortFilter := selector.NameSortFlag
-	sortDirection := selector.SortAscendingFlag
+	sortFilter := "instance-type-name"
+	sortDirection := "ascending"
 	results, err = itf.SortInstanceTypes(results, &sortFilter, &sortDirection)
 
 	h.Ok(t, err)
@@ -528,8 +528,8 @@ func TestSortInstanceTypes_Name(t *testing.T) {
 	h.Ok(t, err)
 
 	// test ascending
-	sortFilter := selector.NameSortFlag
-	sortDirection := selector.SortAscendingFlag
+	sortFilter := "instance-type-name"
+	sortDirection := "ascending"
 	sortedResults, err := itf.SortInstanceTypes(results, &sortFilter, &sortDirection)
 	expectedResults := []string{"a1.2xlarge", "a1.4xlarge", "a1.large"}
 
@@ -538,7 +538,7 @@ func TestSortInstanceTypes_Name(t *testing.T) {
 	h.Assert(t, checkSortResults(sortedResults, expectedResults), fmt.Sprintf("Expected ascending order: [%s], but actual order: %s", strings.Join(expectedResults, ","), outputs.OneLineOutput(sortedResults)))
 
 	// test descending
-	sortDirection = selector.SortDescendingFlag
+	sortDirection = "descending"
 	sortedResults, err = itf.SortInstanceTypes(results, &sortFilter, &sortDirection)
 	expectedResults = []string{"a1.large", "a1.4xlarge", "a1.2xlarge"}
 
@@ -554,8 +554,8 @@ func TestSortInstanceTypes_Memory(t *testing.T) {
 	h.Ok(t, err)
 
 	// test ascending
-	sortFilter := selector.MemorySortFlag
-	sortDirection := selector.SortAscendingFlag
+	sortFilter := "memory"
+	sortDirection := "ascending"
 	sortedResults, err := itf.SortInstanceTypes(results, &sortFilter, &sortDirection)
 	expectedResults := []string{"a1.large", "a1.2xlarge", "a1.4xlarge"}
 
@@ -564,7 +564,7 @@ func TestSortInstanceTypes_Memory(t *testing.T) {
 	h.Assert(t, checkSortResults(sortedResults, expectedResults), fmt.Sprintf("Expected ascending order: [%s], but actual order: %s", strings.Join(expectedResults, ","), outputs.OneLineOutput(sortedResults)))
 
 	// test descending
-	sortDirection = selector.SortDescendingFlag
+	sortDirection = "descending"
 	sortedResults, err = itf.SortInstanceTypes(results, &sortFilter, &sortDirection)
 	expectedResults = []string{"a1.4xlarge", "a1.2xlarge", "a1.large"}
 
@@ -580,8 +580,8 @@ func TestSortInstanceTypes_Vcpu(t *testing.T) {
 	h.Ok(t, err)
 
 	// test ascending
-	sortFilter := selector.VcpuSortFlag
-	sortDirection := selector.SortAscendingFlag
+	sortFilter := "vcpu"
+	sortDirection := "ascending"
 	sortedResults, err := itf.SortInstanceTypes(results, &sortFilter, &sortDirection)
 	expectedResults := []string{"a1.large", "a1.2xlarge", "a1.4xlarge"}
 
@@ -590,7 +590,7 @@ func TestSortInstanceTypes_Vcpu(t *testing.T) {
 	h.Assert(t, checkSortResults(sortedResults, expectedResults), fmt.Sprintf("Expected ascending order: [%s], but actual order: %s", strings.Join(expectedResults, ","), outputs.OneLineOutput(sortedResults)))
 
 	// test descending
-	sortDirection = selector.SortDescendingFlag
+	sortDirection = "descending"
 	sortedResults, err = itf.SortInstanceTypes(results, &sortFilter, &sortDirection)
 	expectedResults = []string{"a1.4xlarge", "a1.2xlarge", "a1.large"}
 
@@ -617,8 +617,8 @@ func TestSortInstanceTypes_SpotPrice(t *testing.T) {
 	}
 
 	// test ascending
-	sortFilter := selector.SpotPriceSortFlag
-	sortDirection := selector.SortAscendingFlag
+	sortFilter := "spot-price"
+	sortDirection := "ascending"
 	sortedResults, err := itf.SortInstanceTypes(results, &sortFilter, &sortDirection)
 	expectedResults := []string{"a1.large", "a1.2xlarge", "a1.4xlarge"}
 
@@ -627,7 +627,7 @@ func TestSortInstanceTypes_SpotPrice(t *testing.T) {
 	h.Assert(t, checkSortResults(sortedResults, expectedResults), fmt.Sprintf("Expected ascending order: [%s], but actual order: %s", strings.Join(expectedResults, ","), outputs.OneLineOutput(sortedResults)))
 
 	// test descending
-	sortDirection = selector.SortDescendingFlag
+	sortDirection = "descending"
 	sortedResults, err = itf.SortInstanceTypes(results, &sortFilter, &sortDirection)
 	expectedResults = []string{"a1.4xlarge", "a1.2xlarge", "a1.large"}
 
@@ -654,8 +654,8 @@ func TestSortInstanceTypes_OnDemandPrice(t *testing.T) {
 	}
 
 	// sort ascending
-	sortFilter := selector.ODPriceSortFlag
-	sortDirection := selector.SortAscendingFlag
+	sortFilter := "on-demand-price"
+	sortDirection := "ascending"
 	sortedResults, err := itf.SortInstanceTypes(results, &sortFilter, &sortDirection)
 	expectedResults := []string{"a1.large", "a1.2xlarge", "a1.4xlarge"}
 
@@ -664,7 +664,7 @@ func TestSortInstanceTypes_OnDemandPrice(t *testing.T) {
 	h.Assert(t, checkSortResults(sortedResults, expectedResults), fmt.Sprintf("Expected ascending order: [%s], but actual order: %s", strings.Join(expectedResults, ","), outputs.OneLineOutput(sortedResults)))
 
 	// sort descending
-	sortDirection = selector.SortDescendingFlag
+	sortDirection = "descending"
 	sortedResults, err = itf.SortInstanceTypes(results, &sortFilter, &sortDirection)
 	expectedResults = []string{"a1.4xlarge", "a1.2xlarge", "a1.large"}
 
@@ -680,7 +680,7 @@ func TestSortInstanceTypes_InvalidFilter(t *testing.T) {
 	h.Ok(t, err)
 
 	sortFilter := "blah blah blah"
-	sortDirection := selector.SortAscendingFlag
+	sortDirection := "ascending"
 	sortedResults, err := itf.SortInstanceTypes(results, &sortFilter, &sortDirection)
 
 	h.Assert(t, err != nil, "An error should be returned")
@@ -693,7 +693,7 @@ func TestSortInstanceTypes_InvalidDirection(t *testing.T) {
 	results, err := itf.FilterInstanceTypes(filters)
 	h.Ok(t, err)
 
-	sortFilter := selector.NameSortFlag
+	sortFilter := "instance-type-name"
 	sortDirection := "fdsfds"
 	sortedResults, err := itf.SortInstanceTypes(results, &sortFilter, &sortDirection)
 

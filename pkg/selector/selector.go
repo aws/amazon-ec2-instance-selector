@@ -100,16 +100,16 @@ const (
 
 	pricePerHour = "pricePerHour"
 
-	// Sorting constants
+	// Sorting flags
 
-	ODPriceSortFlag   = "on-demand-price"
-	SpotPriceSortFlag = "spot-price"
-	VcpuSortFlag      = "vcpu"
-	MemorySortFlag    = "memory"
-	NameSortFlag      = "instance-type-name"
+	sortODPrice   = "on-demand-price"
+	sortSpotPrice = "spot-price"
+	sortVcpu      = "vcpu"
+	sortMemory    = "memory"
+	sortName      = "instance-type-name"
 
-	SortAscendingFlag  = "ascending"
-	SortDescendingFlag = "descending"
+	sortAscending  = "ascending"
+	sortDescending = "descending"
 )
 
 // New creates an instance of Selector provided an aws session
@@ -227,9 +227,9 @@ func (itf Selector) SortInstanceTypes(instanceTypes []*instancetypes.Details, so
 	var isDescending bool
 	if sortDirectionFlag != nil {
 		switch *sortDirectionFlag {
-		case SortDescendingFlag:
+		case sortDescending:
 			isDescending = true
-		case SortAscendingFlag:
+		case sortAscending:
 			isDescending = false
 		default:
 			return nil, fmt.Errorf("invalid sort direction flag: %s", *sortDirectionFlag)
@@ -241,11 +241,11 @@ func (itf Selector) SortInstanceTypes(instanceTypes []*instancetypes.Details, so
 	// if sorting based on either on demand or spot price, ensure the appropriate cache
 	// has been refreshed.
 	if sortFilterFlag != nil {
-		if *sortFilterFlag == ODPriceSortFlag {
+		if *sortFilterFlag == sortODPrice {
 			if err := itf.EC2Pricing.RefreshOnDemandCache(); err != nil {
 				return nil, fmt.Errorf("there was a problem refreshing the on-demand pricing cache: %v", err)
 			}
-		} else if *sortFilterFlag == SpotPriceSortFlag {
+		} else if *sortFilterFlag == sortSpotPrice {
 			if err := itf.EC2Pricing.RefreshSpotCache(spotPricingDaysBack); err != nil {
 				return nil, fmt.Errorf("there was a problem refreshing the spot pricing cache: %v", err)
 			}
@@ -262,7 +262,7 @@ func (itf Selector) SortInstanceTypes(instanceTypes []*instancetypes.Details, so
 		// Handle nil values by making non nil values always less than the nil values. That way the
 		// nil values can be bubbled up to the end of the list.
 		switch *sortFilterFlag {
-		case ODPriceSortFlag:
+		case sortODPrice:
 			if firstType.OndemandPricePerHour == nil {
 				return false
 			} else if secondType.OndemandPricePerHour == nil {
@@ -274,7 +274,7 @@ func (itf Selector) SortInstanceTypes(instanceTypes []*instancetypes.Details, so
 			} else {
 				return *firstType.OndemandPricePerHour <= *secondType.OndemandPricePerHour
 			}
-		case SpotPriceSortFlag:
+		case sortSpotPrice:
 			if firstType.SpotPrice == nil {
 				return false
 			} else if secondType.SpotPrice == nil {
@@ -286,7 +286,7 @@ func (itf Selector) SortInstanceTypes(instanceTypes []*instancetypes.Details, so
 			} else {
 				return *firstType.SpotPrice <= *secondType.SpotPrice
 			}
-		case VcpuSortFlag:
+		case sortVcpu:
 			if firstType.VCpuInfo == nil || firstType.VCpuInfo.DefaultVCpus == nil {
 				return false
 			} else if secondType.VCpuInfo == nil || secondType.VCpuInfo.DefaultVCpus == nil {
@@ -298,7 +298,7 @@ func (itf Selector) SortInstanceTypes(instanceTypes []*instancetypes.Details, so
 			} else {
 				return *firstType.VCpuInfo.DefaultVCpus <= *secondType.VCpuInfo.DefaultVCpus
 			}
-		case MemorySortFlag:
+		case sortMemory:
 			if firstType.MemoryInfo == nil || firstType.MemoryInfo.SizeInMiB == nil {
 				return false
 			} else if secondType.MemoryInfo == nil || secondType.MemoryInfo.SizeInMiB == nil {
@@ -310,7 +310,7 @@ func (itf Selector) SortInstanceTypes(instanceTypes []*instancetypes.Details, so
 			} else {
 				return *firstType.MemoryInfo.SizeInMiB <= *secondType.MemoryInfo.SizeInMiB
 			}
-		case NameSortFlag:
+		case sortName:
 			if firstType.InstanceType == nil {
 				return false
 			} else if secondType.InstanceType == nil {

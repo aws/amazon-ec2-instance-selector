@@ -320,8 +320,8 @@ func main() {
 
 	// Pass in the list of instance type details to the SortInstanceTypes if you
 	// wish to sort the instances based on set filters.
-	sortFilter := selector.NameSortFlag
-	sortDirection := selector.SortAscendingFlag
+	sortFilter := "instance-type-name"
+	sortDirection := "ascending"
 	instanceTypesSlice, err = instanceSelector.SortInstanceTypes(instanceTypesSlice, &sortFilter, &sortDirection)
 	if err != nil {
 		fmt.Printf("Oh no, there was an error filtering instance types: %v", err)
@@ -329,10 +329,12 @@ func main() {
 	}
 
 	// Truncate results and format them for output with your desired formatting function.
+	// All formatting functions can be found here:
+	// https://github.com/aws/amazon-ec2-instance-selector/blob/main/pkg/selector/outputs/outputs.go
 	maxResults := 10
 	instanceTypesSlice, _, err = outputs.TruncateResults(&maxResults, instanceTypesSlice)
 	if err != nil {
-		fmt.Printf("Oh no, there was an error truncating instnace types: %v", err)
+		fmt.Printf("Oh no, there was an error truncating instance types: %v", err)
 		return
 	}
 	instanceTypes := outputs.SimpleInstanceTypeOutput(instanceTypesSlice)

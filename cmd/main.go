@@ -119,6 +119,17 @@ const (
 	oneLineOutput   = "one-line"
 	simpleOutput    = "simple"
 	verboseOutput   = "verbose"
+
+	// Sorting constants
+
+	sortODPrice   = "on-demand-price"
+	sortSpotPrice = "spot-price"
+	sortVcpu      = "vcpu"
+	sortMemory    = "memory"
+	sortName      = "instance-type-name"
+
+	sortAscending  = "ascending"
+	sortDescending = "descending"
 )
 
 var (
@@ -150,16 +161,16 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	}
 
 	cliSortCriteria := []string{
-		selector.ODPriceSortFlag,
-		selector.SpotPriceSortFlag,
-		selector.VcpuSortFlag,
-		selector.MemorySortFlag,
-		selector.NameSortFlag,
+		sortODPrice,
+		sortSpotPrice,
+		sortVcpu,
+		sortMemory,
+		sortName,
 	}
 
 	cliSortDirections := []string{
-		selector.SortAscendingFlag,
-		selector.SortDescendingFlag,
+		sortAscending,
+		sortDescending,
 	}
 
 	// Registers flags with specific input types from the cli pkg
@@ -226,8 +237,8 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	cli.ConfigBoolFlag(verbose, cli.StringMe("v"), nil, "Verbose - will print out full instance specs")
 	cli.ConfigBoolFlag(help, cli.StringMe("h"), nil, "Help")
 	cli.ConfigBoolFlag(version, nil, nil, "Prints CLI version")
-	cli.ConfigStringOptionsFlag(sortDirection, nil, cli.StringMe(selector.SortAscendingFlag), fmt.Sprintf("Specify the direction to sort in (%s)", strings.Join(cliSortDirections, ", ")), cliSortDirections)
-	cli.ConfigStringOptionsFlag(sortFilter, nil, cli.StringMe(selector.NameSortFlag), fmt.Sprintf("Specify the field to sort by (%s)", strings.Join(cliSortCriteria, ", ")), cliSortCriteria)
+	cli.ConfigStringOptionsFlag(sortDirection, nil, cli.StringMe(sortAscending), fmt.Sprintf("Specify the direction to sort in (%s)", strings.Join(cliSortDirections, ", ")), cliSortDirections)
+	cli.ConfigStringOptionsFlag(sortFilter, nil, cli.StringMe(sortName), fmt.Sprintf("Specify the field to sort by (%s)", strings.Join(cliSortCriteria, ", ")), cliSortCriteria)
 
 	// Parses the user input with the registered flags and runs type specific validation on the user input
 	flags, err := cli.ParseAndValidateFlags()
