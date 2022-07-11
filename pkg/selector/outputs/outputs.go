@@ -26,24 +26,6 @@ import (
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/instancetypes"
 )
 
-// TruncateResults is used to prepare a list of details for output by truncating the number of results
-// in the list to have at most maxResults elements. Returns the truncated list of instance types and
-// the number of truncated items.
-func TruncateResults(maxResults *int, instanceTypeInfoSlice []*instancetypes.Details) ([]*instancetypes.Details, int, error) {
-	if maxResults == nil {
-		return instanceTypeInfoSlice, 0, nil
-	} else if *maxResults < 0 {
-		return nil, 0, fmt.Errorf("negative max results value")
-	}
-
-	upperIndex := *maxResults
-	if *maxResults > len(instanceTypeInfoSlice) {
-		upperIndex = len(instanceTypeInfoSlice)
-	}
-
-	return instanceTypeInfoSlice[0:upperIndex], len(instanceTypeInfoSlice) - upperIndex, nil
-}
-
 // SimpleInstanceTypeOutput is an OutputFn which outputs a slice of instance type names
 func SimpleInstanceTypeOutput(instanceTypeInfoSlice []*instancetypes.Details) []string {
 	instanceTypeStrings := []string{}
@@ -53,7 +35,7 @@ func SimpleInstanceTypeOutput(instanceTypeInfoSlice []*instancetypes.Details) []
 	return instanceTypeStrings
 }
 
-// VerboseInstanceTypeOutput is an OutputFn which returns a list of full instance specs
+// VerboseInstanceTypeOutput is an OutputFn which outputs a slice of instance type names
 func VerboseInstanceTypeOutput(instanceTypeInfoSlice []*instancetypes.Details) []string {
 	output, err := json.MarshalIndent(instanceTypeInfoSlice, "", "    ")
 	if err != nil {
@@ -192,7 +174,7 @@ func TableOutputWide(instanceTypeInfoSlice []*instancetypes.Details) []string {
 	return []string{buf.String()}
 }
 
-// OneLineOutput is an output function which returns the instance type names on a single line separated by commas
+// OneLineOutput is an output function which prints the instance type names on a single line separated by commas
 func OneLineOutput(instanceTypeInfoSlice []*instancetypes.Details) []string {
 	instanceTypeNames := []string{}
 	for _, instanceType := range instanceTypeInfoSlice {
