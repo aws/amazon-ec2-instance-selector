@@ -23,7 +23,6 @@ import (
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/instancetypes"
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/selector/outputs"
 	h "github.com/aws/amazon-ec2-instance-selector/v2/pkg/test"
-	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ec2"
 )
 
@@ -119,51 +118,4 @@ func TestOneLineOutput(t *testing.T) {
 
 	instanceTypeOut = outputs.OneLineOutput(nil)
 	h.Assert(t, len(instanceTypeOut) == 0, "Should return 0 instance types when passed nil")
-}
-
-func TestTruncateResults(t *testing.T) {
-	instanceTypes := getInstanceTypes(t, "25_instances.json")
-
-	// test 0 for max results
-	maxResults := aws.Int(0)
-	truncatedResult, numTrucated, err := outputs.TruncateResults(maxResults, instanceTypes)
-	h.Ok(t, err)
-	h.Assert(t, len(truncatedResult) == 0, fmt.Sprintf("Should return 0 instance types since max results is set to %d, but only %d are returned in total", *maxResults, len(truncatedResult)))
-	h.Assert(t, numTrucated == 25, fmt.Sprintf("Should truncate 25 results, but actually truncated: %d results", numTrucated))
-
-	// test 1 for max results
-	maxResults = aws.Int(1)
-	truncatedResult, numTrucated, err = outputs.TruncateResults(maxResults, instanceTypes)
-	h.Ok(t, err)
-	h.Assert(t, len(truncatedResult) == 1, fmt.Sprintf("Should return 1 instance type since max results is set to %d, but only %d are returned in total", *maxResults, len(truncatedResult)))
-	h.Assert(t, numTrucated == 24, fmt.Sprintf("Should truncate 24 results, but actually truncated: %d results", numTrucated))
-
-	// test 30 for max results
-	maxResults = aws.Int(30)
-	truncatedResult, numTrucated, err = outputs.TruncateResults(maxResults, instanceTypes)
-	h.Ok(t, err)
-	h.Assert(t, len(truncatedResult) == 25, fmt.Sprintf("Should return 25 instance types since max results is set to %d but only %d are returned in total", *maxResults, len(truncatedResult)))
-	h.Assert(t, numTrucated == 0, fmt.Sprintf("Should truncate 0 results, but actually truncated: %d results", numTrucated))
-}
-
-func TestFormatInstanceTypes_NegativeMaxResults(t *testing.T) {
-	instanceTypes := getInstanceTypes(t, "25_instances.json")
-
-	maxResults := aws.Int(-1)
-	formattedResult, numTrucated, err := outputs.TruncateResults(maxResults, instanceTypes)
-
-	h.Assert(t, err != nil, "An error should be returned")
-	h.Assert(t, formattedResult == nil, fmt.Sprintf("returned list should be nil, but it is actually: %s", outputs.OneLineOutput(formattedResult)))
-	h.Assert(t, numTrucated == 0, fmt.Sprintf("No results should be truncated, but %d results were truncated", numTrucated))
-}
-
-func TestFormatInstanceTypes_NilMaxResults(t *testing.T) {
-	instanceTypes := getInstanceTypes(t, "25_instances.json")
-
-	var maxResults *int = nil
-	formattedResult, numTrucated, err := outputs.TruncateResults(maxResults, instanceTypes)
-
-	h.Ok(t, err)
-	h.Assert(t, len(formattedResult) == 25, fmt.Sprintf("Should return 25 instance types since max results is set to nil but only %d are returned in total", len(formattedResult)))
-	h.Assert(t, numTrucated == 0, fmt.Sprintf("No results should be truncated, but actually truncated: %d results", numTrucated))
 }
