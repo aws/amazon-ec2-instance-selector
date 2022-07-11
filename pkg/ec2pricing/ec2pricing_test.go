@@ -75,7 +75,7 @@ func setupMock(t *testing.T, api string, file string) mockedPricing {
 		err = json.Unmarshal(mockFile, &productsMap)
 		h.Assert(t, err == nil, "Error parsing mock json file contents "+mockFilename)
 		productsOutput := pricing.GetProductsOutput{
-			PriceList: []aws.JSONValue{productsMap},
+			PriceList: []*string{aws.String(string(mockFile))},
 		}
 		return mockedPricing{
 			GetProductsPagesResp: productsOutput,
