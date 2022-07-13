@@ -30,6 +30,7 @@ import (
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/selector/outputs"
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/sorter"
 	"github.com/aws/aws-sdk-go/aws/session"
+	tea "github.com/charmbracelet/bubbletea"
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"go.uber.org/multierr"
@@ -47,6 +48,7 @@ const (
 	tableOutput     = "table"
 	tableWideOutput = "table-wide"
 	oneLine         = "one-line"
+	bubbleTeaOutput = "bubble-tea"
 )
 
 // Filter Flag Constants
@@ -170,6 +172,7 @@ Full docs can be found at github.com/aws/amazon-` + binName
 		tableOutput,
 		tableWideOutput,
 		oneLine,
+		bubbleTeaOutput,
 	}
 	resultsOutputFn := outputs.SimpleInstanceTypeOutput
 
@@ -421,47 +424,52 @@ Full docs can be found at github.com/aws/amazon-` + binName
 		sortField = &sortFieldShorthandPath
 	}
 
-	outputFn := getOutputFn(outputFlag, selector.InstanceTypesOutputFn(resultsOutputFn))
-	var instanceTypes []string
-	var itemsTruncated int
+	// store maxResults since we want to fetch instance types without truncating results
+	prevMaxResults := filters.MaxResults
+	filters.MaxResults = nil
+	instanceTypesDetails, err := instanceSelector.FilterVerbose(filters)
+	if err != nil {
+		fmt.Printf("An error occurred when filtering instance types: %v", err)
+		os.Exit(1)
+	}
 
+	// filtering already sorts by name in ascending order, so only sort if another sort field or
+	// direction is selected
 	sortDirection := cli.StringMe(flags[sortDirection])
-	if *sortField == instanceNamePath && (*sortDirection == sortAscending || *sortDirection == sortAsc) {
-		// filter already sorts in ascending order by name
-		instanceTypes, itemsTruncated, err = instanceSelector.FilterWithOutput(filters, outputFn)
-		if err != nil {
-			fmt.Printf("An error occurred when filtering instance types: %v", err)
-			os.Exit(1)
-		}
-		if len(instanceTypes) == 0 {
-			log.Println("The criteria was too narrow and returned no valid instance types. Consider broadening your criteria so that more instance types are returned.")
-			os.Exit(1)
-		}
-	} else {
-		// fetch instance types without truncating results
-		prevMaxResults := filters.MaxResults
-		filters.MaxResults = nil
-		instanceTypeDetails, err := instanceSelector.FilterVerbose(filters)
-		if err != nil {
-			fmt.Printf("An error occurred when filtering instance types: %v", err)
-			os.Exit(1)
-		}
-
-		instanceTypeDetails, err = sorter.Sort(instanceTypeDetails, *sortField, *sortDirection)
+	if *sortField != instanceNamePath && *sortDirection != sortAscending && *sortDirection != sortAsc {
+		instanceTypesDetails, err = sorter.Sort(instanceTypesDetails, *sortField, *sortDirection)
 		if err != nil {
 			fmt.Printf("Sorting error: %v", err)
 			os.Exit(1)
 		}
+	}
+
+	// handle output format
+	var itemsTruncated int
+	var instanceTypes []string
+	if outputFlag != nil && *outputFlag == bubbleTeaOutput {
+		// TODO: clean this bubble tea thing up (add else instead of early returning)
+		p := tea.NewProgram((outputs.NewBubbleTeaModel(instanceTypesDetails)))
+		if err := p.Start(); err != nil {
+			fmt.Printf("An error occurred when starting bubble tea: %v", err)
+			os.Exit(1)
+		}
+
+		shutdown()
+		return
+	} else {
+		// handle regular output modes
 
 		// truncate instance types based on user passed in maxResults
-		instanceTypeDetails, itemsTruncated = truncateResults(prevMaxResults, instanceTypeDetails)
-		if len(instanceTypeDetails) == 0 {
+		instanceTypesDetails, itemsTruncated = truncateResults(prevMaxResults, instanceTypesDetails)
+		if len(instanceTypesDetails) == 0 {
 			log.Println("The criteria was too narrow and returned no valid instance types. Consider broadening your criteria so that more instance types are returned.")
 			os.Exit(1)
 		}
 
 		// format instance types for output
-		instanceTypes = outputFn(instanceTypeDetails)
+		outputFn := getOutputFn(outputFlag, selector.InstanceTypesOutputFn(resultsOutputFn))
+		instanceTypes = outputFn(instanceTypesDetails)
 	}
 
 	for _, instanceType := range instanceTypes {
