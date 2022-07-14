@@ -324,13 +324,15 @@ func main() {
 	sortDirection := "ascending"
 	instanceTypesSlice, err = instanceSelector.SortInstanceTypes(instanceTypesSlice, &sortFilter, &sortDirection)
 	if err != nil {
-		fmt.Printf("Oh no, there was an error filtering instance types: %v", err)
+		fmt.Printf("Oh no, there was an error sorting instance types: %v", err)
 		return
 	}
 
 	// Truncate results and format them for output with your desired formatting function.
 	// All formatting functions can be found here:
 	// https://github.com/aws/amazon-ec2-instance-selector/blob/main/pkg/selector/outputs/outputs.go
+	// Examples of formatted outputs can be found here:
+	// https://github.com/aws/amazon-ec2-instance-selector#examples
 	maxResults := 10
 	instanceTypesSlice, _, err = outputs.TruncateResults(&maxResults, instanceTypesSlice)
 	if err != nil {

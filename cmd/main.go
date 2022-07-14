@@ -124,7 +124,7 @@ const (
 
 	sortODPrice   = "on-demand-price"
 	sortSpotPrice = "spot-price"
-	sortVcpu      = "vcpu"
+	sortVCPU      = "vcpu"
 	sortMemory    = "memory"
 	sortName      = "instance-type-name"
 
@@ -163,7 +163,7 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	cliSortCriteria := []string{
 		sortODPrice,
 		sortSpotPrice,
-		sortVcpu,
+		sortVCPU,
 		sortMemory,
 		sortName,
 	}
@@ -369,6 +369,7 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	instanceTypeDetails, err = instanceSelector.SortInstanceTypes(instanceTypeDetails, sortFilterFlag, sortDirectionFlag)
 	if err != nil {
 		fmt.Printf("An error occurred when sorting instance types: %v", err)
+		os.Exit(1)
 	}
 
 	// format instance types as strings
