@@ -215,16 +215,28 @@ func (itf Selector) FilterInstanceTypes(filters Filters) ([]*instancetypes.Detai
 	return filteredInstanceTypes, nil
 }
 
-// isSortFilterValid determines whether the given sortFilter matches any
-// of the given valid flags
-func isSortFilterValid(sortFilter string, validFlags ...string) bool {
+// validateFilter determines whether the given sortFilter matches
+// one of the valid filter flags.
+func validateFilter(sortFilter *string) error {
+	if sortFilter == nil {
+		return fmt.Errorf("sort filter is nil")
+	}
+
+	validFlags := []string{
+		sortODPrice,
+		sortSpotPrice,
+		sortVCPU,
+		sortMemory,
+		sortName,
+	}
+
 	for _, flag := range validFlags {
-		if sortFilter == flag {
-			return true
+		if *sortFilter == flag {
+			return nil
 		}
 	}
 
-	return false
+	return fmt.Errorf("invalid sort filter: %s. (valid options: %s)", *sortFilter, strings.Join(validFlags, ", "))
 }
 
 // SortInstanceTypes accepts a list of instance type details, a sort filter flag, and a sort direction flag and
@@ -247,14 +259,12 @@ func (itf Selector) SortInstanceTypes(instanceTypes []*instancetypes.Details, so
 	case sortAscending:
 		isDescending = false
 	default:
-		return nil, fmt.Errorf("invalid sort direction: %s", *sortDirection)
+		return nil, fmt.Errorf("invalid sort direction: %s (valid options: %s, %s)", *sortDirection, sortAscending, sortDescending)
 	}
 
 	// validate filter flag
-	if sortFilter == nil {
-		return nil, fmt.Errorf("sort filter is nil")
-	} else if !isSortFilterValid(*sortFilter, sortODPrice, sortSpotPrice, sortVCPU, sortMemory, sortName) {
-		return nil, fmt.Errorf("invalid sort filter: %s", *sortFilter)
+	if err := validateFilter(sortFilter); err != nil {
+		return nil, err
 	}
 
 	// if sorting based on either on-demand or spot price, ensure the appropriate cache
