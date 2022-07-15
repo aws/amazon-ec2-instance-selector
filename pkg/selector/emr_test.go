@@ -46,6 +46,24 @@ func TestEMRDefaultService(t *testing.T) {
 	h.Assert(t, *transformedFilters.VirtualizationType == "hvm", "emr should only support hvm")
 }
 
+func TestFilters_Version5_33_0(t *testing.T) {
+	registry := selector.NewRegistry()
+	registry.Register("emr", &selector.EMR{})
+
+	filters := selector.Filters{
+		Service: &emr,
+	}
+
+	emrWithVersion := "emr-" + "5.33.0"
+	filters.Service = &emrWithVersion
+	transformedFilters, err := registry.ExecuteTransforms(filters)
+	h.Ok(t, err)
+	h.Assert(t, transformedFilters != filters, " Filters should have been modified")
+	h.Assert(t, *transformedFilters.RootDeviceType == "ebs", "emr should only supports ebs")
+	h.Assert(t, *transformedFilters.VirtualizationType == "hvm", "emr should only support hvm")
+	h.Assert(t, contains(*transformedFilters.InstanceTypes, "m6gd.xlarge"), "emr version 5.33.0 should include m6gd.xlarge")
+}
+
 func TestFilters_Version5_25_0(t *testing.T) {
 	registry := selector.NewRegistry()
 	registry.Register("emr", &selector.EMR{})
