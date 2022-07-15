@@ -215,9 +215,9 @@ func (itf Selector) FilterInstanceTypes(filters Filters) ([]*instancetypes.Detai
 	return filteredInstanceTypes, nil
 }
 
-// validateFilter determines whether the given sortFilter matches
+// validateSortFilter determines whether the given sortFilter matches
 // one of the valid filter flags.
-func validateFilter(sortFilter *string) error {
+func validateSortFilter(sortFilter *string) error {
 	if sortFilter == nil {
 		return fmt.Errorf("sort filter is nil")
 	}
@@ -263,7 +263,7 @@ func (itf Selector) SortInstanceTypes(instanceTypes []*instancetypes.Details, so
 	}
 
 	// validate filter flag
-	if err := validateFilter(sortFilter); err != nil {
+	if err := validateSortFilter(sortFilter); err != nil {
 		return nil, err
 	}
 
