@@ -180,7 +180,7 @@ func (EMR) isOnlyEMR_5_33_0_plus(instanceType string) bool {
 		"m5zn.",
 		"m6gd",
 		"r5b",
-		"r6gd"
+		"r6gd",
 	}
 	for _, prefix := range prefixes {
 		if strings.HasPrefix(instanceType, prefix) {
@@ -336,7 +336,7 @@ func (EMR) getAllEMRInstanceTypes() []string {
 		"m5d.4xlarge",
 		"m5d.8xlarge",
 		"m5d.xlarge",
-		"m5zn.12xlarge",		
+		"m5zn.12xlarge",
 		"m5zn.2xlarge",
 		"m5zn.3xlarge",
 		"m5zn.6xlarge",
@@ -403,7 +403,7 @@ func (EMR) getAllEMRInstanceTypes() []string {
 		"r5dn.2xlarge",
 		"r5dn.4xlarge",
 		"r5dn.8xlarge",
-		"r5dn.xlarge",		
+		"r5dn.xlarge",
 		"r6g.12xlarge",
 		"r6g.16xlarge",
 		"r6g.2xlarge",
