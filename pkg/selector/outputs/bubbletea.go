@@ -178,6 +178,7 @@ func NewBubbleTeaModel(instanceTypes []*instancetypes.Details) BubbleTeaModel {
 				lipgloss.NewStyle().
 					Align((lipgloss.Left)),
 			).
+			// TODO: maybe remove this because never used
 			WithMissingDataIndicatorStyled(table.StyledCell{
 				Style: lipgloss.NewStyle().Foreground(lipgloss.Color("#faa")),
 				Data:  "Not Fetched",
@@ -218,10 +219,19 @@ func (m BubbleTeaModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 // View is used by bubble tea to render the bubble tea model
 func (m BubbleTeaModel) View() string {
+	outputStr := strings.Builder{}
+
+	outputStr.WriteString(m.tableModel.View())
+	outputStr.WriteString("\n")
+
 	// TODO: add section explaining controls (similar to
 	// lighter colored text in default bubble tea example)
+	// TODO: put controls in the footer
+	controlsStr := "↑/↓ - up/down • ←/→  - left/right • shift + ↑/↓ - pg up/down"
+	controlsStr = lipgloss.NewStyle().Faint(true).Render(controlsStr)
+	outputStr.WriteString(controlsStr)
 
-	return m.tableModel.View()
+	return outputStr.String()
 }
 
 // TODO:
