@@ -1,9 +1,11 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/bytequantity"
+	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/cli/sorter"
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/selector"
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/selector/outputs"
 	"github.com/aws/aws-sdk-go/aws"
@@ -38,6 +40,11 @@ func main() {
 	// when creating the Filter struct
 	cpuArch := "x86_64"
 
+	priceRange := selector.Float64RangeFilter{
+		LowerBound: 0,
+		UpperBound: 100,
+	}
+
 	// Create a Filter struct with criteria you would like to filter
 	// The full struct definition can be found here for all of the supported filters:
 	// https://github.com/aws/amazon-ec2-instance-selector/blob/main/pkg/selector/types.go
@@ -45,6 +52,7 @@ func main() {
 		VCpusRange:      &vcpusRange,
 		MemoryRange:     &memoryRange,
 		CPUArchitecture: &cpuArch,
+		PricePerHour:    &priceRange,
 	}
 
 	// Pass the Filter struct to the FilteredInstanceTypes function of your
@@ -52,16 +60,6 @@ func main() {
 	instanceTypesSlice, err := instanceSelector.FilterInstanceTypes(filters)
 	if err != nil {
 		fmt.Printf("Oh no, there was an error getting instance types: %v", err)
-		return
-	}
-
-	// Pass in the list of instance type details to the SortInstanceTypes function
-	// if you wish to sort the instances based on set filters.
-	sortFilter := "instance-type-name"
-	sortDirection := "ascending"
-	instanceTypesSlice, err = instanceSelector.SortInstanceTypes(instanceTypesSlice, &sortFilter, &sortDirection)
-	if err != nil {
-		fmt.Printf("Oh no, there was an error sorting instance types: %v", err)
 		return
 	}
 
@@ -76,8 +74,37 @@ func main() {
 		fmt.Printf("Oh no, there was an error truncating instance types: %v", err)
 		return
 	}
-	instanceTypes := outputs.SimpleInstanceTypeOutput(instanceTypesSlice)
+
+	instanceTypesSlice[3].OnDemandPricePerHour = nil
+	instanceTypesSlice[8].OnDemandPricePerHour = nil
+
+	// Pass in the list of instance type details to the SortInstanceTypes function
+	// if you wish to sort the instances based on set filters.
+	sortFilter := "on-demand-price"
+	sortDirection := "descending"
+	sortedTypes, err := instanceSelector.SortInstanceTypes(instanceTypesSlice, &sortFilter, &sortDirection)
+	if err != nil {
+		fmt.Printf("Oh no, there was an error sorting instance types: %v", err)
+		return
+	}
+	instanceTypes := outputs.TableOutputWide(sortedTypes)
+
+	jsonTypeIndent, err := json.MarshalIndent(instanceTypesSlice[0], "", "    ")
+	fmt.Println(string(jsonTypeIndent))
+	fmt.Println()
 
 	// Print the returned instance types slice
 	fmt.Println(instanceTypes)
+
+	// TODO: remove this. This is for testing purposes
+	fmt.Println()
+
+	// jsonType, err := json.Marshal(instanceTypesSlice[0])
+	// fmt.Println(string(jsonType) + "\n")
+
+	sorter, err := sorter.NewSorter(instanceTypesSlice, "$.OndemandPricePerHour", sortDirection)
+	sorter.Sort()
+	types := sorter.InstanceTypes()
+	str := outputs.TableOutputWide(types)
+	fmt.Printf(str[0])
 }

@@ -24,6 +24,7 @@ import (
 	"time"
 
 	commandline "github.com/aws/amazon-ec2-instance-selector/v2/pkg/cli"
+	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/cli/sorter"
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/env"
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/instancetypes"
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/selector"
@@ -110,7 +111,7 @@ const (
 	cacheTTL      = "cache-ttl"
 	cacheDir      = "cache-dir"
 	sortDirection = "sort-direction"
-	sortFilter    = "sort-filter"
+	sortBy        = "sort-by"
 
 	// Output constants
 
@@ -122,6 +123,7 @@ const (
 
 	// Sorting constants
 
+	// TODO: remove
 	sortODPrice   = "on-demand-price"
 	sortSpotPrice = "spot-price"
 	sortVCPU      = "vcpu"
@@ -129,7 +131,9 @@ const (
 	sortName      = "instance-type-name"
 
 	sortAscending  = "ascending"
+	sortAsc        = "asc"
 	sortDescending = "descending"
+	sortDesc       = "desc"
 )
 
 var (
@@ -160,17 +164,20 @@ Full docs can be found at github.com/aws/amazon-` + binName
 		simpleOutput,
 	}
 
-	cliSortCriteria := []string{
-		sortODPrice,
-		sortSpotPrice,
-		sortVCPU,
-		sortMemory,
-		sortName,
-	}
+	// TODO: remove
+	// cliSortCriteria := []string{
+	// 	sortODPrice,
+	// 	sortSpotPrice,
+	// 	sortVCPU,
+	// 	sortMemory,
+	// 	sortName,
+	// }
 
 	cliSortDirections := []string{
 		sortAscending,
+		sortAsc,
 		sortDescending,
+		sortDesc,
 	}
 
 	// Registers flags with specific input types from the cli pkg
@@ -238,7 +245,9 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	cli.ConfigBoolFlag(help, cli.StringMe("h"), nil, "Help")
 	cli.ConfigBoolFlag(version, nil, nil, "Prints CLI version")
 	cli.ConfigStringOptionsFlag(sortDirection, nil, cli.StringMe(sortAscending), fmt.Sprintf("Specify the direction to sort in (%s)", strings.Join(cliSortDirections, ", ")), cliSortDirections)
-	cli.ConfigStringOptionsFlag(sortFilter, nil, cli.StringMe(sortName), fmt.Sprintf("Specify the field to sort by (%s)", strings.Join(cliSortCriteria, ", ")), cliSortCriteria)
+	// TODO: modify this to accept all strings and change help comment to include text about json path and defaults
+	// TODO: modify description to include json path and defaults
+	cli.ConfigStringFlag(sortBy, nil, cli.StringMe(sortName), "Specify the field to sort by", nil)
 
 	// Parses the user input with the registered flags and runs type specific validation on the user input
 	flags, err := cli.ParseAndValidateFlags()
@@ -321,13 +330,27 @@ Full docs can be found at github.com/aws/amazon-` + binName
 		DedicatedHosts:                   cli.BoolMe(flags[dedicatedHosts]),
 	}
 
-	// If output type is `table-wide`, cache both prices for better comparison in output,
-	//   even if the actual filter is applied on any one of those based on usage class
-	// Save time by hydrating all caches in parallel
+	sortFilterFlag := cli.StringMe(flags[sortBy])
+	lowercaseField := strings.ToLower(*sortFilterFlag)
 	outputFlag := cli.StringMe(flags[output])
 	if outputFlag != nil && *outputFlag == tableWideOutput {
+		// If output type is `table-wide`, cache both prices for better comparison in output,
+		//   even if the actual filter is applied on any one of those based on usage class
+		// Save time by hydrating all caches in parallel
 		if err := hydrateCaches(*instanceSelector); err != nil {
 			log.Printf("%v", err)
+		}
+	} else if strings.Contains(lowercaseField, "price") {
+		// if sorting based on either on-demand or spot price, ensure the appropriate cache
+		// has been refreshed.
+		if strings.Contains(lowercaseField, "ondemand") {
+			if err := instanceSelector.EC2Pricing.RefreshOnDemandCache(); err != nil {
+				log.Printf("there was a problem refreshing the on-demand pricing cache: %v", err)
+			}
+		} else if strings.Contains(lowercaseField, "spot") {
+			if err := instanceSelector.EC2Pricing.RefreshSpotCache(spotPricingDaysBack); err != nil {
+				log.Printf("there was a problem refreshing the spot pricing cache: %v", err)
+			}
 		}
 	}
 
@@ -364,9 +387,9 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	}
 
 	// sort instance types
-	sortFilterFlag := cli.StringMe(flags[sortFilter])
 	sortDirectionFlag := cli.StringMe(flags[sortDirection])
-	instanceTypeDetails, err = instanceSelector.SortInstanceTypes(instanceTypeDetails, sortFilterFlag, sortDirectionFlag)
+	instanceTypeDetails, err = sortInstanceTypes(instanceTypeDetails, sortFilterFlag, sortDirectionFlag)
+	//instanceTypeDetails, err = instanceSelector.SortInstanceTypes(instanceTypeDetails, sortFilterFlag, sortDirectionFlag)
 	if err != nil {
 		fmt.Printf("An error occurred when sorting instance types: %v", err)
 		os.Exit(1)
@@ -541,4 +564,49 @@ func hydrateCaches(instanceSelector selector.Selector) (errs error) {
 	}
 	wg.Wait()
 	return errs
+}
+
+func sortInstanceTypes(instanceTypes []*instancetypes.Details, sortField *string, sortDirection *string) ([]*instancetypes.Details, error) {
+	if sortField == nil {
+		return nil, fmt.Errorf("sortField is nil")
+	} else if sortDirection == nil {
+		return nil, fmt.Errorf("sortDirection is nil")
+	}
+
+	// TODO: can check for default constants here (perhaps a switch statement with default being the json path)
+	// Extra:
+	//		- If want to do constants in the way that Brandon recommended (for all quantity fields) then we can parse through
+	//		- fields before flags are created so that we can determine the default keys for quantity fields
+	//				- wait this wouldn't work because we don't have the instance types before the CLI flags are collected...
+	//				- OH WAIT we can just directly look at the fields of the struct perhaps? and then just allow
+	//				  quantities to be default flags and then use the type variable name as the name of the field?
+	//					- Maybe we can do this through reflect.Value?
+	//					- or maybe we can make a dummy instance type to look at as a json value?
+	// Helpful link: https://pkg.go.dev/reflect#Value
+
+	/*
+			maybe get default quantative values this way?
+
+			v := reflect.ValueOf(x)
+
+		    values := make([]interface{}, v.NumField())
+
+		    for i := 0; i < v.NumField(); i++ {
+		        values[i] = v.Field(i).Interface()
+		    }
+
+
+			// However, still need some way to get field name so that we can use that as a valid key for users
+
+			// perhaps can have a map that maps field names (keys) to json paths so that we can pass it into
+			// the sorter
+	*/
+
+	// TODO: check for actual json paths here
+	sorter, err := sorter.NewSorter(instanceTypes, *sortField, *sortDirection)
+	if err != nil {
+		return nil, err
+	}
+	sorter.Sort()
+	return sorter.InstanceTypes(), nil
 }

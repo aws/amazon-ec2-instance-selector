@@ -164,8 +164,8 @@ func TableOutputWide(instanceTypeInfoSlice []*instancetypes.Details) []string {
 
 		onDemandPricePerHourStr := "-Not Fetched-"
 		spotPricePerHourStr := "-Not Fetched-"
-		if instanceTypeInfo.OndemandPricePerHour != nil {
-			onDemandPricePerHourStr = fmt.Sprintf("$%s", formatFloat(*instanceTypeInfo.OndemandPricePerHour))
+		if instanceTypeInfo.OnDemandPricePerHour != nil {
+			onDemandPricePerHourStr = fmt.Sprintf("$%s", formatFloat(*instanceTypeInfo.OnDemandPricePerHour))
 		}
 		if instanceTypeInfo.SpotPrice != nil {
 			spotPricePerHourStr = fmt.Sprintf("$%s", formatFloat(*instanceTypeInfo.SpotPrice))

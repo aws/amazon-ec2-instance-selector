@@ -42,7 +42,7 @@ func getInstanceTypes(t *testing.T, file string) []*instancetypes.Details {
 	instanceTypesDetails := []*instancetypes.Details{}
 	for _, it := range dito.InstanceTypes {
 		odPrice := float64(0.53)
-		instanceTypesDetails = append(instanceTypesDetails, &instancetypes.Details{InstanceTypeInfo: *it, OndemandPricePerHour: &odPrice})
+		instanceTypesDetails = append(instanceTypesDetails, &instancetypes.Details{InstanceTypeInfo: *it, OnDemandPricePerHour: &odPrice})
 	}
 	return instanceTypesDetails
 }

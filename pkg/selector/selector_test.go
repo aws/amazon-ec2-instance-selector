@@ -650,7 +650,7 @@ func TestSortInstanceTypes_OnDemandPrice(t *testing.T) {
 	prices["a1.4xlarge"] = &price3
 	for _, v := range results {
 		name := v.InstanceTypeInfo.InstanceType
-		v.OndemandPricePerHour = prices[*name]
+		v.OnDemandPricePerHour = prices[*name]
 	}
 
 	// sort ascending

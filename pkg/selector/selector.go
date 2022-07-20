@@ -289,16 +289,16 @@ func (itf Selector) SortInstanceTypes(instanceTypes []*instancetypes.Details, so
 		// nil values can be bubbled up to the end of the list.
 		switch *sortFilter {
 		case sortODPrice:
-			if firstType.OndemandPricePerHour == nil {
+			if firstType.OnDemandPricePerHour == nil {
 				return false
-			} else if secondType.OndemandPricePerHour == nil {
+			} else if secondType.OnDemandPricePerHour == nil {
 				return true
 			}
 
 			if isDescending {
-				return *firstType.OndemandPricePerHour > *secondType.OndemandPricePerHour
+				return *firstType.OnDemandPricePerHour > *secondType.OnDemandPricePerHour
 			} else {
-				return *firstType.OndemandPricePerHour <= *secondType.OndemandPricePerHour
+				return *firstType.OnDemandPricePerHour <= *secondType.OnDemandPricePerHour
 			}
 		case sortSpotPrice:
 			if firstType.SpotPrice == nil {
@@ -386,7 +386,7 @@ func (itf Selector) prepareFilter(filters Filters, instanceTypeInfo instancetype
 			log.Printf("Could not retrieve instantaneous hourly on-demand price for instance type %s\n", instanceTypeName)
 		} else {
 			instanceTypeHourlyPriceOnDemand = &price
-			instanceTypeInfo.OndemandPricePerHour = instanceTypeHourlyPriceOnDemand
+			instanceTypeInfo.OnDemandPricePerHour = instanceTypeHourlyPriceOnDemand
 		}
 	}
 	if itf.EC2Pricing.SpotCacheCount() > 0 && contains(instanceTypeInfo.SupportedUsageClasses, "spot") {
