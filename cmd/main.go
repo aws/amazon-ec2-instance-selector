@@ -25,8 +25,10 @@ import (
 
 	commandline "github.com/aws/amazon-ec2-instance-selector/v2/pkg/cli"
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/env"
+	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/instancetypes"
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/selector"
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/selector/outputs"
+	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/sorter"
 	"github.com/aws/aws-sdk-go/aws/session"
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
@@ -103,15 +105,30 @@ const (
 
 // Configuration Flag Constants
 const (
-	maxResults = "max-results"
-	profile    = "profile"
-	help       = "help"
-	verbose    = "verbose"
-	version    = "version"
-	region     = "region"
-	output     = "output"
-	cacheTTL   = "cache-ttl"
-	cacheDir   = "cache-dir"
+	maxResults    = "max-results"
+	profile       = "profile"
+	help          = "help"
+	verbose       = "verbose"
+	version       = "version"
+	region        = "region"
+	output        = "output"
+	cacheTTL      = "cache-ttl"
+	cacheDir      = "cache-dir"
+	sortDirection = "sort-direction"
+	sortBy        = "sort-by"
+)
+
+// Sorting Constants
+const (
+	// Direction
+
+	sortAscending  = "ascending"
+	sortAsc        = "asc"
+	sortDescending = "descending"
+	sortDesc       = "desc"
+
+	// JSON field paths
+	instanceNamePath = "$.InstanceType"
 )
 
 var (
@@ -141,6 +158,15 @@ Full docs can be found at github.com/aws/amazon-` + binName
 		oneLine,
 	}
 	resultsOutputFn := outputs.SimpleInstanceTypeOutput
+
+	cliSortDirections := []string{
+		sortAscending,
+		sortAsc,
+		sortDescending,
+		sortDesc,
+	}
+
+	// TODO: map all cli flags to json paths for sorting
 
 	// Registers flags with specific input types from the cli pkg
 	// Filter Flags - These will be grouped at the top of the help flags
@@ -206,6 +232,8 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	cli.ConfigBoolFlag(verbose, cli.StringMe("v"), nil, "Verbose - will print out full instance specs")
 	cli.ConfigBoolFlag(help, cli.StringMe("h"), nil, "Help")
 	cli.ConfigBoolFlag(version, nil, nil, "Prints CLI version")
+	cli.ConfigStringOptionsFlag(sortDirection, nil, cli.StringMe(sortAscending), fmt.Sprintf("Specify the direction to sort in (%s)", strings.Join(cliSortDirections, ", ")), cliSortDirections)
+	cli.ConfigStringFlag(sortBy, nil, cli.StringMe(instanceNamePath), "Specify the field to sort by. Any quantity flag present in this CLI or a JSON path to the appropriate instancetype.Details struct is acceptable.", nil)
 
 	// Parses the user input with the registered flags and runs type specific validation on the user input
 	flags, err := cli.ParseAndValidateFlags()
@@ -237,6 +265,9 @@ Full docs can be found at github.com/aws/amazon-` + binName
 		}
 	}
 	registerShutdown(shutdown)
+
+	sortField := cli.StringMe(flags[sortBy])
+	lowercaseSortField := strings.ToLower(*sortField)
 	outputFlag := cli.StringMe(flags[output])
 	if outputFlag != nil && *outputFlag == tableWideOutput {
 		// If output type is `table-wide`, simply print both prices for better comparison,
@@ -245,18 +276,37 @@ Full docs can be found at github.com/aws/amazon-` + binName
 		if err := hydrateCaches(*instanceSelector); err != nil {
 			log.Printf("%v", err)
 		}
-	} else if flags[pricePerHour] != nil {
+	} else {
 		// Else, if price filters are applied, only hydrate the respective cache as we don't have to print the prices
-		if flags[usageClass] == nil || *cli.StringMe(flags[usageClass]) == "on-demand" {
-			if instanceSelector.EC2Pricing.OnDemandCacheCount() == 0 {
-				if err := instanceSelector.EC2Pricing.RefreshOnDemandCache(); err != nil {
-					log.Printf("There was a problem refreshing the on-demand pricing cache: %v", err)
+		if flags[pricePerHour] != nil {
+			if flags[usageClass] == nil || *cli.StringMe(flags[usageClass]) == "on-demand" {
+				if instanceSelector.EC2Pricing.OnDemandCacheCount() == 0 {
+					if err := instanceSelector.EC2Pricing.RefreshOnDemandCache(); err != nil {
+						log.Printf("There was a problem refreshing the on-demand pricing cache: %v", err)
+					}
+				}
+			} else {
+				if instanceSelector.EC2Pricing.SpotCacheCount() == 0 {
+					if err := instanceSelector.EC2Pricing.RefreshSpotCache(spotPricingDaysBack); err != nil {
+						log.Printf("There was a problem refreshing the spot pricing cache: %v", err)
+					}
 				}
 			}
-		} else {
-			if instanceSelector.EC2Pricing.SpotCacheCount() == 0 {
-				if err := instanceSelector.EC2Pricing.RefreshSpotCache(spotPricingDaysBack); err != nil {
-					log.Printf("There was a problem refreshing the spot pricing cache: %v", err)
+		}
+
+		// refresh appropriate caches if sorting by either spot or on demand pricing
+		if strings.Contains(lowercaseSortField, "price") {
+			if strings.Contains(lowercaseSortField, "spot") {
+				if instanceSelector.EC2Pricing.SpotCacheCount() == 0 {
+					if err := instanceSelector.EC2Pricing.RefreshSpotCache(spotPricingDaysBack); err != nil {
+						log.Printf("There was a problem refreshing the spot pricing cache: %v", err)
+					}
+				}
+			} else {
+				if instanceSelector.EC2Pricing.OnDemandCacheCount() == 0 {
+					if err := instanceSelector.EC2Pricing.RefreshOnDemandCache(); err != nil {
+						log.Printf("There was a problem refreshing the on-demand pricing cache: %v", err)
+					}
 				}
 			}
 		}
@@ -339,15 +389,55 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	}
 
 	outputFn := getOutputFn(outputFlag, selector.InstanceTypesOutputFn(resultsOutputFn))
+	var instanceTypes []string
+	var itemsTruncated int
 
-	instanceTypes, itemsTruncated, err := instanceSelector.FilterWithOutput(filters, outputFn)
-	if err != nil {
-		fmt.Printf("An error occurred when filtering instance types: %v", err)
-		os.Exit(1)
-	}
-	if len(instanceTypes) == 0 {
-		log.Println("The criteria was too narrow and returned no valid instance types. Consider broadening your criteria so that more instance types are returned.")
-		os.Exit(1)
+	sortDirection := cli.StringMe(flags[sortDirection])
+	if *sortField == instanceNamePath && (*sortDirection == sortAscending || *sortDirection == sortAsc) {
+		// filter already sorts in ascending order by name
+		instanceTypes, itemsTruncated, err = instanceSelector.FilterWithOutput(filters, outputFn)
+		if err != nil {
+			fmt.Printf("An error occurred when filtering instance types: %v", err)
+			os.Exit(1)
+		}
+		if len(instanceTypes) == 0 {
+			log.Println("The criteria was too narrow and returned no valid instance types. Consider broadening your criteria so that more instance types are returned.")
+			os.Exit(1)
+		}
+	} else {
+		// have to sort before truncation
+
+		// fetch instance types without truncating results
+		prevMaxResults := filters.MaxResults
+		filters.MaxResults = nil
+		instanceTypeDetails, err := instanceSelector.FilterVerbose(filters)
+		if err != nil {
+			fmt.Printf("An error occurred when filtering instance types: %v", err)
+			os.Exit(1)
+		}
+
+		// sort instance types
+		sorter, err := sorter.NewSorter(instanceTypeDetails, *sortField, *sortDirection)
+		if err != nil {
+			fmt.Printf("An error occurred when preparing to sort instance types: %v", err)
+			os.Exit(1)
+		}
+		err = sorter.Sort()
+		if err != nil {
+			fmt.Printf("An error occurred when sorting instance types: %v", err)
+			os.Exit(1)
+		}
+		instanceTypeDetails = sorter.InstanceTypes()
+
+		// truncate instance types based on user passed in maxResults
+		instanceTypeDetails, itemsTruncated = truncateResults(prevMaxResults, instanceTypeDetails)
+		if len(instanceTypeDetails) == 0 {
+			log.Println("The criteria was too narrow and returned no valid instance types. Consider broadening your criteria so that more instance types are returned.")
+			os.Exit(1)
+		}
+
+		// format instance types for output
+		instanceTypes = outputFn(instanceTypeDetails)
 	}
 
 	for _, instanceType := range instanceTypes {
@@ -486,4 +576,15 @@ func registerShutdown(shutdown func()) {
 		<-sigs
 		shutdown()
 	}()
+}
+
+func truncateResults(maxResults *int, instanceTypeInfoSlice []*instancetypes.Details) ([]*instancetypes.Details, int) {
+	if maxResults == nil {
+		return instanceTypeInfoSlice, 0
+	}
+	upperIndex := *maxResults
+	if *maxResults > len(instanceTypeInfoSlice) {
+		upperIndex = len(instanceTypeInfoSlice)
+	}
+	return instanceTypeInfoSlice[0:upperIndex], len(instanceTypeInfoSlice) - upperIndex
 }
