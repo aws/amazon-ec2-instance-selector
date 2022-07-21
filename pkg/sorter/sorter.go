@@ -21,14 +21,23 @@ import (
 	"strings"
 
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/instancetypes"
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/oliveagle/jsonpath"
 )
 
 const (
+	// Sort direction
+
 	sortAscending  = "ascending"
 	sortAsc        = "asc"
 	sortDescending = "descending"
 	sortDesc       = "desc"
+
+	// Not all fields can be reached through a json path (Ex: gpu count)
+	// so have special flags for such cases.
+
+	gpuCountField              = "gpus"
+	inferenceAcceleratorsField = "inference-accelerators"
 )
 
 // sorterNode represents a sortable instance type which holds the value
@@ -56,8 +65,8 @@ type sorterWrapper struct {
 // NewSorter creates a new Sorter object to be used to sort the given instance types
 // based on the sorting field and direction
 //
-// sortField is a JSON path to a field in the instancetypes.Details struct which represents
-// the field to sort instance types by. JSON path must start with "$" character (Ex: "$.MemoryInfo.SizeInMiB").
+// sortField is a json path to a field in the instancetypes.Details struct which represents
+// the field to sort instance types by. json path must start with "$" character (Ex: "$.MemoryInfo.SizeInMiB").
 //
 // sortDirection represents the direction to sort in. Valid options: "ascending", "asc", "descending", "desc".
 func NewSorter(instanceTypes []*instancetypes.Details, sortField string, sortDirection string) (*Sorter, error) {
@@ -92,6 +101,23 @@ func NewSorter(instanceTypes []*instancetypes.Details, sortField string, sortDir
 // newSorterNode creates a new sorterNode object which represents the given instance type
 // and can be used in sorting of instance types based on the given sortField
 func newSorterNode(instanceType *instancetypes.Details, sortField string) (*sorterNode, error) {
+	// some important fields (such as gpu count) can not be accessed directly in the instancetypes.Details
+	// struct, so we have special hard-coded flags to handle such cases
+	switch sortField {
+	case gpuCountField:
+		gpuCount := getTotalGpusCount(instanceType)
+		return &sorterNode{
+			instanceType: instanceType,
+			fieldValue:   reflect.ValueOf(gpuCount),
+		}, nil
+	case inferenceAcceleratorsField:
+		acceleratorsCount := getTotalAcceleratorsCount(instanceType)
+		return &sorterNode{
+			instanceType: instanceType,
+			fieldValue:   reflect.ValueOf(acceleratorsCount),
+		}, nil
+	}
+
 	// convert instance type into json
 	jsonInstanceType, err := json.Marshal(instanceType)
 	if err != nil {
@@ -110,7 +136,13 @@ func newSorterNode(instanceType *instancetypes.Details, sortField string) (*sort
 	// json path
 	result, err := jsonpath.JsonPathLookup(jsonData, sortField)
 	if err != nil {
-		return nil, err
+		// handle case where parent objects in path are null
+		// by setting result to nil
+		if err.Error() == "get attribute from null object" {
+			result = nil
+		} else {
+			return nil, fmt.Errorf("error during json path lookup: %v", err)
+		}
 	}
 
 	return &sorterNode{
@@ -256,4 +288,39 @@ func (s *Sorter) InstanceTypes() []*instancetypes.Details {
 	}
 
 	return instanceTypes
+}
+
+// helper functions for special sorting fields
+
+// getTotalGpusCount calculates the number of gpus in the given instance type
+func getTotalGpusCount(instanceType *instancetypes.Details) *int64 {
+	gpusInfo := instanceType.GpuInfo
+
+	if gpusInfo == nil {
+		return nil
+	}
+
+	total := aws.Int64(0)
+	for _, gpu := range gpusInfo.Gpus {
+		total = aws.Int64(*total + *gpu.Count)
+	}
+
+	return total
+}
+
+// getTotalAcceleratorsCount calculates the total number of inference accelerators
+// in the given instance type
+func getTotalAcceleratorsCount(instanceType *instancetypes.Details) *int64 {
+	acceleratorInfo := instanceType.InferenceAcceleratorInfo
+
+	if acceleratorInfo == nil {
+		return nil
+	}
+
+	total := aws.Int64(0)
+	for _, accel := range acceleratorInfo.Accelerators {
+		total = aws.Int64(*total + *accel.Count)
+	}
+
+	return total
 }

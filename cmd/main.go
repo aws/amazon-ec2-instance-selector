@@ -127,8 +127,22 @@ const (
 	sortDescending = "descending"
 	sortDesc       = "desc"
 
+	// Sorting Fields
+	spotPrice = "spot-price"
+	odPrice   = "on-demand-price"
+
 	// JSON field paths
-	instanceNamePath = "$.InstanceType"
+	instanceNamePath                   = "$.InstanceType"
+	vcpuPath                           = "$.VCpuInfo.DefaultVCpus"
+	memoryPath                         = "$.MemoryInfo.SizeInMiB"
+	gpuMemoryTotalPath                 = "$.GpuInfo.TotalGpuMemoryInMiB"
+	networkInterfacesPath              = "$.NetworkInfo.MaximumNetworkInterfaces"
+	spotPricePath                      = "$.SpotPrice"
+	odPricePath                        = "$.OndemandPricePerHour"
+	instanceStoragePath                = "$.InstanceStorageInfo.TotalSizeInGB"
+	ebsOptimizedBaselineBandwidthPath  = "$.EbsInfo.EbsOptimizedInfo.BaselineBandwidthInMbps"
+	ebsOptimizedBaselineThroughputPath = "$.EbsInfo.EbsOptimizedInfo.BaselineThroughputInMBps"
+	ebsOptimizedBaselineIOPSPath       = "$.EbsInfo.EbsOptimizedInfo.BaselineIops"
 )
 
 var (
@@ -166,7 +180,38 @@ Full docs can be found at github.com/aws/amazon-` + binName
 		sortDesc,
 	}
 
-	// TODO: map all cli flags to json paths for sorting
+	sortingShorthandFlags := []string{
+		vcpus,
+		memory,
+		gpuMemoryTotal,
+		networkInterfaces,
+		spotPrice,
+		odPrice,
+		instanceStorage,
+		ebsOptimizedBaselineBandwidth,
+		ebsOptimizedBaselineThroughput,
+		ebsOptimizedBaselineIOPS,
+		gpus,
+		inferenceAccelerators,
+	}
+
+	sortingShorthandPaths := []string{
+		vcpuPath,
+		memoryPath,
+		gpuMemoryTotalPath,
+		networkInterfacesPath,
+		spotPricePath,
+		odPricePath,
+		instanceStoragePath,
+		ebsOptimizedBaselineBandwidthPath,
+		ebsOptimizedBaselineThroughputPath,
+		ebsOptimizedBaselineIOPS,
+		gpus,
+		inferenceAccelerators,
+	}
+
+	// map quantity cli flags to json paths for easier cli sorting
+	sortingKeysMap := mapQuantityFlagsToPath(&sortingShorthandFlags, &sortingShorthandPaths)
 
 	// Registers flags with specific input types from the cli pkg
 	// Filter Flags - These will be grouped at the top of the help flags
@@ -233,7 +278,16 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	cli.ConfigBoolFlag(help, cli.StringMe("h"), nil, "Help")
 	cli.ConfigBoolFlag(version, nil, nil, "Prints CLI version")
 	cli.ConfigStringOptionsFlag(sortDirection, nil, cli.StringMe(sortAscending), fmt.Sprintf("Specify the direction to sort in (%s)", strings.Join(cliSortDirections, ", ")), cliSortDirections)
-	cli.ConfigStringFlag(sortBy, nil, cli.StringMe(instanceNamePath), "Specify the field to sort by. Any quantity flag present in this CLI or a JSON path to the appropriate instancetype.Details struct is acceptable.", nil)
+	cli.ConfigStringFlag(
+		sortBy,
+		nil,
+		cli.StringMe(instanceNamePath),
+		fmt.Sprintf(
+			"Specify the field to sort by. Any quantity flag present in this CLI (%s) or a JSON path to the appropriate field in the instancetype.Details struct is acceptable.",
+			strings.Join(sortingShorthandFlags, ", "),
+		),
+		nil,
+	)
 
 	// Parses the user input with the registered flags and runs type specific validation on the user input
 	flags, err := cli.ParseAndValidateFlags()
@@ -388,6 +442,12 @@ Full docs can be found at github.com/aws/amazon-` + binName
 		}
 	}
 
+	// determine if user used a shorthand for sorting flag
+	sortFieldShorthandPath, ok := sortingKeysMap[*sortField]
+	if ok {
+		sortField = &sortFieldShorthandPath
+	}
+
 	outputFn := getOutputFn(outputFlag, selector.InstanceTypesOutputFn(resultsOutputFn))
 	var instanceTypes []string
 	var itemsTruncated int
@@ -405,8 +465,6 @@ Full docs can be found at github.com/aws/amazon-` + binName
 			os.Exit(1)
 		}
 	} else {
-		// have to sort before truncation
-
 		// fetch instance types without truncating results
 		prevMaxResults := filters.MaxResults
 		filters.MaxResults = nil
@@ -587,4 +645,13 @@ func truncateResults(maxResults *int, instanceTypeInfoSlice []*instancetypes.Det
 		upperIndex = len(instanceTypeInfoSlice)
 	}
 	return instanceTypeInfoSlice[0:upperIndex], len(instanceTypeInfoSlice) - upperIndex
+}
+
+func mapQuantityFlagsToPath(flags *[]string, paths *[]string) map[string]string {
+	sortingFlagKeys := make(map[string]string)
+	for i := range *flags {
+		sortingFlagKeys[(*flags)[i]] = (*paths)[i]
+	}
+
+	return sortingFlagKeys
 }
