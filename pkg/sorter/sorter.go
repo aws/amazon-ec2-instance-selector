@@ -59,7 +59,7 @@ type Sorter struct {
 // based on the sorting field and direction
 //
 // sortField is a json path to a field in the instancetypes.Details struct which represents
-// the field to sort instance types by. json path must start with "$" character (Ex: "$.MemoryInfo.SizeInMiB").
+// the field to sort instance types by (Ex: ".MemoryInfo.SizeInMiB").
 //
 // sortDirection represents the direction to sort in. Valid options: "ascending", "asc", "descending", "desc".
 func NewSorter(instanceTypes []*instancetypes.Details, sortField string, sortDirection string) (*Sorter, error) {
@@ -72,6 +72,8 @@ func NewSorter(instanceTypes []*instancetypes.Details, sortField string, sortDir
 	default:
 		return nil, fmt.Errorf("invalid sort direction: %s (valid options: %s, %s, %s, %s)", sortDirection, sortAscending, sortAsc, sortDescending, sortDesc)
 	}
+
+	sortField = formatSortField(sortField)
 
 	// Create sorterNode objects for each instance type
 	sorters := []*sorterNode{}
@@ -89,6 +91,18 @@ func NewSorter(instanceTypes []*instancetypes.Details, sortField string, sortDir
 		sortField:    sortField,
 		isDescending: isDescending,
 	}, nil
+}
+
+// formatSortField reformats sortField to match the expected json path format
+// of the json lookup library. Format is unchanged if the sorting field
+// matches one of the special flags.
+func formatSortField(sortField string) string {
+	// check to see if the sorting field matched one of the special exceptions
+	if sortField == gpuCountField || sortField == inferenceAcceleratorsField {
+		return sortField
+	}
+
+	return "$" + sortField
 }
 
 // newSorterNode creates a new sorterNode object which represents the given instance type

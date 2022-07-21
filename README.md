@@ -148,7 +148,7 @@ t3a.medium     2       4          nitro       true         true                 
 
 **Sort by memory in descending order using JSON path**
 ```
-$ ec2-instance-selector -r us-east-1 -o table-wide --max-results 10 --sort-by $.MemoryInfo.SizeInMiB --sort-direction desc
+$ ec2-instance-selector -r us-east-1 -o table-wide --max-results 10 --sort-by .MemoryInfo.SizeInMiB --sort-direction desc
 Instance Type      VCPUs   Mem (GiB)  Hypervisor  Current Gen  Hibernation Support  CPU Arch  Network Performance  ENIs    GPUs    GPU Mem (GiB)  GPU Info  On-Demand Price/Hr  Spot Price/Hr (30d avg)  
 -------------      -----   ---------  ----------  -----------  -------------------  --------  -------------------  ----    ----    -------------  --------  ------------------  -----------------------  
 u-12tb1.112xlarge  448     12,288     nitro       true         false                x86_64    100 Gigabit          15      0       0                        $109.2              -Not Fetched-            

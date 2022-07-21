@@ -132,17 +132,17 @@ const (
 	odPrice   = "on-demand-price"
 
 	// JSON field paths
-	instanceNamePath                   = "$.InstanceType"
-	vcpuPath                           = "$.VCpuInfo.DefaultVCpus"
-	memoryPath                         = "$.MemoryInfo.SizeInMiB"
-	gpuMemoryTotalPath                 = "$.GpuInfo.TotalGpuMemoryInMiB"
-	networkInterfacesPath              = "$.NetworkInfo.MaximumNetworkInterfaces"
-	spotPricePath                      = "$.SpotPrice"
-	odPricePath                        = "$.OndemandPricePerHour"
-	instanceStoragePath                = "$.InstanceStorageInfo.TotalSizeInGB"
-	ebsOptimizedBaselineBandwidthPath  = "$.EbsInfo.EbsOptimizedInfo.BaselineBandwidthInMbps"
-	ebsOptimizedBaselineThroughputPath = "$.EbsInfo.EbsOptimizedInfo.BaselineThroughputInMBps"
-	ebsOptimizedBaselineIOPSPath       = "$.EbsInfo.EbsOptimizedInfo.BaselineIops"
+	instanceNamePath                   = ".InstanceType"
+	vcpuPath                           = ".VCpuInfo.DefaultVCpus"
+	memoryPath                         = ".MemoryInfo.SizeInMiB"
+	gpuMemoryTotalPath                 = ".GpuInfo.TotalGpuMemoryInMiB"
+	networkInterfacesPath              = ".NetworkInfo.MaximumNetworkInterfaces"
+	spotPricePath                      = ".SpotPrice"
+	odPricePath                        = ".OndemandPricePerHour"
+	instanceStoragePath                = ".InstanceStorageInfo.TotalSizeInGB"
+	ebsOptimizedBaselineBandwidthPath  = ".EbsInfo.EbsOptimizedInfo.BaselineBandwidthInMbps"
+	ebsOptimizedBaselineThroughputPath = ".EbsInfo.EbsOptimizedInfo.BaselineThroughputInMBps"
+	ebsOptimizedBaselineIOPSPath       = ".EbsInfo.EbsOptimizedInfo.BaselineIops"
 )
 
 var (
