@@ -3,7 +3,7 @@ module github.com/aws/amazon-ec2-instance-selector/v2
 go 1.18
 
 require (
-	github.com/aws/aws-sdk-go v1.44.51
+	github.com/aws/aws-sdk-go v1.43.31
 	github.com/blang/semver/v4 v4.0.0
 	github.com/imdario/mergo v0.3.11
 	github.com/mitchellh/go-homedir v1.1.0
