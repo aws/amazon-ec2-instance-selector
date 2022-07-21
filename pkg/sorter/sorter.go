@@ -55,13 +55,6 @@ type Sorter struct {
 	isDescending bool
 }
 
-// sorterWrapper is used to internally hide the implementation of the
-// sorting interface from users
-type sorterWrapper struct {
-	sorter *Sorter
-	err    error
-}
-
 // NewSorter creates a new Sorter object to be used to sort the given instance types
 // based on the sorting field and direction
 //
@@ -154,41 +147,21 @@ func newSorterNode(instanceType *instancetypes.Details, sortField string) (*sort
 // Sort the instance types in the Sorter based on the Sorter's sort field and
 // direction
 func (s *Sorter) Sort() error {
-	sortWrapper := sorterWrapper{
-		sorter: s,
-		err:    nil,
-	}
+	var sortErr error = nil
 
-	sort.Sort(&sortWrapper)
+	sort.Slice(s.sorters, func(i int, j int) bool {
+		valI := s.sorters[i].fieldValue
+		valJ := s.sorters[j].fieldValue
 
-	return sortWrapper.err
-}
+		less, err := isLess(valI, valJ, s.isDescending)
+		if err != nil {
+			sortErr = err
+		}
 
-// Len returns the number of sorter nodes in the Sorter
-func (sw *sorterWrapper) Len() int {
-	s := sw.sorter
-	return len(s.sorters)
-}
+		return less
+	})
 
-// Swap swaps the positions of the sorter nodes at indices i and j
-func (sw *sorterWrapper) Swap(i, j int) {
-	s := sw.sorter
-	s.sorters[i], s.sorters[j] = s.sorters[j], s.sorters[i]
-}
-
-// Less determines whether the value of the sorter node at index i
-// is less than the value of the sorter node at index j or not
-func (sw *sorterWrapper) Less(i, j int) bool {
-	s := sw.sorter
-	valI := s.sorters[i].fieldValue
-	valJ := s.sorters[j].fieldValue
-
-	less, err := isLess(valI, valJ, s.isDescending)
-	if err != nil {
-		sw.err = err
-	}
-
-	return less
+	return sortErr
 }
 
 // isLess determines whether the first value (valI) is less than the
