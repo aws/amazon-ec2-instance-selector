@@ -278,16 +278,7 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	cli.ConfigBoolFlag(help, cli.StringMe("h"), nil, "Help")
 	cli.ConfigBoolFlag(version, nil, nil, "Prints CLI version")
 	cli.ConfigStringOptionsFlag(sortDirection, nil, cli.StringMe(sortAscending), fmt.Sprintf("Specify the direction to sort in (%s)", strings.Join(cliSortDirections, ", ")), cliSortDirections)
-	cli.ConfigStringFlag(
-		sortBy,
-		nil,
-		cli.StringMe(instanceNamePath),
-		fmt.Sprintf(
-			"Specify the field to sort by. Any quantity flag present in this CLI (%s) or a JSON path to the appropriate field in the instancetype.Details struct is acceptable.",
-			strings.Join(sortingShorthandFlags, ", "),
-		),
-		nil,
-	)
+	cli.ConfigStringFlag(sortBy, nil, cli.StringMe(instanceNamePath), "Specify the field to sort by. Quantity flags present in this CLI (memory, gpus, etc.) or a JSON path to the appropriate instance type field (Ex: \".MemoryInfo.SizeInMiB\") is acceptable.", nil)
 
 	// Parses the user input with the registered flags and runs type specific validation on the user input
 	flags, err := cli.ParseAndValidateFlags()
