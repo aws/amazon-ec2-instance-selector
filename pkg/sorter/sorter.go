@@ -161,6 +161,10 @@ func newSorterNode(instanceType *instancetypes.Details, sortField string) (*sort
 // Sort the instance types in the Sorter based on the Sorter's sort field and
 // direction
 func (s *Sorter) Sort() error {
+	if len(s.sorters) <= 1 {
+		return nil
+	}
+
 	var sortErr error = nil
 
 	sort.Slice(s.sorters, func(i int, j int) bool {
