@@ -45,6 +45,9 @@ const (
 	colKeyGPUInfo            = "GPU Info"
 	colKeyODPrice            = "On-Demand Price/Hr"
 	colKeySpotPrice          = "Spot Price/Hr (30 day avg)"
+
+	// controls
+	controlsString = "Controls: ↑/↓ - up/down • ←/→  - left/right • z/x - pg up/down • q - quit"
 )
 
 var (
@@ -161,8 +164,8 @@ func NewBubbleTeaModel(instanceTypes []*instancetypes.Details) BubbleTeaModel {
 	keys := table.DefaultKeyMap()
 	keys.ScrollLeft.SetKeys("left")
 	keys.ScrollRight.SetKeys("right")
-	keys.PageDown.SetKeys("shift+down", "l", "pgdown")
-	keys.PageUp.SetKeys("shift+up", "h", "pgup")
+	keys.PageDown.SetKeys("x", "l", "pgdown")
+	keys.PageUp.SetKeys("z", "h", "pgup")
 
 	model := BubbleTeaModel{
 		tableModel: table.New(columns).
@@ -211,7 +214,8 @@ func (m BubbleTeaModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	m.tableModel, cmd = m.tableModel.Update(msg)
 
 	// update footer
-	footerStr := fmt.Sprintf("Page: %d/%d", m.tableModel.CurrentPage(), m.tableModel.MaxPages())
+	controlsStr := lipgloss.NewStyle().Faint(true).Render(controlsString)
+	footerStr := fmt.Sprintf("Page: %d/%d | %s", m.tableModel.CurrentPage(), m.tableModel.MaxPages(), controlsStr)
 	m.tableModel = m.tableModel.WithStaticFooter(footerStr)
 
 	return m, cmd
@@ -223,13 +227,6 @@ func (m BubbleTeaModel) View() string {
 
 	outputStr.WriteString(m.tableModel.View())
 	outputStr.WriteString("\n")
-
-	// TODO: add section explaining controls (similar to
-	// lighter colored text in default bubble tea example)
-	// TODO: put controls in the footer
-	controlsStr := "↑/↓ - up/down • ←/→  - left/right • shift + ↑/↓ - pg up/down"
-	controlsStr = lipgloss.NewStyle().Faint(true).Render(controlsStr)
-	outputStr.WriteString(controlsStr)
 
 	return outputStr.String()
 }
