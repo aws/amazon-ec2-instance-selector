@@ -464,18 +464,11 @@ Full docs can be found at github.com/aws/amazon-` + binName
 			os.Exit(1)
 		}
 
-		// sort instance types
-		sorter, err := sorter.NewSorter(instanceTypeDetails, *sortField, *sortDirection)
+		instanceTypeDetails, err = sorter.Sort(instanceTypeDetails, *sortField, *sortDirection)
 		if err != nil {
-			fmt.Printf("An error occurred when preparing to sort instance types: %v", err)
+			fmt.Printf("Sorting error: %v", err)
 			os.Exit(1)
 		}
-		err = sorter.Sort()
-		if err != nil {
-			fmt.Printf("An error occurred when sorting instance types: %v", err)
-			os.Exit(1)
-		}
-		instanceTypeDetails = sorter.InstanceTypes()
 
 		// truncate instance types based on user passed in maxResults
 		instanceTypeDetails, itemsTruncated = truncateResults(prevMaxResults, instanceTypeDetails)

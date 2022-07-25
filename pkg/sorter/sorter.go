@@ -47,12 +47,31 @@ type sorterNode struct {
 	fieldValue   reflect.Value
 }
 
-// Sorter is used to sort instance types based on a sorting field
+// sorter is used to sort instance types based on a sorting field
 // and direction
-type Sorter struct {
+type sorter struct {
 	sorters      []*sorterNode
 	sortField    string
 	isDescending bool
+}
+
+// Sort sorts the given instance types by the given field in the given direction
+//
+// sortField is a json path to a field in the instancetypes.Details struct which represents
+// the field to sort instance types by (Ex: ".MemoryInfo.SizeInMiB").
+//
+// sortDirection represents the direction to sort in. Valid options: "ascending", "asc", "descending", "desc".
+func Sort(instanceTypes []*instancetypes.Details, sortField string, sortDirection string) ([]*instancetypes.Details, error) {
+	sorter, err := newSorter(instanceTypes, sortField, sortDirection)
+	if err != nil {
+		return nil, fmt.Errorf("an error occurred when preparing to sort instance types: %v", err)
+	}
+
+	if err := sorter.sort(); err != nil {
+		return nil, fmt.Errorf("an error occurred when sorting instance types: %v", err)
+	}
+
+	return sorter.instanceTypes(), nil
 }
 
 // NewSorter creates a new Sorter object to be used to sort the given instance types
@@ -62,7 +81,7 @@ type Sorter struct {
 // the field to sort instance types by (Ex: ".MemoryInfo.SizeInMiB").
 //
 // sortDirection represents the direction to sort in. Valid options: "ascending", "asc", "descending", "desc".
-func NewSorter(instanceTypes []*instancetypes.Details, sortField string, sortDirection string) (*Sorter, error) {
+func newSorter(instanceTypes []*instancetypes.Details, sortField string, sortDirection string) (*sorter, error) {
 	var isDescending bool
 	switch sortDirection {
 	case sortDescending, sortDesc:
@@ -86,7 +105,7 @@ func NewSorter(instanceTypes []*instancetypes.Details, sortField string, sortDir
 		sorters = append(sorters, newSorter)
 	}
 
-	return &Sorter{
+	return &sorter{
 		sorters:      sorters,
 		sortField:    sortField,
 		isDescending: isDescending,
@@ -158,9 +177,9 @@ func newSorterNode(instanceType *instancetypes.Details, sortField string) (*sort
 	}, nil
 }
 
-// Sort the instance types in the Sorter based on the Sorter's sort field and
+// sort the instance types in the Sorter based on the Sorter's sort field and
 // direction
-func (s *Sorter) Sort() error {
+func (s *sorter) sort() error {
 	if len(s.sorters) <= 1 {
 		return nil
 	}
@@ -270,8 +289,8 @@ func isLess(valI, valJ reflect.Value, isDescending bool) (bool, error) {
 	}
 }
 
-// InstanceTypes returns the list of instance types held in the Sorter
-func (s *Sorter) InstanceTypes() []*instancetypes.Details {
+// instanceTypes returns the list of instance types held in the Sorter
+func (s *sorter) instanceTypes() []*instancetypes.Details {
 	instanceTypes := []*instancetypes.Details{}
 
 	for _, node := range s.sorters {
