@@ -69,121 +69,105 @@ func checkSortResults(instanceTypes []*instancetypes.Details, expectedResult []s
 
 // Tests
 
-func TestNewSorter_JSONPath(t *testing.T) {
+func TestSort_JSONPath(t *testing.T) {
 	instanceTypes := getInstanceTypeDetails(t, "3_instances.json")
 
-	sortField := ".MemoryInfo.SizeInMiB"
+	sortField := ".EbsInfo.EbsOptimizedInfo.BaselineBandwidthInMbps"
 	sortDirection := "asc"
 
-	result, err := sorter.NewSorter(instanceTypes, sortField, sortDirection)
+	sortedInstances, err := sorter.Sort(instanceTypes, sortField, sortDirection)
+	expectedResults := []string{
+		"a1.large",
+		"a1.2xlarge",
+		"a1.4xlarge",
+	}
 
 	h.Ok(t, err)
-	h.Assert(t, result != nil, "Returned sorter should not be nil")
+	h.Assert(t, checkSortResults(sortedInstances, expectedResults), fmt.Sprintf("Expected ascending order: [%s], but actual order: %s", strings.Join(expectedResults, ","), outputs.OneLineOutput(sortedInstances)))
 }
 
-func TestNewSorter_SpecialCases(t *testing.T) {
-	instanceTypes := getInstanceTypeDetails(t, "3_instances.json")
+func TestSort_SpecialCases(t *testing.T) {
+	instanceTypes := getInstanceTypeDetails(t, "4_special_cases.json")
 
 	// test gpus flag
 	sortField := "gpus"
 	sortDirection := "asc"
 
-	result, err := sorter.NewSorter(instanceTypes, sortField, sortDirection)
+	sortedInstances, err := sorter.Sort(instanceTypes, sortField, sortDirection)
+	expectedResults := []string{
+		"g3.4xlarge",
+		"g3.16xlarge",
+		"inf1.24xlarge",
+		"inf1.2xlarge",
+	}
 
 	h.Ok(t, err)
-	h.Assert(t, result != nil, "Returned sorter should not be nil")
+	h.Assert(t, checkSortResults(sortedInstances, expectedResults), fmt.Sprintf("Expected gpus order: [%s], but actual order: %s", strings.Join(expectedResults, ","), outputs.OneLineOutput(sortedInstances)))
 
 	// test inference accelerators flag
 	sortField = "inference-accelerators"
 
-	result, err = sorter.NewSorter(instanceTypes, sortField, sortDirection)
+	sortedInstances, err = sorter.Sort(instanceTypes, sortField, sortDirection)
+
+	expectedResults = []string{
+		"inf1.2xlarge",
+		"inf1.24xlarge",
+		"g3.16xlarge",
+		"g3.4xlarge",
+	}
 
 	h.Ok(t, err)
-	h.Assert(t, result != nil, "Returned sorter should not be nil")
+	h.Assert(t, checkSortResults(sortedInstances, expectedResults), fmt.Sprintf("Expected inference accelerators order: [%s], but actual order: %s", strings.Join(expectedResults, ","), outputs.OneLineOutput(sortedInstances)))
 }
 
-func TestNewSorter_OneElement(t *testing.T) {
+func TestSort_OneElement(t *testing.T) {
 	instanceTypes := getInstanceTypeDetails(t, "1_instance.json")
 
 	sortField := ".MemoryInfo.SizeInMiB"
 	sortDirection := "asc"
 
-	result, err := sorter.NewSorter(instanceTypes, sortField, sortDirection)
+	sortedInstances, err := sorter.Sort(instanceTypes, sortField, sortDirection)
+	expectedResults := []string{"a1.2xlarge"}
 
 	h.Ok(t, err)
-	h.Assert(t, result != nil, "Returned sorter should not be nil")
+	h.Assert(t, len(sortedInstances) == 1, fmt.Sprintf("Should only have 1 instance, but have: %d", len(sortedInstances)))
+	h.Assert(t, checkSortResults(sortedInstances, expectedResults), fmt.Sprintf("Expected order: [%s], but actual order: %s", strings.Join(expectedResults, ","), outputs.OneLineOutput(sortedInstances)))
 }
 
-func TestNewSorter_EmptyList(t *testing.T) {
+func TestSort_EmptyList(t *testing.T) {
 	instanceTypes := []*instancetypes.Details{}
 
 	sortField := ".MemoryInfo.SizeInMiB"
 	sortDirection := "asc"
 
-	result, err := sorter.NewSorter(instanceTypes, sortField, sortDirection)
+	sortedInstances, err := sorter.Sort(instanceTypes, sortField, sortDirection)
 
 	h.Ok(t, err)
-	h.Assert(t, result != nil, "Returned sorter should not be nil")
+	h.Assert(t, len(sortedInstances) == 0, fmt.Sprintf("sorter instance types list should be empty but actually has %d elements", len(sortedInstances)))
 }
 
-func TestNewSorter_InvalidSortField(t *testing.T) {
+func TestSort_InvalidSortField(t *testing.T) {
 	instanceTypes := getInstanceTypeDetails(t, "3_instances.json")
 
 	sortField := "fdsafdsafdjskalfjlsf #@"
 	sortDirection := "asc"
 
-	result, err := sorter.NewSorter(instanceTypes, sortField, sortDirection)
+	sortedInstances, err := sorter.Sort(instanceTypes, sortField, sortDirection)
 
 	h.Assert(t, err != nil, "An error should be returned")
-	h.Assert(t, result == nil, "Returned sorter should be nil")
+	h.Assert(t, sortedInstances == nil, "Returned sorter should be nil")
 }
 
-func TestNewSorter_InvalidDirection(t *testing.T) {
+func TestSort_InvalidDirection(t *testing.T) {
 	instanceTypes := getInstanceTypeDetails(t, "3_instances.json")
 
 	sortField := ".MemoryInfo.SizeInMiB"
 	sortDirection := "fdsa hfd j2 $#21"
 
-	result, err := sorter.NewSorter(instanceTypes, sortField, sortDirection)
+	sortedInstances, err := sorter.Sort(instanceTypes, sortField, sortDirection)
 
 	h.Assert(t, err != nil, "An error should be returned")
-	h.Assert(t, result == nil, "Returned sorter should be nil")
-}
-
-func TestInstanceTypes(t *testing.T) {
-	instanceTypes := getInstanceTypeDetails(t, "3_instances.json")
-
-	sortField := ".MemoryInfo.SizeInMiB"
-	sortDirection := "asc"
-
-	result, err := sorter.NewSorter(instanceTypes, sortField, sortDirection)
-	h.Ok(t, err)
-
-	sorterInstances := result.InstanceTypes()
-
-	h.Assert(t,
-		len(sorterInstances) == len(instanceTypes),
-		fmt.Sprintf("returned instance types list should have %d elements but actually has %d elements.",
-			len(instanceTypes),
-			len(sorterInstances),
-		),
-	)
-	for i := range instanceTypes {
-		h.Assert(t,
-			*instanceTypes[i].InstanceType == *sorterInstances[i].InstanceType,
-			fmt.Sprintf("Instance types in sorter (%s) should be the same as original list (%s).",
-				strings.Join(outputs.OneLineOutput(instanceTypes), ", "),
-				strings.Join(outputs.OneLineOutput(sorterInstances), ", "),
-			),
-		)
-	}
-	h.Assert(t,
-		len(sorterInstances) == len(instanceTypes),
-		fmt.Sprintf("Instance types in sorter (%s) should be the same as original list (%s).",
-			strings.Join(outputs.OneLineOutput(instanceTypes), ", "),
-			strings.Join(outputs.OneLineOutput(sorterInstances), ", "),
-		),
-	)
+	h.Assert(t, sortedInstances == nil, "Returned sorter should be nil")
 }
 
 func TestSort_Number(t *testing.T) {
@@ -197,36 +181,28 @@ func TestSort_Number(t *testing.T) {
 	sortField := ".MemoryInfo.SizeInMiB"
 	sortDirection := "asc"
 
-	result, err := sorter.NewSorter(instanceTypes, sortField, sortDirection)
-	h.Ok(t, err)
-
-	err = result.Sort()
-	h.Ok(t, err)
-
-	sorterInstances := result.InstanceTypes()
+	sortedInstances, err := sorter.Sort(instanceTypes, sortField, sortDirection)
 	expectedResults := []string{
 		"a1.large",
 		"a1.2xlarge",
 		"a1.4xlarge",
 	}
-	h.Assert(t, checkSortResults(sorterInstances, expectedResults), fmt.Sprintf("Expected ascending order: [%s], but actual order: %s", strings.Join(expectedResults, ","), outputs.OneLineOutput(sorterInstances)))
+
+	h.Ok(t, err)
+	h.Assert(t, checkSortResults(sortedInstances, expectedResults), fmt.Sprintf("Expected ascending order: [%s], but actual order: %s", strings.Join(expectedResults, ","), outputs.OneLineOutput(sortedInstances)))
 
 	// test descending
 	sortDirection = "desc"
 
-	result, err = sorter.NewSorter(instanceTypes, sortField, sortDirection)
-	h.Ok(t, err)
-
-	err = result.Sort()
-	h.Ok(t, err)
-
-	sorterInstances = result.InstanceTypes()
+	sortedInstances, err = sorter.Sort(instanceTypes, sortField, sortDirection)
 	expectedResults = []string{
 		"a1.4xlarge",
 		"a1.2xlarge",
 		"a1.large",
 	}
-	h.Assert(t, checkSortResults(sorterInstances, expectedResults), fmt.Sprintf("Expected descending order: [%s], but actual order: %s", strings.Join(expectedResults, ","), outputs.OneLineOutput(sorterInstances)))
+
+	h.Ok(t, err)
+	h.Assert(t, checkSortResults(sortedInstances, expectedResults), fmt.Sprintf("Expected descending order: [%s], but actual order: %s", strings.Join(expectedResults, ","), outputs.OneLineOutput(sortedInstances)))
 }
 
 func TestSort_String(t *testing.T) {
@@ -236,36 +212,28 @@ func TestSort_String(t *testing.T) {
 	sortField := ".InstanceType"
 	sortDirection := "asc"
 
-	result, err := sorter.NewSorter(instanceTypes, sortField, sortDirection)
-	h.Ok(t, err)
-
-	err = result.Sort()
-	h.Ok(t, err)
-
-	sorterInstances := result.InstanceTypes()
+	sortedInstances, err := sorter.Sort(instanceTypes, sortField, sortDirection)
 	expectedResults := []string{
 		"a1.2xlarge",
 		"a1.4xlarge",
 		"a1.large",
 	}
-	h.Assert(t, checkSortResults(sorterInstances, expectedResults), fmt.Sprintf("Expected ascending order: [%s], but actual order: %s", strings.Join(expectedResults, ","), outputs.OneLineOutput(sorterInstances)))
+
+	h.Ok(t, err)
+	h.Assert(t, checkSortResults(sortedInstances, expectedResults), fmt.Sprintf("Expected ascending order: [%s], but actual order: %s", strings.Join(expectedResults, ","), outputs.OneLineOutput(sortedInstances)))
 
 	// test descending
 	sortDirection = "desc"
 
-	result, err = sorter.NewSorter(instanceTypes, sortField, sortDirection)
-	h.Ok(t, err)
-
-	err = result.Sort()
-	h.Ok(t, err)
-
-	sorterInstances = result.InstanceTypes()
+	sortedInstances, err = sorter.Sort(instanceTypes, sortField, sortDirection)
 	expectedResults = []string{
 		"a1.large",
 		"a1.4xlarge",
 		"a1.2xlarge",
 	}
-	h.Assert(t, checkSortResults(sorterInstances, expectedResults), fmt.Sprintf("Expected descending order: [%s], but actual order: %s", strings.Join(expectedResults, ","), outputs.OneLineOutput(sorterInstances)))
+
+	h.Ok(t, err)
+	h.Assert(t, checkSortResults(sortedInstances, expectedResults), fmt.Sprintf("Expected descending order: [%s], but actual order: %s", strings.Join(expectedResults, ","), outputs.OneLineOutput(sortedInstances)))
 }
 
 func TestSort_Invalid(t *testing.T) {
@@ -275,36 +243,28 @@ func TestSort_Invalid(t *testing.T) {
 	sortField := ".SpotPrice"
 	sortDirection := "asc"
 
-	result, err := sorter.NewSorter(instanceTypes, sortField, sortDirection)
-	h.Ok(t, err)
-
-	err = result.Sort()
-	h.Ok(t, err)
-
-	sorterInstances := result.InstanceTypes()
+	sortedInstances, err := sorter.Sort(instanceTypes, sortField, sortDirection)
 	expectedResults := []string{
 		"a1.large",
 		"a1.2xlarge",
 		"a1.4xlarge",
 	}
-	h.Assert(t, checkSortResults(sorterInstances, expectedResults), fmt.Sprintf("Expected ascending order: [%s], but actual order: %s", strings.Join(expectedResults, ","), outputs.OneLineOutput(sorterInstances)))
+
+	h.Ok(t, err)
+	h.Assert(t, checkSortResults(sortedInstances, expectedResults), fmt.Sprintf("Expected ascending order: [%s], but actual order: %s", strings.Join(expectedResults, ","), outputs.OneLineOutput(sortedInstances)))
 
 	// test descending
 	sortDirection = "desc"
 
-	result, err = sorter.NewSorter(instanceTypes, sortField, sortDirection)
-	h.Ok(t, err)
-
-	err = result.Sort()
-	h.Ok(t, err)
-
-	sorterInstances = result.InstanceTypes()
+	sortedInstances, err = sorter.Sort(instanceTypes, sortField, sortDirection)
 	expectedResults = []string{
 		"a1.2xlarge",
 		"a1.large",
 		"a1.4xlarge",
 	}
-	h.Assert(t, checkSortResults(sorterInstances, expectedResults), fmt.Sprintf("Expected descending order: [%s], but actual order: %s", strings.Join(expectedResults, ","), outputs.OneLineOutput(sorterInstances)))
+
+	h.Ok(t, err)
+	h.Assert(t, checkSortResults(sortedInstances, expectedResults), fmt.Sprintf("Expected descending order: [%s], but actual order: %s", strings.Join(expectedResults, ","), outputs.OneLineOutput(sortedInstances)))
 }
 
 func TestSort_Unsortable(t *testing.T) {
@@ -313,11 +273,10 @@ func TestSort_Unsortable(t *testing.T) {
 	sortField := ".NetworkInfo"
 	sortDirection := "asc"
 
-	result, err := sorter.NewSorter(instanceTypes, sortField, sortDirection)
-	h.Ok(t, err)
+	sortedInstances, err := sorter.Sort(instanceTypes, sortField, sortDirection)
 
-	err = result.Sort()
 	h.Assert(t, err != nil, "An error should be returned")
+	h.Assert(t, sortedInstances == nil, "returned instances list should be nil")
 }
 
 func TestSort_Pointer(t *testing.T) {
@@ -326,11 +285,10 @@ func TestSort_Pointer(t *testing.T) {
 	sortField := ".EbsInfo"
 	sortDirection := "asc"
 
-	result, err := sorter.NewSorter(instanceTypes, sortField, sortDirection)
-	h.Ok(t, err)
+	sortedInstances, err := sorter.Sort(instanceTypes, sortField, sortDirection)
 
-	err = result.Sort()
 	h.Assert(t, err != nil, "An error should be returned")
+	h.Assert(t, sortedInstances == nil, "returned instances list should be nil")
 }
 
 func TestSort_Bool(t *testing.T) {
@@ -340,68 +298,26 @@ func TestSort_Bool(t *testing.T) {
 	sortField := ".HibernationSupported"
 	sortDirection := "asc"
 
-	result, err := sorter.NewSorter(instanceTypes, sortField, sortDirection)
-	h.Ok(t, err)
-
-	err = result.Sort()
-	h.Ok(t, err)
-
-	sorterInstances := result.InstanceTypes()
+	sortedInstances, err := sorter.Sort(instanceTypes, sortField, sortDirection)
 	expectedResults := []string{
 		"a1.4xlarge",
 		"a1.2xlarge",
 		"a1.large",
 	}
-	h.Assert(t, checkSortResults(sorterInstances, expectedResults), fmt.Sprintf("Expected ascending order: [%s], but actual order: %s", strings.Join(expectedResults, ","), outputs.OneLineOutput(sorterInstances)))
+
+	h.Ok(t, err)
+	h.Assert(t, checkSortResults(sortedInstances, expectedResults), fmt.Sprintf("Expected ascending order: [%s], but actual order: %s", strings.Join(expectedResults, ","), outputs.OneLineOutput(sortedInstances)))
 
 	// test descending
 	sortDirection = "desc"
 
-	result, err = sorter.NewSorter(instanceTypes, sortField, sortDirection)
-	h.Ok(t, err)
-
-	err = result.Sort()
-	h.Ok(t, err)
-
-	sorterInstances = result.InstanceTypes()
+	sortedInstances, err = sorter.Sort(instanceTypes, sortField, sortDirection)
 	expectedResults = []string{
 		"a1.large",
 		"a1.2xlarge",
 		"a1.4xlarge",
 	}
-	h.Assert(t, checkSortResults(sorterInstances, expectedResults), fmt.Sprintf("Expected descending order: [%s], but actual order: %s", strings.Join(expectedResults, ","), outputs.OneLineOutput(sorterInstances)))
-}
 
-func TestSort_EmptyList(t *testing.T) {
-	instanceTypes := []*instancetypes.Details{}
-
-	sortField := ".HibernationSupported"
-	sortDirection := "asc"
-
-	result, err := sorter.NewSorter(instanceTypes, sortField, sortDirection)
 	h.Ok(t, err)
-
-	err = result.Sort()
-	h.Ok(t, err)
-
-	sorterInstances := result.InstanceTypes()
-	h.Assert(t, len(sorterInstances) == 0, fmt.Sprintf("sorter instance types list should be empty but actually has %d elements", len(sorterInstances)))
-}
-
-func TestSort_OneElement(t *testing.T) {
-	instanceTypes := getInstanceTypeDetails(t, "1_instance.json")
-
-	sortField := ".HibernationSupported"
-	sortDirection := "asc"
-
-	result, err := sorter.NewSorter(instanceTypes, sortField, sortDirection)
-	h.Ok(t, err)
-
-	err = result.Sort()
-	h.Ok(t, err)
-
-	sorterInstances := result.InstanceTypes()
-	expectedResults := []string{"a1.2xlarge"}
-	h.Assert(t, len(sorterInstances) == 1, fmt.Sprintf("sorter instance types list should have 1 element actually has %d elements", len(sorterInstances)))
-	h.Assert(t, checkSortResults(sorterInstances, expectedResults), fmt.Sprintf("Expected ascending order: [%s], but actual order: %s", strings.Join(expectedResults, ","), outputs.OneLineOutput(sorterInstances)))
+	h.Assert(t, checkSortResults(sortedInstances, expectedResults), fmt.Sprintf("Expected descending order: [%s], but actual order: %s", strings.Join(expectedResults, ","), outputs.OneLineOutput(sortedInstances)))
 }
