@@ -434,8 +434,7 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	}
 
 	// determine if user used a shorthand for sorting flag
-	sortFieldShorthandPath, ok := sortingKeysMap[*sortField]
-	if ok {
+	if sortFieldShorthandPath, ok := sortingKeysMap[*sortField]; ok {
 		sortField = &sortFieldShorthandPath
 	}
 
