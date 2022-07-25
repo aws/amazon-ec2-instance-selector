@@ -34,7 +34,7 @@ const (
 	sortDesc       = "desc"
 
 	// Not all fields can be reached through a json path (Ex: gpu count)
-	// so have special flags for such cases.
+	// so we have special flags for such cases.
 
 	gpuCountField              = "gpus"
 	inferenceAcceleratorsField = "inference-accelerators"

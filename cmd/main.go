@@ -205,7 +205,7 @@ Full docs can be found at github.com/aws/amazon-` + binName
 		instanceStoragePath,
 		ebsOptimizedBaselineBandwidthPath,
 		ebsOptimizedBaselineThroughputPath,
-		ebsOptimizedBaselineIOPS,
+		ebsOptimizedBaselineIOPSPath,
 		gpus,
 		inferenceAccelerators,
 	}
