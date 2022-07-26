@@ -74,7 +74,7 @@ func Sort(instanceTypes []*instancetypes.Details, sortField string, sortDirectio
 	return sorter.instanceTypes(), nil
 }
 
-// NewSorter creates a new Sorter object to be used to sort the given instance types
+// newSorter creates a new Sorter object to be used to sort the given instance types
 // based on the sorting field and direction
 //
 // sortField is a json path to a field in the instancetypes.Details struct which represents

@@ -143,7 +143,7 @@ func TestSort_EmptyList(t *testing.T) {
 	sortedInstances, err := sorter.Sort(instanceTypes, sortField, sortDirection)
 
 	h.Ok(t, err)
-	h.Assert(t, len(sortedInstances) == 0, fmt.Sprintf("sorter instance types list should be empty but actually has %d elements", len(sortedInstances)))
+	h.Assert(t, len(sortedInstances) == 0, fmt.Sprintf("Sorted instance types list should be empty but actually has %d elements", len(sortedInstances)))
 }
 
 func TestSort_InvalidSortField(t *testing.T) {
