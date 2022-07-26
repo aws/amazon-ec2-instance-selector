@@ -146,6 +146,140 @@ t3.medium      2       4          nitro       true         true                 
 t3a.medium     2       4          nitro       true         true                 x86_64        Up to 5 Gigabit      3       0       0                        $0.0376             $0.01431
 ```
 
+**Sort by memory in ascending order using shorthand**
+```
+$ ec2-instance-selector -r us-east-1 -o table-wide --max-results 10 --sort-by memory --sort-direction asc
+Instance Type  VCPUs   Mem (GiB)  Hypervisor  Current Gen  Hibernation Support  CPU Arch      Network Performance  ENIs    GPUs    GPU Mem (GiB)  GPU Info  On-Demand Price/Hr  Spot Price/Hr (30d avg)  
+-------------  -----   ---------  ----------  -----------  -------------------  --------      -------------------  ----    ----    -------------  --------  ------------------  -----------------------  
+t2.nano        1       0.5        xen         true         true                 i386, x86_64  Low to Moderate      2       0       0                        $0.0058             -Not Fetched-            
+t4g.nano       2       0.5        nitro       true         false                arm64         Up to 5 Gigabit      2       0       0                        $0.0042             $0.0013                  
+t3a.nano       2       0.5        nitro       true         true                 x86_64        Up to 5 Gigabit      2       0       0                        $0.0047             $0.00178                 
+t3.nano        2       0.5        nitro       true         true                 x86_64        Up to 5 Gigabit      2       0       0                        $0.0052             $0.0016                  
+t1.micro       1       0.6123     xen         false        false                i386, x86_64  Very Low             2       0       0                        $0.02               $0.00213                 
+t3a.micro      2       1          nitro       true         true                 x86_64        Up to 5 Gigabit      2       0       0                        $0.0094             $0.00332                 
+t3.micro       2       1          nitro       true         true                 x86_64        Up to 5 Gigabit      2       0       0                        $0.0104             $0.0031                  
+t2.micro       1       1          xen         true         true                 i386, x86_64  Low to Moderate      2       0       0                        $0.0116             $0.0035                  
+t4g.micro      2       1          nitro       true         false                arm64         Up to 5 Gigabit      2       0       0                        $0.0084             $0.0025                  
+m1.small       1       1.69922    xen         false        false                i386, x86_64  Low                  2       0       0                        $0.044              $0.00865
+NOTE: 547 entries were truncated, increase --max-results to see more
+```
+Available shorthand flags: vcpus, memory, gpu-memory-total, network-interfaces, spot-price, on-demand-price, instance-storage, ebs-optimized-baseline-bandwidth, ebs-optimized-baseline-throughput, ebs-optimized-baseline-iops, gpus, inference-accelerators
+
+**Sort by memory in descending order using JSON path**
+```
+$ ec2-instance-selector -r us-east-1 -o table-wide --max-results 10 --sort-by .MemoryInfo.SizeInMiB --sort-direction desc
+Instance Type      VCPUs   Mem (GiB)  Hypervisor  Current Gen  Hibernation Support  CPU Arch  Network Performance  ENIs    GPUs    GPU Mem (GiB)  GPU Info  On-Demand Price/Hr  Spot Price/Hr (30d avg)  
+-------------      -----   ---------  ----------  -----------  -------------------  --------  -------------------  ----    ----    -------------  --------  ------------------  -----------------------  
+u-12tb1.112xlarge  448     12,288     nitro       true         false                x86_64    100 Gigabit          15      0       0                        $109.2              -Not Fetched-            
+u-9tb1.112xlarge   448     9,216      nitro       true         false                x86_64    100 Gigabit          15      0       0                        $81.9               -Not Fetched-            
+u-6tb1.112xlarge   448     6,144      nitro       true         false                x86_64    100 Gigabit          15      0       0                        $54.6               -Not Fetched-            
+u-6tb1.56xlarge    224     6,144      nitro       true         false                x86_64    100 Gigabit          15      0       0                        $46.40391           -Not Fetched-            
+x2iedn.metal       128     4,096      none        true         false                x86_64    100 Gigabit          15      0       0                        $26.676             $8.0028                  
+x2iedn.32xlarge    128     4,096      nitro       true         false                x86_64    100 Gigabit          15      0       0                        $26.676             $8.0028                  
+x1e.32xlarge       128     3,904      xen         true         false                x86_64    25 Gigabit           8       0       0                        $26.688             $8.03461                 
+x2iedn.24xlarge    96      3,072      nitro       true         false                x86_64    75 Gigabit           15      0       0                        $20.007             $13.23032                
+u-3tb1.56xlarge    224     3,072      nitro       true         false                x86_64    50 Gigabit           8       0       0                        $27.3               -Not Fetched-            
+x2idn.metal        128     2,048      none        true         false                x86_64    100 Gigabit          15      0       0                        $13.338             $4.67017
+NOTE: 547 entries were truncated, increase --max-results to see more
+```
+JSON path must point to a field in the [instancetype.Details struct](https://github.com/aws/amazon-ec2-instance-selector/blob/5bffbf2750ee09f5f1308bdc8d4b635a2c6e2721/pkg/instancetypes/instancetypes.go#L37).
+
+**Example output of instance type object using Verbose output**
+```
+$ ec2-instance-selector --max-results 1 -v
+[
+    {
+        "AutoRecoverySupported": true,
+        "BareMetal": false,
+        "BurstablePerformanceSupported": false,
+        "CurrentGeneration": false,
+        "DedicatedHostsSupported": true,
+        "EbsInfo": {
+            "EbsOptimizedInfo": {
+                "BaselineBandwidthInMbps": 1750,
+                "BaselineIops": 10000,
+                "BaselineThroughputInMBps": 218.75,
+                "MaximumBandwidthInMbps": 3500,
+                "MaximumIops": 20000,
+                "MaximumThroughputInMBps": 437.5
+            },
+            "EbsOptimizedSupport": "default",
+            "EncryptionSupport": "supported",
+            "NvmeSupport": "required"
+        },
+        "FpgaInfo": null,
+        "FreeTierEligible": false,
+        "GpuInfo": null,
+        "HibernationSupported": false,
+        "Hypervisor": "nitro",
+        "InferenceAcceleratorInfo": null,
+        "InstanceStorageInfo": null,
+        "InstanceStorageSupported": false,
+        "InstanceType": "a1.2xlarge",
+        "MemoryInfo": {
+            "SizeInMiB": 16384
+        },
+        "NetworkInfo": {
+            "DefaultNetworkCardIndex": 0,
+            "EfaInfo": null,
+            "EfaSupported": false,
+            "EnaSupport": "required",
+            "EncryptionInTransitSupported": false,
+            "Ipv4AddressesPerInterface": 15,
+            "Ipv6AddressesPerInterface": 15,
+            "Ipv6Supported": true,
+            "MaximumNetworkCards": 1,
+            "MaximumNetworkInterfaces": 4,
+            "NetworkCards": [
+                {
+                    "MaximumNetworkInterfaces": 4,
+                    "NetworkCardIndex": 0,
+                    "NetworkPerformance": "Up to 10 Gigabit"
+                }
+            ],
+            "NetworkPerformance": "Up to 10 Gigabit"
+        },
+        "PlacementGroupInfo": {
+            "SupportedStrategies": [
+                "cluster",
+                "partition",
+                "spread"
+            ]
+        },
+        "ProcessorInfo": {
+            "SupportedArchitectures": [
+                "arm64"
+            ],
+            "SustainedClockSpeedInGhz": 2.3
+        },
+        "SupportedBootModes": [
+            "uefi"
+        ],
+        "SupportedRootDeviceTypes": [
+            "ebs"
+        ],
+        "SupportedUsageClasses": [
+            "on-demand",
+            "spot"
+        ],
+        "SupportedVirtualizationTypes": [
+            "hvm"
+        ],
+        "VCpuInfo": {
+            "DefaultCores": 8,
+            "DefaultThreadsPerCore": 1,
+            "DefaultVCpus": 8,
+            "ValidCores": null,
+            "ValidThreadsPerCore": null
+        },
+        "OndemandPricePerHour": 0.204,
+        "SpotPrice": 0.03939999999999999
+    }
+]
+NOTE: 497 entries were truncated, increase --max-results to see more
+```
+NOTE: Use this JSON format as reference when finding JSON paths for sorting
+
 **All CLI Options**
 
 ```
@@ -153,7 +287,7 @@ $ ec2-instance-selector --help
 ```
 
 ```bash#help
-ec2-instance-selector is a CLI tool to filter EC2 instance types based on resource criteria.
+ec2-instance-selector is a CLI tool to filter EC2 instance types based on resource criteria. 
 Filtering allows you to select all the instance types that match your application requirements.
 Full docs can be found at github.com/aws/amazon-ec2-instance-selector
 
@@ -241,15 +375,17 @@ Suite Flags:
 
 
 Global Flags:
-      --cache-dir string   Directory to save the pricing and instance type caches (default "~/.ec2-instance-selector/")
-      --cache-ttl int      Cache TTLs in hours for pricing and instance type caches. Setting the cache to 0 will turn off caching and cleanup any on-disk caches. (default 168)
-  -h, --help               Help
-      --max-results int    The maximum number of instance types that match your criteria to return (default 20)
-  -o, --output string      Specify the output format (table, table-wide, one-line)
-      --profile string     AWS CLI profile to use for credentials and config
-  -r, --region string      AWS Region to use for API requests (NOTE: if not passed in, uses AWS SDK default precedence)
-  -v, --verbose            Verbose - will print out full instance specs
-      --version            Prints CLI version
+      --cache-dir string        Directory to save the pricing and instance type caches (default "~/.ec2-instance-selector/")
+      --cache-ttl int           Cache TTLs in hours for pricing and instance type caches. Setting the cache to 0 will turn off caching and cleanup any on-disk caches. (default 168)
+  -h, --help                    Help
+      --max-results int         The maximum number of instance types that match your criteria to return (default 20)
+  -o, --output string           Specify the output format (table, table-wide, one-line)
+      --profile string          AWS CLI profile to use for credentials and config
+  -r, --region string           AWS Region to use for API requests (NOTE: if not passed in, uses AWS SDK default precedence)
+      --sort-by string          Specify the field to sort by. Quantity flags present in this CLI (memory, gpus, etc.) or a JSON path to the appropriate instance type field (Ex: ".MemoryInfo.SizeInMiB") is acceptable. (default ".InstanceType")
+      --sort-direction string   Specify the direction to sort in (ascending, asc, descending, desc) (default "ascending")
+  -v, --verbose                 Verbose - will print out full instance specs
+      --version                 Prints CLI version
 ```
 
 

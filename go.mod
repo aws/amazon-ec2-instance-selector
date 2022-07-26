@@ -17,6 +17,7 @@ require (
 require (
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
+	github.com/oliveagle/jsonpath v0.0.0-20180606110733-2e52cf6e6852 // indirect
 	github.com/smartystreets/goconvey v1.6.4 // indirect
 	go.uber.org/atomic v1.4.0 // indirect
 )
