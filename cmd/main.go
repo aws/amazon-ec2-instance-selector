@@ -180,38 +180,21 @@ Full docs can be found at github.com/aws/amazon-` + binName
 		sortDesc,
 	}
 
-	sortingShorthandFlags := []string{
-		vcpus,
-		memory,
-		gpuMemoryTotal,
-		networkInterfaces,
-		spotPrice,
-		odPrice,
-		instanceStorage,
-		ebsOptimizedBaselineBandwidth,
-		ebsOptimizedBaselineThroughput,
-		ebsOptimizedBaselineIOPS,
-		gpus,
-		inferenceAccelerators,
-	}
-
-	sortingShorthandPaths := []string{
-		vcpuPath,
-		memoryPath,
-		gpuMemoryTotalPath,
-		networkInterfacesPath,
-		spotPricePath,
-		odPricePath,
-		instanceStoragePath,
-		ebsOptimizedBaselineBandwidthPath,
-		ebsOptimizedBaselineThroughputPath,
-		ebsOptimizedBaselineIOPSPath,
-		gpus,
-		inferenceAccelerators,
-	}
-
 	// map quantity cli flags to json paths for easier cli sorting
-	sortingKeysMap := mapQuantityFlagsToPath(&sortingShorthandFlags, &sortingShorthandPaths)
+	sortingKeysMap := map[string]string{
+		vcpus:                          vcpuPath,
+		memory:                         memoryPath,
+		gpuMemoryTotal:                 gpuMemoryTotalPath,
+		networkInterfaces:              networkInterfacesPath,
+		spotPrice:                      spotPricePath,
+		odPrice:                        odPricePath,
+		instanceStorage:                instanceStoragePath,
+		ebsOptimizedBaselineBandwidth:  ebsOptimizedBaselineBandwidthPath,
+		ebsOptimizedBaselineThroughput: ebsOptimizedBaselineThroughputPath,
+		ebsOptimizedBaselineIOPS:       ebsOptimizedBaselineIOPSPath,
+		gpus:                           gpus,
+		inferenceAccelerators:          inferenceAccelerators,
+	}
 
 	// Registers flags with specific input types from the cli pkg
 	// Filter Flags - These will be grouped at the top of the help flags
@@ -628,13 +611,4 @@ func truncateResults(maxResults *int, instanceTypeInfoSlice []*instancetypes.Det
 		upperIndex = len(instanceTypeInfoSlice)
 	}
 	return instanceTypeInfoSlice[0:upperIndex], len(instanceTypeInfoSlice) - upperIndex
-}
-
-func mapQuantityFlagsToPath(flags *[]string, paths *[]string) map[string]string {
-	sortingFlagKeys := make(map[string]string)
-	for i := range *flags {
-		sortingFlagKeys[(*flags)[i]] = (*paths)[i]
-	}
-
-	return sortingFlagKeys
 }
