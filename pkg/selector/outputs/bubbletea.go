@@ -28,7 +28,7 @@ import (
 const (
 	// table formatting
 	headerAndFooterPadding = 7
-	headerBuffer           = 2
+	headerPadding          = 2
 )
 
 const (
@@ -213,20 +213,20 @@ func createColumns() *[]table.Column {
 
 	// create columns based on column names
 	columns := []table.Column{
-		table.NewColumn(colKeyInstanceType, colKeyInstanceType, len(colKeyInstanceType)+headerBuffer),
-		table.NewColumn(colKeyVCPU, colKeyVCPU, len(colKeyVCPU)+headerBuffer),
-		table.NewColumn(colKeyMemory, colKeyMemory, len(colKeyMemory)+headerBuffer),
-		table.NewColumn(colKeyHypervisor, colKeyHypervisor, len(colKeyHypervisor)+headerBuffer),
-		table.NewColumn(colKeyCurrentGen, colKeyCurrentGen, len(colKeyCurrentGen)+headerBuffer),
-		table.NewColumn(colKeyHibernationSupport, colKeyHibernationSupport, len(colKeyHibernationSupport)+headerBuffer),
-		table.NewColumn(colKeyCPUArch, colKeyCPUArch, len(colKeyCPUArch)+headerBuffer),
-		table.NewColumn(colKeyNetworkPerformance, colKeyNetworkPerformance, len(colKeyNetworkPerformance)+headerBuffer),
-		table.NewColumn(colKeyENI, colKeyENI, len(colKeyENI)+headerBuffer),
-		table.NewColumn(colKeyGPU, colKeyGPU, len(colKeyGPU)+headerBuffer),
-		table.NewColumn(colKeyGPUMemory, colKeyGPUMemory, len(colKeyGPUMemory)+headerBuffer),
+		table.NewColumn(colKeyInstanceType, colKeyInstanceType, len(colKeyInstanceType)+headerPadding),
+		table.NewColumn(colKeyVCPU, colKeyVCPU, len(colKeyVCPU)+headerPadding),
+		table.NewColumn(colKeyMemory, colKeyMemory, len(colKeyMemory)+headerPadding),
+		table.NewColumn(colKeyHypervisor, colKeyHypervisor, len(colKeyHypervisor)+headerPadding),
+		table.NewColumn(colKeyCurrentGen, colKeyCurrentGen, len(colKeyCurrentGen)+headerPadding),
+		table.NewColumn(colKeyHibernationSupport, colKeyHibernationSupport, len(colKeyHibernationSupport)+headerPadding),
+		table.NewColumn(colKeyCPUArch, colKeyCPUArch, len(colKeyCPUArch)+headerPadding),
+		table.NewColumn(colKeyNetworkPerformance, colKeyNetworkPerformance, len(colKeyNetworkPerformance)+headerPadding),
+		table.NewColumn(colKeyENI, colKeyENI, len(colKeyENI)+headerPadding),
+		table.NewColumn(colKeyGPU, colKeyGPU, len(colKeyGPU)+headerPadding),
+		table.NewColumn(colKeyGPUMemory, colKeyGPUMemory, len(colKeyGPUMemory)+headerPadding),
 		table.NewColumn(colKeyGPUInfo, colKeyGPUInfo, len(colKeyGPUInfo)+gpuInfoBuffer),
-		table.NewColumn(colKeyODPrice, colKeyODPrice, len(colKeyODPrice)+headerBuffer),
-		table.NewColumn(colKeySpotPrice, colKeySpotPrice, len(colKeySpotPrice)+headerBuffer),
+		table.NewColumn(colKeyODPrice, colKeyODPrice, len(colKeyODPrice)+headerPadding),
+		table.NewColumn(colKeySpotPrice, colKeySpotPrice, len(colKeySpotPrice)+headerPadding),
 	}
 
 	return &columns
