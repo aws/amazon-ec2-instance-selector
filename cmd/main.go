@@ -424,7 +424,7 @@ Full docs can be found at github.com/aws/amazon-` + binName
 		sortField = &sortFieldShorthandPath
 	}
 
-	// store maxResults since we want to fetch instance types without truncating results
+	// fetch instance types without truncating results
 	prevMaxResults := filters.MaxResults
 	filters.MaxResults = nil
 	instanceTypesDetails, err := instanceSelector.FilterVerbose(filters)
@@ -436,7 +436,7 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	// filtering already sorts by name in ascending order, so only sort if another sort field or
 	// direction is selected
 	sortDirection := cli.StringMe(flags[sortDirection])
-	if *sortField != instanceNamePath && *sortDirection != sortAscending && *sortDirection != sortAsc {
+	if *sortField != instanceNamePath || (*sortDirection != sortAscending && *sortDirection != sortAsc) {
 		instanceTypesDetails, err = sorter.Sort(instanceTypesDetails, *sortField, *sortDirection)
 		if err != nil {
 			fmt.Printf("Sorting error: %v", err)
@@ -448,7 +448,6 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	var itemsTruncated int
 	var instanceTypes []string
 	if outputFlag != nil && *outputFlag == bubbleTeaOutput {
-		// TODO: clean this bubble tea thing up (add else instead of early returning)
 		p := tea.NewProgram((outputs.NewBubbleTeaModel(instanceTypesDetails)))
 		if err := p.Start(); err != nil {
 			fmt.Printf("An error occurred when starting bubble tea: %v", err)
