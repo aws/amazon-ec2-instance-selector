@@ -32,21 +32,21 @@ const (
 )
 
 const (
-	// column keys
-	colKeyInstanceType       = "Instance Type"
-	colKeyVCPU               = "VCPUs"
-	colKeyMemory             = "Memory (GiB)"
-	colKeyHypervisor         = "Hypervisor"
-	colKeyCurrentGen         = "Current Gen"
-	colKeyHibernationSupport = "Hibernation Support"
-	colKeyCPUArch            = "CPU Architecture"
-	colKeyNetworkPerformance = "Network Performance"
-	colKeyENI                = "ENIs"
-	colKeyGPU                = "GPUs"
-	colKeyGPUMemory          = "GPU Memory (GiB)"
-	colKeyGPUInfo            = "GPU Info"
-	colKeyODPrice            = "On-Demand Price/Hr"
-	colKeySpotPrice          = "Spot Price/Hr (30 day avg)"
+	// column headers
+	colInstanceType       = "Instance Type"
+	colVCPU               = "VCPUs"
+	colMemory             = "Memory (GiB)"
+	colHypervisor         = "Hypervisor"
+	colCurrentGen         = "Current Gen"
+	colHibernationSupport = "Hibernation Support"
+	colCPUArch            = "CPU Architecture"
+	colNetworkPerformance = "Network Performance"
+	colENI                = "ENIs"
+	colGPU                = "GPUs"
+	colGPUMemory          = "GPU Memory (GiB)"
+	colGPUInfo            = "GPU Info"
+	colODPrice            = "On-Demand Price/Hr"
+	colSpotPrice          = "Spot Price/Hr (30 day avg)"
 
 	// controls
 	controlsString = "Controls: ↑/↓ - up/down • ←/→  - left/right • shift + ←/→ - pg up/down • q - quit"
@@ -184,20 +184,20 @@ func createRows(instanceTypes []*instancetypes.Details) *[]table.Row {
 		}
 
 		newRow := table.NewRow(table.RowData{
-			colKeyInstanceType:       *instanceType.InstanceType,
-			colKeyVCPU:               *instanceType.VCpuInfo.DefaultVCpus,
-			colKeyMemory:             formatFloat(float64(*instanceType.MemoryInfo.SizeInMiB) / 1024.0),
-			colKeyHypervisor:         *hyperisor,
-			colKeyCurrentGen:         *instanceType.CurrentGeneration,
-			colKeyHibernationSupport: *instanceType.HibernationSupported,
-			colKeyCPUArch:            strings.Join(cpuArchitectures, ", "),
-			colKeyNetworkPerformance: *instanceType.NetworkInfo.NetworkPerformance,
-			colKeyENI:                *instanceType.NetworkInfo.MaximumNetworkInterfaces,
-			colKeyGPU:                gpus,
-			colKeyGPUMemory:          formatFloat(float64(gpuMemory) / 1024.0),
-			colKeyGPUInfo:            strings.Join(gpuType, ", "),
-			colKeyODPrice:            onDemandPricePerHourStr,
-			colKeySpotPrice:          spotPricePerHourStr,
+			colInstanceType:       *instanceType.InstanceType,
+			colVCPU:               *instanceType.VCpuInfo.DefaultVCpus,
+			colMemory:             formatFloat(float64(*instanceType.MemoryInfo.SizeInMiB) / 1024.0),
+			colHypervisor:         *hyperisor,
+			colCurrentGen:         *instanceType.CurrentGeneration,
+			colHibernationSupport: *instanceType.HibernationSupported,
+			colCPUArch:            strings.Join(cpuArchitectures, ", "),
+			colNetworkPerformance: *instanceType.NetworkInfo.NetworkPerformance,
+			colENI:                *instanceType.NetworkInfo.MaximumNetworkInterfaces,
+			colGPU:                gpus,
+			colGPUMemory:          formatFloat(float64(gpuMemory) / 1024.0),
+			colGPUInfo:            strings.Join(gpuType, ", "),
+			colODPrice:            onDemandPricePerHourStr,
+			colSpotPrice:          spotPricePerHourStr,
 		})
 
 		rows = append(rows, newRow)
@@ -213,20 +213,20 @@ func createColumns() *[]table.Column {
 
 	// create columns based on column names
 	columns := []table.Column{
-		table.NewColumn(colKeyInstanceType, colKeyInstanceType, len(colKeyInstanceType)+headerPadding),
-		table.NewColumn(colKeyVCPU, colKeyVCPU, len(colKeyVCPU)+headerPadding),
-		table.NewColumn(colKeyMemory, colKeyMemory, len(colKeyMemory)+headerPadding),
-		table.NewColumn(colKeyHypervisor, colKeyHypervisor, len(colKeyHypervisor)+headerPadding),
-		table.NewColumn(colKeyCurrentGen, colKeyCurrentGen, len(colKeyCurrentGen)+headerPadding),
-		table.NewColumn(colKeyHibernationSupport, colKeyHibernationSupport, len(colKeyHibernationSupport)+headerPadding),
-		table.NewColumn(colKeyCPUArch, colKeyCPUArch, len(colKeyCPUArch)+headerPadding),
-		table.NewColumn(colKeyNetworkPerformance, colKeyNetworkPerformance, len(colKeyNetworkPerformance)+headerPadding),
-		table.NewColumn(colKeyENI, colKeyENI, len(colKeyENI)+headerPadding),
-		table.NewColumn(colKeyGPU, colKeyGPU, len(colKeyGPU)+headerPadding),
-		table.NewColumn(colKeyGPUMemory, colKeyGPUMemory, len(colKeyGPUMemory)+headerPadding),
-		table.NewColumn(colKeyGPUInfo, colKeyGPUInfo, len(colKeyGPUInfo)+gpuInfoBuffer),
-		table.NewColumn(colKeyODPrice, colKeyODPrice, len(colKeyODPrice)+headerPadding),
-		table.NewColumn(colKeySpotPrice, colKeySpotPrice, len(colKeySpotPrice)+headerPadding),
+		table.NewColumn(colInstanceType, colInstanceType, len(colInstanceType)+headerPadding),
+		table.NewColumn(colVCPU, colVCPU, len(colVCPU)+headerPadding),
+		table.NewColumn(colMemory, colMemory, len(colMemory)+headerPadding),
+		table.NewColumn(colHypervisor, colHypervisor, len(colHypervisor)+headerPadding),
+		table.NewColumn(colCurrentGen, colCurrentGen, len(colCurrentGen)+headerPadding),
+		table.NewColumn(colHibernationSupport, colHibernationSupport, len(colHibernationSupport)+headerPadding),
+		table.NewColumn(colCPUArch, colCPUArch, len(colCPUArch)+headerPadding),
+		table.NewColumn(colNetworkPerformance, colNetworkPerformance, len(colNetworkPerformance)+headerPadding),
+		table.NewColumn(colENI, colENI, len(colENI)+headerPadding),
+		table.NewColumn(colGPU, colGPU, len(colGPU)+headerPadding),
+		table.NewColumn(colGPUMemory, colGPUMemory, len(colGPUMemory)+headerPadding),
+		table.NewColumn(colGPUInfo, colGPUInfo, len(colGPUInfo)+gpuInfoBuffer),
+		table.NewColumn(colODPrice, colODPrice, len(colODPrice)+headerPadding),
+		table.NewColumn(colSpotPrice, colSpotPrice, len(colSpotPrice)+headerPadding),
 	}
 
 	return &columns
