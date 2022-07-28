@@ -77,14 +77,14 @@ var (
 // BubbleTeaModel is used to hold the state of the bubble tea TUI
 type BubbleTeaModel struct {
 	// the model for the table output
-	tableModel table.Model
+	TableModel table.Model
 }
 
 // NewBubbleTeaModel initializes a new bubble tea Model which represents
 // a stylized table to display instance types
 func NewBubbleTeaModel(instanceTypes []*instancetypes.Details) BubbleTeaModel {
 	return BubbleTeaModel{
-		tableModel: createTable(instanceTypes),
+		TableModel: createTable(instanceTypes),
 	}
 }
 
@@ -111,26 +111,26 @@ func (m BubbleTeaModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		termenv.ClearScreen()
 
 		// handle width changes
-		m.tableModel = m.tableModel.WithMaxTotalWidth(msg.Width)
+		m.TableModel = m.TableModel.WithMaxTotalWidth(msg.Width)
 
 		// handle height changes
 		if headerAndFooterPadding >= msg.Height {
 			// height too short to fit rows
-			m.tableModel = m.tableModel.WithPageSize(0)
+			m.TableModel = m.TableModel.WithPageSize(0)
 		} else {
 			newRowsPerPage := msg.Height - headerAndFooterPadding
-			m.tableModel = m.tableModel.WithPageSize(newRowsPerPage)
+			m.TableModel = m.TableModel.WithPageSize(newRowsPerPage)
 		}
 	}
 
 	// update table
 	var cmd tea.Cmd
-	m.tableModel, cmd = m.tableModel.Update(msg)
+	m.TableModel, cmd = m.TableModel.Update(msg)
 
 	// update footer
 	controlsStr := lipgloss.NewStyle().Faint(true).Render(controlsString)
-	footerStr := fmt.Sprintf("Page: %d/%d | %s", m.tableModel.CurrentPage(), m.tableModel.MaxPages(), controlsStr)
-	m.tableModel = m.tableModel.WithStaticFooter(footerStr)
+	footerStr := fmt.Sprintf("Page: %d/%d | %s", m.TableModel.CurrentPage(), m.TableModel.MaxPages(), controlsStr)
+	m.TableModel = m.TableModel.WithStaticFooter(footerStr)
 
 	return m, cmd
 }
@@ -139,7 +139,7 @@ func (m BubbleTeaModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m BubbleTeaModel) View() string {
 	outputStr := strings.Builder{}
 
-	outputStr.WriteString(m.tableModel.View())
+	outputStr.WriteString(m.TableModel.View())
 	outputStr.WriteString("\n")
 
 	return outputStr.String()
@@ -174,7 +174,7 @@ func createRows(instanceTypes []*instancetypes.Details) *[]table.Row {
 			}
 		}
 
-		onDemandPricePerHourStr := "-Not Fetched"
+		onDemandPricePerHourStr := "-Not Fetched-"
 		spotPricePerHourStr := "-Not Fetched-"
 		if instanceType.OndemandPricePerHour != nil {
 			onDemandPricePerHourStr = "$" + formatFloat(*instanceType.OndemandPricePerHour)
