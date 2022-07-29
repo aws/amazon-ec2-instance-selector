@@ -23,6 +23,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -44,6 +45,7 @@ type OnDemandPricing struct {
 	DirectoryPath  string
 	cache          *cache.Cache
 	pricingClient  pricingiface.PricingAPI
+	sync.RWMutex
 }
 
 func LoadODCacheOrNew(pricingClient pricingiface.PricingAPI, region string, fullRefreshTTL time.Duration, directoryPath string) *OnDemandPricing {
@@ -111,6 +113,8 @@ func odCacheRefreshJob(odPricing *OnDemandPricing) {
 }
 
 func (c *OnDemandPricing) Refresh() error {
+	c.Lock()
+	defer c.Unlock()
 	odInstanceTypeCosts, err := c.fetchOnDemandPricing("")
 	if err != nil {
 		return fmt.Errorf("there was a problem refreshing the on-demand instance type pricing cache: %v", err)
@@ -128,6 +132,8 @@ func (c *OnDemandPricing) Get(instanceType string) (float64, error) {
 	if cost, ok := c.cache.Get(instanceType); ok {
 		return cost.(float64), nil
 	}
+	c.RLock()
+	defer c.RUnlock()
 	costs, err := c.fetchOnDemandPricing(instanceType)
 	if err != nil {
 		return 0, fmt.Errorf("there was a problem fetching on-demand instance type pricing for %s: %v", instanceType, err)
@@ -154,6 +160,8 @@ func (c *OnDemandPricing) Save() error {
 }
 
 func (c *OnDemandPricing) Clear() error {
+	c.Lock()
+	defer c.Unlock()
 	c.cache.Flush()
 	return os.Remove(getODCacheFilePath(c.Region, c.DirectoryPath))
 }
