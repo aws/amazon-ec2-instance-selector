@@ -100,7 +100,9 @@ func loadSpotCacheFrom(itemTTL time.Duration, region string, expandedDirPath str
 	if err := decoder.Decode(spotTimeSeries); err != nil {
 		return nil, err
 	}
-	return cache.NewFrom(itemTTL, itemTTL, *spotTimeSeries), nil
+	c := cache.NewFrom(itemTTL, itemTTL, *spotTimeSeries)
+	c.DeleteExpired()
+	return c, nil
 }
 
 func getSpotCacheFilePath(region string, directoryPath string) string {

@@ -93,7 +93,9 @@ func loadODCacheFrom(itemTTL time.Duration, region string, expandedDirPath strin
 	if err := json.Unmarshal(cacheBytes, odCache); err != nil {
 		return nil, err
 	}
-	return cache.NewFrom(itemTTL, itemTTL, *odCache), nil
+	c := cache.NewFrom(itemTTL, itemTTL, *odCache)
+	c.DeleteExpired()
+	return c, nil
 }
 
 func getODCacheFilePath(region string, directoryPath string) string {
