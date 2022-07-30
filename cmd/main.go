@@ -433,15 +433,12 @@ Full docs can be found at github.com/aws/amazon-` + binName
 		os.Exit(1)
 	}
 
-	// filtering already sorts by name in ascending order, so only sort if another sort field or
-	// direction is selected
+	// sort instance types
 	sortDirection := cli.StringMe(flags[sortDirection])
-	if *sortField != instanceNamePath || (*sortDirection != sortAscending && *sortDirection != sortAsc) {
-		instanceTypesDetails, err = sorter.Sort(instanceTypesDetails, *sortField, *sortDirection)
-		if err != nil {
-			fmt.Printf("Sorting error: %v", err)
-			os.Exit(1)
-		}
+	instanceTypesDetails, err = sorter.Sort(instanceTypesDetails, *sortField, *sortDirection)
+	if err != nil {
+		fmt.Printf("Sorting error: %v", err)
+		os.Exit(1)
 	}
 
 	// handle output format
