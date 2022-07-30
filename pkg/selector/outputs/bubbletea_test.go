@@ -82,7 +82,7 @@ func TestNewBubbleTeaModel_CPUArchitectures(t *testing.T) {
 	rows := model.TableModel.GetVisibleRows()
 
 	actualGPUArchitectures := "x86_64"
-	expectedGPUArchitectures := rows[0].Data["CPU Architecture"]
+	expectedGPUArchitectures := rows[0].Data["CPU Arch"]
 
 	h.Assert(t, actualGPUArchitectures == expectedGPUArchitectures, "CPU architecture should be (%s), but actually (%s)", expectedGPUArchitectures, actualGPUArchitectures)
 }
@@ -100,7 +100,7 @@ func TestNewBubbleTeaModel_GPU(t *testing.T) {
 
 	// test GPU memory
 	expectedGPUMemory := "32"
-	actualGPUMemory := rows[0].Data["GPU Memory (GiB)"]
+	actualGPUMemory := rows[0].Data["GPU Mem (GiB)"]
 
 	h.Assert(t, expectedGPUMemory == actualGPUMemory, "GPU memory should be %s, but is actually %s", expectedGPUMemory, actualGPUMemory)
 
@@ -139,18 +139,18 @@ func TestNewBubbleTeaModel_SpotPricing(t *testing.T) {
 	model := outputs.NewBubbleTeaModel(instanceTypes)
 	rows := model.TableModel.GetVisibleRows()
 	expectedODPrice := "$1.368"
-	actualODPrice := fmt.Sprintf("%v", rows[0].Data["Spot Price/Hr (30 day avg)"])
+	actualODPrice := fmt.Sprintf("%v", rows[0].Data["Spot Price/Hr (30d avg)"])
 
-	h.Assert(t, actualODPrice == expectedODPrice, "Actual OD price should be %s, but is actually %s", expectedODPrice, actualODPrice)
+	h.Assert(t, actualODPrice == expectedODPrice, "Actual spot price should be %s, but is actually %s", expectedODPrice, actualODPrice)
 
 	// test nil spot price
 	instanceTypes[0].SpotPrice = nil
 	model = outputs.NewBubbleTeaModel(instanceTypes)
 	rows = model.TableModel.GetVisibleRows()
 	expectedODPrice = "-Not Fetched-"
-	actualODPrice = fmt.Sprintf("%v", rows[0].Data["Spot Price/Hr (30 day avg)"])
+	actualODPrice = fmt.Sprintf("%v", rows[0].Data["Spot Price/Hr (30d avg)"])
 
-	h.Assert(t, actualODPrice == expectedODPrice, "Actual OD price should be %s, but is actually %s", expectedODPrice, actualODPrice)
+	h.Assert(t, actualODPrice == expectedODPrice, "Actual spot price should be %s, but is actually %s", expectedODPrice, actualODPrice)
 }
 
 func TestNewBubbleTeaModel_Rows(t *testing.T) {
