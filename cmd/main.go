@@ -48,7 +48,7 @@ const (
 	tableOutput     = "table"
 	tableWideOutput = "table-wide"
 	oneLine         = "one-line"
-	bubbleTeaOutput = "table-interactive"
+	bubbleTeaOutput = "interactive"
 )
 
 // Filter Flag Constants
