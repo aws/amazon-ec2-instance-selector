@@ -15,6 +15,7 @@ package outputs
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/instancetypes"
@@ -29,24 +30,6 @@ const (
 	// table formatting
 	headerAndFooterPadding = 7
 	headerPadding          = 2
-)
-
-const (
-	// column headers
-	colInstanceType       = "Instance Type"
-	colVCPU               = "VCPUs"
-	colMemory             = "Memory (GiB)"
-	colHypervisor         = "Hypervisor"
-	colCurrentGen         = "Current Gen"
-	colHibernationSupport = "Hibernation Support"
-	colCPUArch            = "CPU Architecture"
-	colNetworkPerformance = "Network Performance"
-	colENI                = "ENIs"
-	colGPU                = "GPUs"
-	colGPUMemory          = "GPU Memory (GiB)"
-	colGPUInfo            = "GPU Info"
-	colODPrice            = "On-Demand Price/Hr"
-	colSpotPrice          = "Spot Price/Hr (30 day avg)"
 
 	// controls
 	controlsString = "Controls: ↑/↓ - up/down • ←/→  - left/right • shift + ←/→ - pg up/down • q - quit"
@@ -151,54 +134,25 @@ func (m BubbleTeaModel) View() string {
 func createRows(instanceTypes []*instancetypes.Details) *[]table.Row {
 	rows := []table.Row{}
 
-	for _, instanceType := range instanceTypes {
-		none := "none"
-		hyperisor := instanceType.Hypervisor
-		if hyperisor == nil {
-			hyperisor = &none
+	// calculate and fetch all column data from instance types
+	columnsData := getWideColumnsData(instanceTypes)
+
+	// create a row for each instance type
+	for _, data := range columnsData {
+		rowData := table.RowData{}
+
+		// create a new row by iterating through the column data
+		// struct and using struct tags as column keys
+		structType := reflect.TypeOf(*data)
+		structValue := reflect.ValueOf(*data)
+		for i := 0; i < structType.NumField(); i++ {
+			currField := structType.Field(i)
+			columnName := currField.Tag.Get(columnTag)
+			colValue := structValue.Field(i)
+			rowData[columnName] = getUnderlyingValue(colValue)
 		}
 
-		cpuArchitectures := []string{}
-		for _, cpuArch := range instanceType.ProcessorInfo.SupportedArchitectures {
-			cpuArchitectures = append(cpuArchitectures, *cpuArch)
-		}
-
-		gpus := int64(0)
-		gpuMemory := int64(0)
-		gpuType := []string{}
-		if instanceType.GpuInfo != nil {
-			gpuMemory = *instanceType.GpuInfo.TotalGpuMemoryInMiB
-			for _, gpuInfo := range instanceType.GpuInfo.Gpus {
-				gpus = gpus + *gpuInfo.Count
-				gpuType = append(gpuType, *gpuInfo.Manufacturer+" "+*gpuInfo.Name)
-			}
-		}
-
-		onDemandPricePerHourStr := "-Not Fetched-"
-		spotPricePerHourStr := "-Not Fetched-"
-		if instanceType.OndemandPricePerHour != nil {
-			onDemandPricePerHourStr = "$" + formatFloat(*instanceType.OndemandPricePerHour)
-		}
-		if instanceType.SpotPrice != nil {
-			spotPricePerHourStr = "$" + formatFloat(*instanceType.SpotPrice)
-		}
-
-		newRow := table.NewRow(table.RowData{
-			colInstanceType:       *instanceType.InstanceType,
-			colVCPU:               *instanceType.VCpuInfo.DefaultVCpus,
-			colMemory:             formatFloat(float64(*instanceType.MemoryInfo.SizeInMiB) / 1024.0),
-			colHypervisor:         *hyperisor,
-			colCurrentGen:         *instanceType.CurrentGeneration,
-			colHibernationSupport: *instanceType.HibernationSupported,
-			colCPUArch:            strings.Join(cpuArchitectures, ", "),
-			colNetworkPerformance: *instanceType.NetworkInfo.NetworkPerformance,
-			colENI:                *instanceType.NetworkInfo.MaximumNetworkInterfaces,
-			colGPU:                gpus,
-			colGPUMemory:          formatFloat(float64(gpuMemory) / 1024.0),
-			colGPUInfo:            strings.Join(gpuType, ", "),
-			colODPrice:            onDemandPricePerHourStr,
-			colSpotPrice:          spotPricePerHourStr,
-		})
+		newRow := table.NewRow(rowData)
 
 		rows = append(rows, newRow)
 	}
@@ -208,25 +162,16 @@ func createRows(instanceTypes []*instancetypes.Details) *[]table.Row {
 
 // createColumns creates columns based on the column key constants
 func createColumns() *[]table.Column {
-	// GPU info field has long strings, so have different buffer length for that field
-	gpuInfoBuffer := 10
+	columns := []table.Column{}
 
-	// create columns based on column names
-	columns := []table.Column{
-		table.NewColumn(colInstanceType, colInstanceType, len(colInstanceType)+headerPadding),
-		table.NewColumn(colVCPU, colVCPU, len(colVCPU)+headerPadding),
-		table.NewColumn(colMemory, colMemory, len(colMemory)+headerPadding),
-		table.NewColumn(colHypervisor, colHypervisor, len(colHypervisor)+headerPadding),
-		table.NewColumn(colCurrentGen, colCurrentGen, len(colCurrentGen)+headerPadding),
-		table.NewColumn(colHibernationSupport, colHibernationSupport, len(colHibernationSupport)+headerPadding),
-		table.NewColumn(colCPUArch, colCPUArch, len(colCPUArch)+headerPadding),
-		table.NewColumn(colNetworkPerformance, colNetworkPerformance, len(colNetworkPerformance)+headerPadding),
-		table.NewColumn(colENI, colENI, len(colENI)+headerPadding),
-		table.NewColumn(colGPU, colGPU, len(colGPU)+headerPadding),
-		table.NewColumn(colGPUMemory, colGPUMemory, len(colGPUMemory)+headerPadding),
-		table.NewColumn(colGPUInfo, colGPUInfo, len(colGPUInfo)+gpuInfoBuffer),
-		table.NewColumn(colODPrice, colODPrice, len(colODPrice)+headerPadding),
-		table.NewColumn(colSpotPrice, colSpotPrice, len(colSpotPrice)+headerPadding),
+	// iterate through wideColumnsData struct and create a new column for each field tag
+	columnDataStruct := wideColumnsData{}
+	structType := reflect.TypeOf(columnDataStruct)
+	for i := 0; i < structType.NumField(); i++ {
+		columnHeader := structType.Field(i).Tag.Get(columnTag)
+		newCol := table.NewColumn(columnHeader, columnHeader, len(columnHeader)+headerPadding)
+
+		columns = append(columns, newCol)
 	}
 
 	return &columns
