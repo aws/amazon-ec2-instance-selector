@@ -131,11 +131,8 @@ func (m BubbleTeaModel) View() string {
 // table creation helpers:
 
 // createRows creates a row for each instance type in the passed in list
-func createRows(instanceTypes []*instancetypes.Details) *[]table.Row {
+func createRows(columnsData []*wideColumnsData) *[]table.Row {
 	rows := []table.Row{}
-
-	// calculate and fetch all column data from instance types
-	columnsData := getWideColumnsData(instanceTypes)
 
 	// create a row for each instance type
 	for _, data := range columnsData {
@@ -160,8 +157,40 @@ func createRows(instanceTypes []*instancetypes.Details) *[]table.Row {
 	return &rows
 }
 
-// createColumns creates columns based on the column key constants
-func createColumns() *[]table.Column {
+// maxColWidth finds the maximum width element in the given column
+func maxColWidth(columnsData []*wideColumnsData, columnHeader string) int {
+	// default max width is the width of the header itself with padding
+	maxWidth := len(columnHeader) + headerPadding
+
+	for _, data := range columnsData {
+		// get data at given column
+		structType := reflect.TypeOf(*data)
+		structValue := reflect.ValueOf(*data)
+		var underlyingValue interface{}
+		for i := 0; i < structType.NumField(); i++ {
+			currField := structType.Field(i)
+			columnName := currField.Tag.Get(columnTag)
+			if columnName == columnHeader {
+				colValue := structValue.Field(i)
+				underlyingValue = getUnderlyingValue(colValue)
+				break
+			}
+		}
+
+		// see if the width of the current column element exceeds
+		// the previous max width
+		currWidth := len(fmt.Sprintf("%v", underlyingValue))
+		if currWidth > maxWidth {
+			maxWidth = currWidth
+		}
+	}
+
+	return maxWidth
+}
+
+// createColumns creates columns based on the tags in the wideColumnsData
+// struct
+func createColumns(columnsData []*wideColumnsData) *[]table.Column {
 	columns := []table.Column{}
 
 	// iterate through wideColumnsData struct and create a new column for each field tag
@@ -169,7 +198,7 @@ func createColumns() *[]table.Column {
 	structType := reflect.TypeOf(columnDataStruct)
 	for i := 0; i < structType.NumField(); i++ {
 		columnHeader := structType.Field(i).Tag.Get(columnTag)
-		newCol := table.NewColumn(columnHeader, columnHeader, len(columnHeader)+headerPadding)
+		newCol := table.NewColumn(columnHeader, columnHeader, maxColWidth(columnsData, columnHeader))
 
 		columns = append(columns, newCol)
 	}
@@ -209,8 +238,11 @@ func createTable(instanceTypes []*instancetypes.Details) table.Model {
 	// can't get terminal size yet, so set temporary value
 	initialDimensionVal := 30
 
-	newTable := table.New(*createColumns()).
-		WithRows(*createRows(instanceTypes)).
+	// calculate and fetch all column data from instance types
+	columnsData := getWideColumnsData(instanceTypes)
+
+	newTable := table.New(*createColumns(columnsData)).
+		WithRows(*createRows(columnsData)).
 		WithKeyMap(*createKeyMap()).
 		WithPageSize(initialDimensionVal).
 		Focused(true).
