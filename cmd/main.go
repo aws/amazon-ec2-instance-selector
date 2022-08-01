@@ -445,7 +445,7 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	var itemsTruncated int
 	var instanceTypes []string
 	if outputFlag != nil && *outputFlag == bubbleTeaOutput {
-		p := tea.NewProgram((outputs.NewBubbleTeaModel(instanceTypesDetails)))
+		p := tea.NewProgram(outputs.NewBubbleTeaModel(instanceTypesDetails))
 		if err := p.Start(); err != nil {
 			fmt.Printf("An error occurred when starting bubble tea: %v", err)
 			os.Exit(1)
