@@ -307,9 +307,6 @@ func createKeyMap() *table.KeyMap {
 // createTable creates an intractable table which contains information about all of
 // the given instance types
 func createTable(instanceTypes []*instancetypes.Details) table.Model {
-	// can't get terminal size yet, so set temporary value
-	initialDimensionVal := 30
-
 	// calculate and fetch all column data from instance types
 	columnsData := getWideColumnsData(instanceTypes)
 
