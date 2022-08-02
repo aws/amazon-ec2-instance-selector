@@ -38,7 +38,7 @@ const (
 
 	// controls
 	tableControls   = "Controls: ↑/↓ - up/down • ←/→  - left/right • shift + ←/→ - pg up/down • enter - expand • q - quit"
-	verboseControls = "Controls: ↑/↓ or scroll wheel - up/down • enter - return to table • q - quit"
+	verboseControls = "Controls: ↑/↓ - up/down • enter - return to table • q - quit"
 
 	// can't get terminal dimensions on startup, so use this
 	initialDimensionVal = 30
