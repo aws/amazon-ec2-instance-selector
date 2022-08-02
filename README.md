@@ -133,17 +133,18 @@ t3a.medium           2            4
 **Wide Table Output**
 ```
 $ ec2-instance-selector --memory 4 --vcpus 2 --cpu-architecture x86_64 -r us-east-1 -o table-wide
-Instance Type  VCPUs   Mem (GiB)  Hypervisor  Current Gen  Hibernation Support  CPU Arch      Network Performance  ENIs    GPUs    GPU Mem (GiB)  GPU Info  On-Demand Price/Hr  Spot Price/Hr (30d avg)
--------------  -----   ---------  ----------  -----------  -------------------  --------      -------------------  ----    ----    -------------  --------  ------------------  -----------------------
-c5.large       2       4          nitro       true         true                 x86_64        Up to 10 Gigabit     3       0       0                        $0.085              $0.04708
-c5a.large      2       4          nitro       true         false                x86_64        Up to 10 Gigabit     3       0       0                        $0.077              $0.03249
-c5ad.large     2       4          nitro       true         false                x86_64        Up to 10 Gigabit     3       0       0                        $0.086              $0.0324
-c5d.large      2       4          nitro       true         true                 x86_64        Up to 10 Gigabit     3       0       0                        $0.096              $0.03525
-c6a.large      2       4          nitro       true         false                x86_64        Up to 12.5 Gigabit   3       0       0                        $0.0765             $0.034
-c6i.large      2       4          nitro       true         false                x86_64        Up to 12.5 Gigabit   3       0       0                        $0.085              $0.03416
-t2.medium      2       4          xen         true         true                 i386, x86_64  Low to Moderate      3       0       0                        $0.0464             $0.01407
-t3.medium      2       4          nitro       true         true                 x86_64        Up to 5 Gigabit      3       0       0                        $0.0416             $0.0125
-t3a.medium     2       4          nitro       true         true                 x86_64        Up to 5 Gigabit      3       0       0                        $0.0376             $0.01431
+Instance Type  VCPUs   Mem (GiB)  Hypervisor  Current Gen  Hibernation Support  CPU Arch      Network Performance  ENIs    GPUs    GPU Mem (GiB)  GPU Info  On-Demand Price/Hr  Spot Price/Hr (30d avg)  
+-------------  -----   ---------  ----------  -----------  -------------------  --------      -------------------  ----    ----    -------------  --------  ------------------  -----------------------  
+c5.large       2       4          nitro       true         true                 x86_64        Up to 10 Gigabit     3       0       0              none      -Not Fetched-       $0.03932                 
+c5a.large      2       4          nitro       true         false                x86_64        Up to 10 Gigabit     3       0       0              none      -Not Fetched-       $0.03822                 
+c5ad.large     2       4          nitro       true         false                x86_64        Up to 10 Gigabit     3       0       0              none      -Not Fetched-       $0.03449                 
+c5d.large      2       4          nitro       true         true                 x86_64        Up to 10 Gigabit     3       0       0              none      $0.096              $0.03983                 
+c6a.large      2       4          nitro       true         false                x86_64        Up to 12.5 Gigabit   3       0       0              none      $0.0765             $0.034                   
+c6i.large      2       4          nitro       true         false                x86_64        Up to 12.5 Gigabit   3       0       0              none      $0.085              $0.03605                 
+c6id.large     2       4          nitro       true         false                x86_64        Up to 12.5 Gigabit   3       0       0              none      -Not Fetched-       $0.034                   
+t2.medium      2       4          xen         true         true                 i386, x86_64  Low to Moderate      3       0       0              none      $0.0464             $0.0139                  
+t3.medium      2       4          nitro       true         true                 x86_64        Up to 5 Gigabit      3       0       0              none      $0.0416             $0.0125                  
+t3a.medium     2       4          nitro       true         true                 x86_64        Up to 5 Gigabit      3       0       0              none      -Not Fetched-       $0.01246
 ```
 
 **Sort by memory in ascending order using shorthand**
@@ -151,16 +152,16 @@ t3a.medium     2       4          nitro       true         true                 
 $ ec2-instance-selector -r us-east-1 -o table-wide --max-results 10 --sort-by memory --sort-direction asc
 Instance Type  VCPUs   Mem (GiB)  Hypervisor  Current Gen  Hibernation Support  CPU Arch      Network Performance  ENIs    GPUs    GPU Mem (GiB)  GPU Info  On-Demand Price/Hr  Spot Price/Hr (30d avg)  
 -------------  -----   ---------  ----------  -----------  -------------------  --------      -------------------  ----    ----    -------------  --------  ------------------  -----------------------  
-t2.nano        1       0.5        xen         true         true                 i386, x86_64  Low to Moderate      2       0       0                        $0.0058             -Not Fetched-            
-t4g.nano       2       0.5        nitro       true         false                arm64         Up to 5 Gigabit      2       0       0                        $0.0042             $0.0013                  
-t3a.nano       2       0.5        nitro       true         true                 x86_64        Up to 5 Gigabit      2       0       0                        $0.0047             $0.00178                 
-t3.nano        2       0.5        nitro       true         true                 x86_64        Up to 5 Gigabit      2       0       0                        $0.0052             $0.0016                  
-t1.micro       1       0.6123     xen         false        false                i386, x86_64  Very Low             2       0       0                        $0.02               $0.00213                 
-t3a.micro      2       1          nitro       true         true                 x86_64        Up to 5 Gigabit      2       0       0                        $0.0094             $0.00332                 
-t3.micro       2       1          nitro       true         true                 x86_64        Up to 5 Gigabit      2       0       0                        $0.0104             $0.0031                  
-t2.micro       1       1          xen         true         true                 i386, x86_64  Low to Moderate      2       0       0                        $0.0116             $0.0035                  
-t4g.micro      2       1          nitro       true         false                arm64         Up to 5 Gigabit      2       0       0                        $0.0084             $0.0025                  
-m1.small       1       1.69922    xen         false        false                i386, x86_64  Low                  2       0       0                        $0.044              $0.00865
+t2.nano        1       0.5        xen         true         true                 i386, x86_64  Low to Moderate      2       0       0              none      $0.0058             -Not Fetched-            
+t4g.nano       2       0.5        nitro       true         false                arm64         Up to 5 Gigabit      2       0       0              none      $0.0042             $0.0013                  
+t3a.nano       2       0.5        nitro       true         true                 x86_64        Up to 5 Gigabit      2       0       0              none      -Not Fetched-       $0.00328                 
+t3.nano        2       0.5        nitro       true         true                 x86_64        Up to 5 Gigabit      2       0       0              none      $0.0052             $0.0016                  
+t1.micro       1       0.6123     xen         false        false                i386, x86_64  Very Low             2       0       0              none      -Not Fetched-       $0.00205                 
+t3a.micro      2       1          nitro       true         true                 x86_64        Up to 5 Gigabit      2       0       0              none      -Not Fetched-       $0.00284                 
+t3.micro       2       1          nitro       true         true                 x86_64        Up to 5 Gigabit      2       0       0              none      $0.0104             $0.0031                  
+t2.micro       1       1          xen         true         true                 i386, x86_64  Low to Moderate      2       0       0              none      -Not Fetched-       $0.0035                  
+t4g.micro      2       1          nitro       true         false                arm64         Up to 5 Gigabit      2       0       0              none      -Not Fetched-       $0.0025                  
+m1.small       1       1.69922    xen         false        false                i386, x86_64  Low                  2       0       0              none      -Not Fetched-       $0.01876
 NOTE: 547 entries were truncated, increase --max-results to see more
 ```
 Available shorthand flags: vcpus, memory, gpu-memory-total, network-interfaces, spot-price, on-demand-price, instance-storage, ebs-optimized-baseline-bandwidth, ebs-optimized-baseline-throughput, ebs-optimized-baseline-iops, gpus, inference-accelerators
@@ -170,16 +171,16 @@ Available shorthand flags: vcpus, memory, gpu-memory-total, network-interfaces, 
 $ ec2-instance-selector -r us-east-1 -o table-wide --max-results 10 --sort-by .MemoryInfo.SizeInMiB --sort-direction desc
 Instance Type      VCPUs   Mem (GiB)  Hypervisor  Current Gen  Hibernation Support  CPU Arch  Network Performance  ENIs    GPUs    GPU Mem (GiB)  GPU Info  On-Demand Price/Hr  Spot Price/Hr (30d avg)  
 -------------      -----   ---------  ----------  -----------  -------------------  --------  -------------------  ----    ----    -------------  --------  ------------------  -----------------------  
-u-12tb1.112xlarge  448     12,288     nitro       true         false                x86_64    100 Gigabit          15      0       0                        $109.2              -Not Fetched-            
-u-9tb1.112xlarge   448     9,216      nitro       true         false                x86_64    100 Gigabit          15      0       0                        $81.9               -Not Fetched-            
-u-6tb1.112xlarge   448     6,144      nitro       true         false                x86_64    100 Gigabit          15      0       0                        $54.6               -Not Fetched-            
-u-6tb1.56xlarge    224     6,144      nitro       true         false                x86_64    100 Gigabit          15      0       0                        $46.40391           -Not Fetched-            
-x2iedn.metal       128     4,096      none        true         false                x86_64    100 Gigabit          15      0       0                        $26.676             $8.0028                  
-x2iedn.32xlarge    128     4,096      nitro       true         false                x86_64    100 Gigabit          15      0       0                        $26.676             $8.0028                  
-x1e.32xlarge       128     3,904      xen         true         false                x86_64    25 Gigabit           8       0       0                        $26.688             $8.03461                 
-x2iedn.24xlarge    96      3,072      nitro       true         false                x86_64    75 Gigabit           15      0       0                        $20.007             $13.23032                
-u-3tb1.56xlarge    224     3,072      nitro       true         false                x86_64    50 Gigabit           8       0       0                        $27.3               -Not Fetched-            
-x2idn.metal        128     2,048      none        true         false                x86_64    100 Gigabit          15      0       0                        $13.338             $4.67017
+u-12tb1.112xlarge  448     12,288     nitro       true         false                x86_64    100 Gigabit          15      0       0              none      $109.2              -Not Fetched-            
+u-9tb1.112xlarge   448     9,216      nitro       true         false                x86_64    100 Gigabit          15      0       0              none      -Not Fetched-       -Not Fetched-            
+u-6tb1.112xlarge   448     6,144      nitro       true         false                x86_64    100 Gigabit          15      0       0              none      $54.6               -Not Fetched-            
+u-6tb1.56xlarge    224     6,144      nitro       true         false                x86_64    100 Gigabit          15      0       0              none      $46.40391           -Not Fetched-            
+x2iedn.metal       128     4,096      none        true         false                x86_64    100 Gigabit          15      0       0              none      $26.676             $20.92296                
+x2iedn.32xlarge    128     4,096      nitro       true         false                x86_64    100 Gigabit          15      0       0              none      $26.676             $8.70294                 
+x1e.32xlarge       128     3,904      xen         true         false                x86_64    25 Gigabit           8       0       0              none      $26.688             $8.0064                  
+x2iedn.24xlarge    96      3,072      nitro       true         false                x86_64    75 Gigabit           15      0       0              none      $20.007             $6.0021                  
+u-3tb1.56xlarge    224     3,072      nitro       true         false                x86_64    50 Gigabit           8       0       0              none      $27.3               -Not Fetched-            
+x2idn.metal        128     2,048      none        true         false                x86_64    100 Gigabit          15      0       0              none      $13.338             $7.46603
 NOTE: 547 entries were truncated, increase --max-results to see more
 ```
 JSON path must point to a field in the [instancetype.Details struct](https://github.com/aws/amazon-ec2-instance-selector/blob/5bffbf2750ee09f5f1308bdc8d4b635a2c6e2721/pkg/instancetypes/instancetypes.go#L37).
