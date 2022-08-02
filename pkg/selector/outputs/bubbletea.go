@@ -15,11 +15,13 @@ package outputs
 
 import (
 	"fmt"
+	"math"
 	"reflect"
 	"strings"
 
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/instancetypes"
 	"github.com/charmbracelet/bubbles/key"
+	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/evertras/bubble-table/table"
@@ -31,8 +33,21 @@ const (
 	headerAndFooterPadding = 7
 	headerPadding          = 2
 
+	// verbose view formatting
+	outlinePadding = 8
+
 	// controls
-	controlsString = "Controls: ↑/↓ - up/down • ←/→  - left/right • shift + ←/→ - pg up/down • q - quit"
+	tableControls   = "Controls: ↑/↓ - up/down • ←/→  - left/right • shift + ←/→ - pg up/down • enter - expand • q - quit"
+	verboseControls = "Controls: ↑/↓ or scroll wheel - up/down • enter - return to table • q - quit"
+
+	// can't get terminal dimensions on startup, so use this
+	initialDimensionVal = 30
+)
+
+const (
+	// table states
+	stateTable   = "table"
+	stateVerbose = "verbose"
 )
 
 var (
@@ -57,17 +72,36 @@ var (
 	}
 )
 
+// verboseState represents the current state of the verbose view
+type verboseState struct {
+	// model for verbose output viewport
+	viewport viewport.Model
+
+	instanceTypes []*instancetypes.Details
+
+	// the instance which the verbose output is focused on
+	focusedInstanceName *string
+}
+
 // BubbleTeaModel is used to hold the state of the bubble tea TUI
 type BubbleTeaModel struct {
+	// holds the output state of the model
+	state string
+
 	// the model for the table output
 	TableModel table.Model
+
+	// holds state for the verbose view
+	verboseView verboseState
 }
 
 // NewBubbleTeaModel initializes a new bubble tea Model which represents
 // a stylized table to display instance types
 func NewBubbleTeaModel(instanceTypes []*instancetypes.Details) BubbleTeaModel {
 	return BubbleTeaModel{
-		TableModel: createTable(instanceTypes),
+		state:       stateTable,
+		TableModel:  createTable(instanceTypes),
+		verboseView: *initVerboseView(instanceTypes),
 	}
 }
 
@@ -83,52 +117,90 @@ func (m BubbleTeaModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "ctrl+c", "esc", "q":
+		case "ctrl+c", "q":
 			return m, tea.Quit
+		case "enter":
+			switch m.state {
+			case stateTable:
+				// switch from table state to verbose state
+				m.state = stateVerbose
+
+				// get focused instance type
+				rowIndex := m.TableModel.GetHighlightedRowIndex()
+				focusedInstance := m.verboseView.instanceTypes[rowIndex]
+
+				// set content of view
+				m.verboseView.focusedInstanceName = focusedInstance.InstanceType
+				m.verboseView.viewport.SetContent(VerboseInstanceTypeOutput([]*instancetypes.Details{focusedInstance})[0])
+
+				// move viewport to top of printout
+				m.verboseView.viewport.SetYOffset(0)
+			case stateVerbose:
+				// switch from verbose state to table state
+				m.state = stateTable
+			}
 		}
 	case tea.WindowSizeMsg:
 		// handle screen resizing
-
-		// This is needed to handle a bug with bubble tea
-		// where resizing causes misprints (https://github.com/Evertras/bubble-table/issues/121)
-		termenv.ClearScreen()
-
-		// handle width changes
-		m.TableModel = m.TableModel.WithMaxTotalWidth(msg.Width)
-
-		// handle height changes
-		if headerAndFooterPadding >= msg.Height {
-			// height too short to fit rows
-			m.TableModel = m.TableModel.WithPageSize(0)
-		} else {
-			newRowsPerPage := msg.Height - headerAndFooterPadding
-			m.TableModel = m.TableModel.WithPageSize(newRowsPerPage)
-		}
+		m = resizeTableView(m, msg)
+		m = resizeVerboseView(m, msg)
 	}
 
-	// update table
-	var cmd tea.Cmd
-	m.TableModel, cmd = m.TableModel.Update(msg)
+	switch m.state {
+	case stateTable:
+		// update table
+		var cmd tea.Cmd
+		m.TableModel, cmd = m.TableModel.Update(msg)
 
-	// update footer
-	controlsStr := lipgloss.NewStyle().Faint(true).Render(controlsString)
-	footerStr := fmt.Sprintf("Page: %d/%d | %s", m.TableModel.CurrentPage(), m.TableModel.MaxPages(), controlsStr)
-	m.TableModel = m.TableModel.WithStaticFooter(footerStr)
+		// update footer
+		controlsStr := lipgloss.NewStyle().Faint(true).Render(tableControls)
+		footerStr := fmt.Sprintf("Page: %d/%d | %s", m.TableModel.CurrentPage(), m.TableModel.MaxPages(), controlsStr)
+		m.TableModel = m.TableModel.WithStaticFooter(footerStr)
 
-	return m, cmd
+		return m, cmd
+	case stateVerbose:
+		// update viewport
+		var cmd tea.Cmd
+		m.verboseView.viewport, cmd = m.verboseView.viewport.Update(msg)
+		return m, cmd
+	}
+
+	return m, nil
 }
 
 // View is used by bubble tea to render the bubble tea model
 func (m BubbleTeaModel) View() string {
 	outputStr := strings.Builder{}
 
-	outputStr.WriteString(m.TableModel.View())
-	outputStr.WriteString("\n")
+	switch m.state {
+	case stateTable:
+		outputStr.WriteString(m.TableModel.View())
+		outputStr.WriteString("\n")
+	case stateVerbose:
+		// format header for viewport
+		instanceName := titleStyle.Render(*m.verboseView.focusedInstanceName)
+		line := strings.Repeat("─", int(math.Max(0, float64(m.verboseView.viewport.Width-lipgloss.Width(instanceName)))))
+		outputStr.WriteString(lipgloss.JoinHorizontal(lipgloss.Center, instanceName, line))
+		outputStr.WriteString("\n")
+
+		outputStr.WriteString(m.verboseView.viewport.View())
+		outputStr.WriteString("\n")
+
+		// format footer for viewport
+		pagePercentage := infoStyle.Render(fmt.Sprintf("%3.f%%", m.verboseView.viewport.ScrollPercent()*100))
+		line = strings.Repeat("─", int(math.Max(0, float64(m.verboseView.viewport.Width-lipgloss.Width(pagePercentage)))))
+		outputStr.WriteString(lipgloss.JoinHorizontal(lipgloss.Center, line, pagePercentage))
+		outputStr.WriteString("\n")
+
+		// controls
+		outputStr.WriteString(lipgloss.NewStyle().Faint(true).Render(verboseControls))
+		outputStr.WriteString("\n")
+	}
 
 	return outputStr.String()
 }
 
-// table creation helpers:
+// table helpers:
 
 // createRows creates a row for each instance type in the passed in list
 func createRows(columnsData []*wideColumnsData) *[]table.Row {
@@ -256,4 +328,77 @@ func createTable(instanceTypes []*instancetypes.Details) table.Model {
 		HeaderStyle(lipgloss.NewStyle().Align(lipgloss.Center).Bold(true))
 
 	return newTable
+}
+
+// resizeTableView will change the dimensions of the table in order to accommodate
+// the new window dimensions represented by the given tea.WindowSizeMsg
+func resizeTableView(model BubbleTeaModel, msg tea.WindowSizeMsg) BubbleTeaModel {
+	// This is needed to handle a bug with bubble tea
+	// where resizing causes misprints (https://github.com/Evertras/bubble-table/issues/121)
+	termenv.ClearScreen()
+
+	// handle width changes
+	model.TableModel = model.TableModel.WithMaxTotalWidth(msg.Width)
+
+	// handle height changes
+	if headerAndFooterPadding >= msg.Height {
+		// height too short to fit rows
+		model.TableModel = model.TableModel.WithPageSize(0)
+	} else {
+		newRowsPerPage := msg.Height - headerAndFooterPadding
+		model.TableModel = model.TableModel.WithPageSize(newRowsPerPage)
+	}
+
+	return model
+}
+
+// verbose helpers:
+
+// styling for viewport
+var (
+	titleStyle = func() lipgloss.Style {
+		b := lipgloss.RoundedBorder()
+		b.Right = "├"
+		return lipgloss.NewStyle().BorderStyle(b).Padding(0, 1)
+	}()
+
+	infoStyle = func() lipgloss.Style {
+		b := lipgloss.RoundedBorder()
+		b.Left = "┤"
+		return titleStyle.Copy().BorderStyle(b)
+	}()
+)
+
+// initVerboseView initializes and returns a new verboseState based on the given
+// instance type details
+func initVerboseView(instanceTypes []*instancetypes.Details) *verboseState {
+	viewportModel := viewport.New(initialDimensionVal, initialDimensionVal)
+	viewportModel.MouseWheelEnabled = true
+
+	return &verboseState{
+		viewport:      viewportModel,
+		instanceTypes: instanceTypes,
+	}
+}
+
+// resizeVerboseView will change the dimensions of the verbose viewport in order to accommodate
+// the new window dimensions represented by the given tea.WindowSizeMsg
+func resizeVerboseView(model BubbleTeaModel, msg tea.WindowSizeMsg) BubbleTeaModel {
+	// This is needed to handle a bug with bubble tea
+	// where resizing causes misprints (https://github.com/Evertras/bubble-table/issues/121)
+	termenv.ClearScreen()
+
+	// handle width changes
+	model.verboseView.viewport.Width = msg.Width
+
+	// handle height changes
+	if outlinePadding >= msg.Height {
+		// height too short to fit viewport
+		model.verboseView.viewport.Height = 0
+	} else {
+		newHeight := msg.Height - outlinePadding
+		model.verboseView.viewport.Height = newHeight
+	}
+
+	return model
 }
