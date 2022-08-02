@@ -221,6 +221,8 @@ func getWideColumnsData(instanceTypes []*instancetypes.Details) []*wideColumnsDa
 				gpus = gpus + *gpuInfo.Count
 				gpuType = append(gpuType, *gpuInfo.Manufacturer+" "+*gpuInfo.Name)
 			}
+		} else {
+			gpuType = append(gpuType, none)
 		}
 
 		onDemandPricePerHourStr := "-Not Fetched-"
