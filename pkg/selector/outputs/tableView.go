@@ -16,9 +16,11 @@ package outputs
 import (
 	"fmt"
 	"reflect"
+	"strings"
 
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/instancetypes"
 	"github.com/charmbracelet/bubbles/key"
+	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/evertras/bubble-table/table"
@@ -26,11 +28,11 @@ import (
 
 const (
 	// table formatting
-	headerAndFooterPadding = 7
+	headerAndFooterPadding = 8
 	headerPadding          = 2
 
 	// controls
-	tableControls = "Controls: ↑/↓ - up/down • ←/→  - left/right • shift + ←/→ - pg up/down • enter - expand • q - quit"
+	tableControls = "Controls: ↑/↓ - up/down • ←/→  - left/right • shift + ←/→ - pg up/down • e - expand • q - quit"
 	ellipses      = "..."
 )
 
@@ -39,6 +41,9 @@ type tableModel struct {
 	table table.Model
 
 	tableWidth int
+
+	// the model for the filtering text input
+	filterTextInput textinput.Model
 }
 
 var (
@@ -67,8 +72,9 @@ var (
 // instance type details
 func initTableModel(instanceTypes []*instancetypes.Details) *tableModel {
 	return &tableModel{
-		table:      createTable(instanceTypes),
-		tableWidth: initialDimensionVal,
+		table:           createTable(instanceTypes),
+		tableWidth:      initialDimensionVal,
+		filterTextInput: textinput.New(),
 	}
 }
 
@@ -140,7 +146,8 @@ func createColumns(columnsData []*wideColumnsData) *[]table.Column {
 	structType := reflect.TypeOf(columnDataStruct)
 	for i := 0; i < structType.NumField(); i++ {
 		columnHeader := structType.Field(i).Tag.Get(columnTag)
-		newCol := table.NewColumn(columnHeader, columnHeader, maxColWidth(columnsData, columnHeader))
+		newCol := table.NewColumn(columnHeader, columnHeader, maxColWidth(columnsData, columnHeader)).
+			WithFiltered(true)
 
 		columns = append(columns, newCol)
 	}
@@ -192,7 +199,8 @@ func createTable(instanceTypes []*instancetypes.Details) table.Model {
 			lipgloss.NewStyle().
 				Align((lipgloss.Left)),
 		).
-		HeaderStyle(lipgloss.NewStyle().Align(lipgloss.Center).Bold(true))
+		HeaderStyle(lipgloss.NewStyle().Align(lipgloss.Center).Bold(true)).
+		Filtered(true)
 
 	return newTable
 }
@@ -241,6 +249,31 @@ func (m tableModel) updateFooter() tableModel {
 
 // update updates the state of the tableModel
 func (m tableModel) update(msg tea.Msg) (tableModel, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		// update filtering input field
+		if m.filterTextInput.Focused() {
+			var cmd tea.Cmd
+			if msg.String() == "enter" || msg.String() == "esc" {
+				// exit filter input and update controls string
+				m.filterTextInput.Blur()
+				m = m.updateFooter()
+			} else {
+				m.filterTextInput, cmd = m.filterTextInput.Update(msg)
+			}
+
+			m.table = m.table.WithFilterInput(m.filterTextInput)
+			return m, cmd
+		}
+
+		// listen for specific inputs
+		switch msg.String() {
+		case "f":
+			// focus filter input field
+			m.filterTextInput.Focus()
+		}
+	}
+
 	var cmd tea.Cmd
 	m.table, cmd = m.table.Update(msg)
 
@@ -252,5 +285,15 @@ func (m tableModel) update(msg tea.Msg) (tableModel, tea.Cmd) {
 
 // view returns a string representing the table view
 func (m tableModel) view() string {
-	return m.table.View() + "\n"
+	outputStr := strings.Builder{}
+
+	outputStr.WriteString(m.table.View())
+	outputStr.WriteString("\n")
+
+	if m.filterTextInput.Value() != "" || m.filterTextInput.Focused() {
+		outputStr.WriteString(m.filterTextInput.View())
+		outputStr.WriteString("\n")
+	}
+
+	return outputStr.String()
 }
