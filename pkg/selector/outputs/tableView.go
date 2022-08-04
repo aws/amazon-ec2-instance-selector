@@ -88,11 +88,11 @@ func createFilterTextInput() textinput.Model {
 }
 
 // createRows creates a row for each instance type in the passed in list
-func createRows(columnsData []*wideColumnsData) *[]table.Row {
+func createRows(columnsData []*wideColumnsData, instanceTypes []*instancetypes.Details) *[]table.Row {
 	rows := []table.Row{}
 
 	// create a row for each instance type
-	for _, data := range columnsData {
+	for i, data := range columnsData {
 		rowData := table.RowData{}
 
 		// create a new row by iterating through the column data
@@ -105,6 +105,9 @@ func createRows(columnsData []*wideColumnsData) *[]table.Row {
 			colValue := structValue.Field(i)
 			rowData[columnName] = getUnderlyingValue(colValue)
 		}
+
+		// add instance type as metaData
+		rowData[metaDataKey] = instanceTypes[i]
 
 		newRow := table.NewRow(rowData)
 
@@ -197,7 +200,7 @@ func createTable(instanceTypes []*instancetypes.Details) table.Model {
 	columnsData := getWideColumnsData(instanceTypes)
 
 	newTable := table.New(*createColumns(columnsData)).
-		WithRows(*createRows(columnsData)).
+		WithRows(*createRows(columnsData, instanceTypes)).
 		WithKeyMap(*createKeyMap()).
 		WithPageSize(initialDimensionVal).
 		Focused(true).

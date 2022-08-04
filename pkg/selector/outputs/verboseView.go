@@ -37,8 +37,6 @@ type verboseModel struct {
 	// model for verbose output viewport
 	viewport viewport.Model
 
-	instanceTypes []*instancetypes.Details
-
 	// the instance which the verbose output is focused on
 	focusedInstanceName *string
 }
@@ -65,8 +63,7 @@ func initVerboseModel(instanceTypes []*instancetypes.Details) *verboseModel {
 	viewportModel.MouseWheelEnabled = true
 
 	return &verboseModel{
-		viewport:      viewportModel,
-		instanceTypes: instanceTypes,
+		viewport: viewportModel,
 	}
 }
 

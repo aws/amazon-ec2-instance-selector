@@ -22,6 +22,8 @@ import (
 const (
 	// can't get terminal dimensions on startup, so use this
 	initialDimensionVal = 30
+
+	metaDataKey = "instance type"
 )
 
 const (
@@ -83,8 +85,8 @@ func (m BubbleTeaModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.currentState = stateVerbose
 
 				// get focused instance type
-				rowIndex := m.tableModel.table.GetHighlightedRowIndex()
-				focusedInstance := m.verboseModel.instanceTypes[rowIndex]
+				focusedRow := m.tableModel.table.HighlightedRow()
+				focusedInstance := focusedRow.Data[metaDataKey].(*instancetypes.Details)
 
 				// set content of view
 				m.verboseModel.focusedInstanceName = focusedInstance.InstanceType
