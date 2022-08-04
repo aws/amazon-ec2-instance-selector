@@ -74,8 +74,17 @@ func initTableModel(instanceTypes []*instancetypes.Details) *tableModel {
 	return &tableModel{
 		table:           createTable(instanceTypes),
 		tableWidth:      initialDimensionVal,
-		filterTextInput: textinput.New(),
+		filterTextInput: createFilterTextInput(),
 	}
+}
+
+// createFilterTextInput creates and styles a text input for filtering
+func createFilterTextInput() textinput.Model {
+	filterTextInput := textinput.New()
+	filterTextInput.Prompt = "Filter: "
+	filterTextInput.PromptStyle = lipgloss.NewStyle().Bold(true)
+
+	return filterTextInput
 }
 
 // createRows creates a row for each instance type in the passed in list

@@ -65,6 +65,11 @@ func (m BubbleTeaModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// check for quit or change in state
 		switch msg.String() {
 		case "ctrl+c", "q":
+			// don't change state if using text input
+			if m.tableModel.filterTextInput.Focused() {
+				break
+			}
+
 			return m, tea.Quit
 		case "e":
 			switch m.currentState {
