@@ -11,7 +11,7 @@
 // express or implied. See the License for the specific language governing
 // permissions and limitations under the License.
 
-package outputs_test
+package outputs
 
 import (
 	"encoding/json"
@@ -21,9 +21,12 @@ import (
 	"testing"
 
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/instancetypes"
-	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/selector/outputs"
 	h "github.com/aws/amazon-ec2-instance-selector/v2/pkg/test"
 	"github.com/evertras/bubble-table/table"
+)
+
+const (
+	mockFilesPath = "../../../test/static"
 )
 
 // helpers
@@ -59,8 +62,8 @@ func TestNewBubbleTeaModel_Hypervisor(t *testing.T) {
 	instanceTypes := getInstanceTypeDetails(t, "g3_16xlarge.json")
 
 	// test non nil Hypervisor
-	model := outputs.NewBubbleTeaModel(instanceTypes)
-	rows := model.TableModel.GetVisibleRows()
+	model := NewBubbleTeaModel(instanceTypes)
+	rows := model.tableModel.table.GetVisibleRows()
 	expectedHypervisor := "xen"
 	actualHypervisor := rows[0].Data["Hypervisor"]
 
@@ -68,8 +71,8 @@ func TestNewBubbleTeaModel_Hypervisor(t *testing.T) {
 
 	// test nil Hypervisor
 	instanceTypes[0].Hypervisor = nil
-	model = outputs.NewBubbleTeaModel(instanceTypes)
-	rows = model.TableModel.GetVisibleRows()
+	model = NewBubbleTeaModel(instanceTypes)
+	rows = model.tableModel.table.GetVisibleRows()
 	expectedHypervisor = "none"
 	actualHypervisor = rows[0].Data["Hypervisor"]
 
@@ -78,8 +81,8 @@ func TestNewBubbleTeaModel_Hypervisor(t *testing.T) {
 
 func TestNewBubbleTeaModel_CPUArchitectures(t *testing.T) {
 	instanceTypes := getInstanceTypeDetails(t, "g3_16xlarge.json")
-	model := outputs.NewBubbleTeaModel(instanceTypes)
-	rows := model.TableModel.GetVisibleRows()
+	model := NewBubbleTeaModel(instanceTypes)
+	rows := model.tableModel.table.GetVisibleRows()
 
 	actualGPUArchitectures := "x86_64"
 	expectedGPUArchitectures := rows[0].Data["CPU Arch"]
@@ -89,8 +92,8 @@ func TestNewBubbleTeaModel_CPUArchitectures(t *testing.T) {
 
 func TestNewBubbleTeaModel_GPU(t *testing.T) {
 	instanceTypes := getInstanceTypeDetails(t, "g3_16xlarge.json")
-	model := outputs.NewBubbleTeaModel(instanceTypes)
-	rows := model.TableModel.GetVisibleRows()
+	model := NewBubbleTeaModel(instanceTypes)
+	rows := model.tableModel.table.GetVisibleRows()
 
 	// test GPU count
 	expectedGPUCount := "4"
@@ -115,8 +118,8 @@ func TestNewBubbleTeaModel_ODPricing(t *testing.T) {
 	instanceTypes := getInstanceTypeDetails(t, "g3_16xlarge.json")
 
 	// test non nil OD price
-	model := outputs.NewBubbleTeaModel(instanceTypes)
-	rows := model.TableModel.GetVisibleRows()
+	model := NewBubbleTeaModel(instanceTypes)
+	rows := model.tableModel.table.GetVisibleRows()
 	expectedODPrice := "$4.56"
 	actualODPrice := fmt.Sprintf("%v", rows[0].Data["On-Demand Price/Hr"])
 
@@ -124,8 +127,8 @@ func TestNewBubbleTeaModel_ODPricing(t *testing.T) {
 
 	// test nil OD price
 	instanceTypes[0].OndemandPricePerHour = nil
-	model = outputs.NewBubbleTeaModel(instanceTypes)
-	rows = model.TableModel.GetVisibleRows()
+	model = NewBubbleTeaModel(instanceTypes)
+	rows = model.tableModel.table.GetVisibleRows()
 	expectedODPrice = "-Not Fetched-"
 	actualODPrice = fmt.Sprintf("%v", rows[0].Data["On-Demand Price/Hr"])
 
@@ -136,8 +139,8 @@ func TestNewBubbleTeaModel_SpotPricing(t *testing.T) {
 	instanceTypes := getInstanceTypeDetails(t, "g3_16xlarge.json")
 
 	// test non nil spot price
-	model := outputs.NewBubbleTeaModel(instanceTypes)
-	rows := model.TableModel.GetVisibleRows()
+	model := NewBubbleTeaModel(instanceTypes)
+	rows := model.tableModel.table.GetVisibleRows()
 	expectedODPrice := "$1.368"
 	actualODPrice := fmt.Sprintf("%v", rows[0].Data["Spot Price/Hr (30d avg)"])
 
@@ -145,8 +148,8 @@ func TestNewBubbleTeaModel_SpotPricing(t *testing.T) {
 
 	// test nil spot price
 	instanceTypes[0].SpotPrice = nil
-	model = outputs.NewBubbleTeaModel(instanceTypes)
-	rows = model.TableModel.GetVisibleRows()
+	model = NewBubbleTeaModel(instanceTypes)
+	rows = model.tableModel.table.GetVisibleRows()
 	expectedODPrice = "-Not Fetched-"
 	actualODPrice = fmt.Sprintf("%v", rows[0].Data["Spot Price/Hr (30d avg)"])
 
@@ -155,8 +158,8 @@ func TestNewBubbleTeaModel_SpotPricing(t *testing.T) {
 
 func TestNewBubbleTeaModel_Rows(t *testing.T) {
 	instanceTypes := getInstanceTypeDetails(t, "3_instances.json")
-	model := outputs.NewBubbleTeaModel(instanceTypes)
-	rows := model.TableModel.GetVisibleRows()
+	model := NewBubbleTeaModel(instanceTypes)
+	rows := model.tableModel.table.GetVisibleRows()
 
 	h.Assert(t, len(rows) == len(instanceTypes), "Number of rows should be %d, but is actually %d", len(instanceTypes), len(rows))
 
@@ -165,6 +168,6 @@ func TestNewBubbleTeaModel_Rows(t *testing.T) {
 		currInstanceName := instanceTypes[i].InstanceType
 		currRowName := rows[i].Data["Instance Type"]
 
-		h.Assert(t, *currInstanceName == currRowName, "Rows should be in following order: %s. Actual order: [%s]", outputs.OneLineOutput(instanceTypes), getRowsInstances(rows))
+		h.Assert(t, *currInstanceName == currRowName, "Rows should be in following order: %s. Actual order: [%s]", OneLineOutput(instanceTypes), getRowsInstances(rows))
 	}
 }
