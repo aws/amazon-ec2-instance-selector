@@ -40,7 +40,10 @@ type tableModel struct {
 	// the model for the table output
 	table table.Model
 
-	tableWidth int
+	// width and rows per page are inaccessible through
+	// bubble tea implementation, so expose them here
+	tableWidth       int
+	tableRowsPerPage int
 
 	// the model for the filtering text input
 	filterTextInput textinput.Model
@@ -180,8 +183,8 @@ func createColumns(columnsData []*wideColumnsData) *[]table.Column {
 	return &columns
 }
 
-// createKeyMap creates a KeyMap with the controls for the table
-func createKeyMap() *table.KeyMap {
+// createTableKeyMap creates a KeyMap with the controls for the table
+func createTableKeyMap() *table.KeyMap {
 	keys := table.KeyMap{
 		RowDown: key.NewBinding(
 			key.WithKeys("down"),
@@ -214,7 +217,7 @@ func createTable(instanceTypes []*instancetypes.Details) table.Model {
 
 	newTable := table.New(*createColumns(columnsData)).
 		WithRows(*createRows(columnsData, instanceTypes)).
-		WithKeyMap(*createKeyMap()).
+		WithKeyMap(*createTableKeyMap()).
 		WithPageSize(initialDimensionVal).
 		Focused(true).
 		Border(customBorder).
@@ -242,9 +245,11 @@ func (m tableModel) resizeView(msg tea.WindowSizeMsg) tableModel {
 	if headerAndFooterPadding >= msg.Height {
 		// height too short to fit rows
 		m.table = m.table.WithPageSize(0)
+		m.tableRowsPerPage = 0
 	} else {
 		newRowsPerPage := msg.Height - headerAndFooterPadding
 		m.table = m.table.WithPageSize(newRowsPerPage)
+		m.tableRowsPerPage = newRowsPerPage
 	}
 
 	return m
@@ -266,7 +271,7 @@ func (m tableModel) updateFooter() tableModel {
 		controlsStr = tableControls[0:controlsWidth] + ellipses
 	}
 
-	renderedControls := lipgloss.NewStyle().Faint(true).Render(controlsStr)
+	renderedControls := controlsStyle.Render(controlsStr)
 	footerStr := fmt.Sprintf("%s%s", pageStr, renderedControls)
 	m.table = m.table.WithStaticFooter(footerStr)
 

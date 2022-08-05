@@ -111,7 +111,7 @@ func (m verboseModel) view() string {
 	outputStr.WriteString("\n")
 
 	// controls
-	outputStr.WriteString(lipgloss.NewStyle().Faint(true).Render(verboseControls))
+	outputStr.WriteString(controlsStyle.Render(verboseControls))
 	outputStr.WriteString("\n")
 
 	return outputStr.String()
