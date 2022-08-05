@@ -50,6 +50,8 @@ type tableModel struct {
 
 	// the rows that existed on the table's creation
 	originalRows []table.Row
+
+	canSelectRows bool
 }
 
 var (
@@ -85,6 +87,7 @@ func initTableModel(instanceTypes []*instancetypes.Details) *tableModel {
 		filterTextInput: createFilterTextInput(),
 		isTrimmed:       false,
 		originalRows:    table.GetVisibleRows(),
+		canSelectRows:   true,
 	}
 }
 
@@ -198,9 +201,6 @@ func createKeyMap() *table.KeyMap {
 		PageUp: key.NewBinding(
 			key.WithKeys("shift+left"),
 		),
-		RowSelectToggle: key.NewBinding(
-			key.WithKeys(" "),
-		),
 	}
 
 	return &keys
@@ -301,10 +301,11 @@ func (m tableModel) update(msg tea.Msg) (tableModel, tea.Cmd) {
 			// handle trimming to selected rows
 			if m.isTrimmed {
 				// undo trim
-				m.table = m.table.Filtered(false)
 				m.table = m.table.WithRows(m.originalRows)
-				m.table = m.table.Filtered(true)
+
+				// allow rows to be selected again
 				m.table = m.table.SelectableRows(true)
+				m.canSelectRows = true
 
 				m.isTrimmed = false
 			} else {
@@ -315,10 +316,25 @@ func (m tableModel) update(msg tea.Msg) (tableModel, tea.Cmd) {
 				m.originalRows = m.table.GetVisibleRows()
 				m.table = m.table.Filtered(true)
 
+				// prevent rows from being selected until trim is
+				// undone
 				m.table = m.table.SelectableRows(false)
+				m.canSelectRows = false
 
 				m.table = m.table.WithRows(m.table.SelectedRows())
 				m.isTrimmed = true
+			}
+		case " ":
+			// custom toggling of selected rows because bubble tea implementation
+			// breaks trimming
+			if m.canSelectRows {
+				m.table = m.table.Filtered(false)
+				originalRows := m.table.GetVisibleRows()
+				m.table = m.table.Filtered(true)
+
+				originalRows[m.table.GetHighlightedRowIndex()] = originalRows[m.table.GetHighlightedRowIndex()].Selected(true)
+
+				m.table = m.table.WithRows(originalRows)
 			}
 		}
 	}
@@ -339,7 +355,7 @@ func (m tableModel) view() string {
 	outputStr.WriteString(m.table.View())
 	outputStr.WriteString("\n")
 
-	if m.filterTextInput.Value() != "" || m.filterTextInput.Focused() {
+	if m.table.GetIsFilterActive() || m.filterTextInput.Focused() {
 		outputStr.WriteString(m.filterTextInput.View())
 		outputStr.WriteString("\n")
 	}
