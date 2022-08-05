@@ -81,12 +81,12 @@ func (m BubbleTeaModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					break
 				}
 
-				// switch from table state to verbose state
-				m.currentState = stateVerbose
-
 				// get focused instance type
 				focusedRow := m.tableModel.table.HighlightedRow()
-				focusedInstance := focusedRow.Data[metaDataKey].(*instancetypes.Details)
+				focusedInstance, ok := focusedRow.Data[metaDataKey].(*instancetypes.Details)
+				if !ok {
+					break
+				}
 
 				// set content of view
 				m.verboseModel.focusedInstanceName = focusedInstance.InstanceType
@@ -94,6 +94,9 @@ func (m BubbleTeaModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 				// move viewport to top of printout
 				m.verboseModel.viewport.SetYOffset(0)
+
+				// switch from table state to verbose state
+				m.currentState = stateVerbose
 			case stateVerbose:
 				// switch from verbose state to table state
 				m.currentState = stateTable
