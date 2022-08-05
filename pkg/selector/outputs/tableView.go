@@ -32,7 +32,7 @@ const (
 	headerPadding          = 2
 
 	// controls
-	tableControls = "Controls: ↑/↓ - up/down • ←/→  - left/right • shift + ←/→ - pg up/down • e - expand • q - quit"
+	tableControls = "Controls: ↑/↓ - up/down • ←/→  - left/right • shift + ←/→ - pg up/down • e - expand • f - filter • t - trim toggle • space - select • q - quit"
 	ellipses      = "..."
 )
 
@@ -44,6 +44,12 @@ type tableModel struct {
 
 	// the model for the filtering text input
 	filterTextInput textinput.Model
+
+	// shows whether the rows are currently trimmed or not
+	isTrimmed bool
+
+	// the rows that existed on the table's creation
+	originalRows []table.Row
 }
 
 var (
@@ -71,10 +77,14 @@ var (
 // initTableModel initializes and returns a new tableModel based on the given
 // instance type details
 func initTableModel(instanceTypes []*instancetypes.Details) *tableModel {
+	table := createTable(instanceTypes)
+
 	return &tableModel{
-		table:           createTable(instanceTypes),
+		table:           table,
 		tableWidth:      initialDimensionVal,
 		filterTextInput: createFilterTextInput(),
+		isTrimmed:       false,
+		originalRows:    table.GetVisibleRows(),
 	}
 }
 
@@ -188,6 +198,9 @@ func createKeyMap() *table.KeyMap {
 		PageUp: key.NewBinding(
 			key.WithKeys("shift+left"),
 		),
+		RowSelectToggle: key.NewBinding(
+			key.WithKeys(" "),
+		),
 	}
 
 	return &keys
@@ -212,7 +225,8 @@ func createTable(instanceTypes []*instancetypes.Details) table.Model {
 				Align((lipgloss.Left)),
 		).
 		HeaderStyle(lipgloss.NewStyle().Align(lipgloss.Center).Bold(true)).
-		Filtered(true)
+		Filtered(true).
+		SelectableRows(true)
 
 	return newTable
 }
@@ -283,6 +297,29 @@ func (m tableModel) update(msg tea.Msg) (tableModel, tea.Cmd) {
 		case "f":
 			// focus filter input field
 			m.filterTextInput.Focus()
+		case "t":
+			// handle trimming to selected rows
+			if m.isTrimmed {
+				// undo trim
+				m.table = m.table.Filtered(false)
+				m.table = m.table.WithRows(m.originalRows)
+				m.table = m.table.Filtered(true)
+				m.table = m.table.SelectableRows(true)
+
+				m.isTrimmed = false
+			} else {
+				// trim
+
+				// store current state of rows before trimming
+				m.table = m.table.Filtered(false)
+				m.originalRows = m.table.GetVisibleRows()
+				m.table = m.table.Filtered(true)
+
+				m.table = m.table.SelectableRows(false)
+
+				m.table = m.table.WithRows(m.table.SelectedRows())
+				m.isTrimmed = true
+			}
 		}
 	}
 
