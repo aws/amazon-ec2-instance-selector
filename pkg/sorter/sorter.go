@@ -38,6 +38,33 @@ const (
 
 	gpuCountField              = "gpus"
 	inferenceAcceleratorsField = "inference-accelerators"
+
+	// shorthand flags
+
+	vcpus                          = "vcpus"
+	memory                         = "memory"
+	gpuMemoryTotal                 = "gpu-memory-total"
+	networkInterfaces              = "network-interfaces"
+	spotPrice                      = "spot-price"
+	odPrice                        = "on-demand-price"
+	instanceStorage                = "instance-storage"
+	ebsOptimizedBaselineBandwidth  = "ebs-optimized-baseline-bandwidth"
+	ebsOptimizedBaselineThroughput = "ebs-optimized-baseline-throughput"
+	ebsOptimizedBaselineIOPS       = "ebs-optimized-baseline-iops"
+
+	// JSON field paths for shorthand flags
+
+	instanceNamePath                   = ".InstanceType"
+	vcpuPath                           = ".VCpuInfo.DefaultVCpus"
+	memoryPath                         = ".MemoryInfo.SizeInMiB"
+	gpuMemoryTotalPath                 = ".GpuInfo.TotalGpuMemoryInMiB"
+	networkInterfacesPath              = ".NetworkInfo.MaximumNetworkInterfaces"
+	spotPricePath                      = ".SpotPrice"
+	odPricePath                        = ".OndemandPricePerHour"
+	instanceStoragePath                = ".InstanceStorageInfo.TotalSizeInGB"
+	ebsOptimizedBaselineBandwidthPath  = ".EbsInfo.EbsOptimizedInfo.BaselineBandwidthInMbps"
+	ebsOptimizedBaselineThroughputPath = ".EbsInfo.EbsOptimizedInfo.BaselineThroughputInMBps"
+	ebsOptimizedBaselineIOPSPath       = ".EbsInfo.EbsOptimizedInfo.BaselineIops"
 )
 
 // sorterNode represents a sortable instance type which holds the value
@@ -58,10 +85,29 @@ type sorter struct {
 // Sort sorts the given instance types by the given field in the given direction
 //
 // sortField is a json path to a field in the instancetypes.Details struct which represents
-// the field to sort instance types by (Ex: ".MemoryInfo.SizeInMiB").
+// the field to sort instance types by (Ex: ".MemoryInfo.SizeInMiB"). Quantity flags present
+// in the CLI (memory, gpus, etc.) are also accepted.
 //
 // sortDirection represents the direction to sort in. Valid options: "ascending", "asc", "descending", "desc".
 func Sort(instanceTypes []*instancetypes.Details, sortField string, sortDirection string) ([]*instancetypes.Details, error) {
+	sortingKeysMap := map[string]string{
+		vcpus:                          vcpuPath,
+		memory:                         memoryPath,
+		gpuMemoryTotal:                 gpuMemoryTotalPath,
+		networkInterfaces:              networkInterfacesPath,
+		spotPrice:                      spotPricePath,
+		odPrice:                        odPricePath,
+		instanceStorage:                instanceStoragePath,
+		ebsOptimizedBaselineBandwidth:  ebsOptimizedBaselineBandwidthPath,
+		ebsOptimizedBaselineThroughput: ebsOptimizedBaselineThroughputPath,
+		ebsOptimizedBaselineIOPS:       ebsOptimizedBaselineIOPSPath,
+	}
+
+	// determine if user used a shorthand for sorting flag
+	if sortFieldShorthandPath, ok := sortingKeysMap[sortField]; ok {
+		sortField = sortFieldShorthandPath
+	}
+
 	sorter, err := newSorter(instanceTypes, sortField, sortDirection)
 	if err != nil {
 		return nil, fmt.Errorf("an error occurred when preparing to sort instance types: %v", err)

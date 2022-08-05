@@ -129,22 +129,9 @@ const (
 	sortDescending = "descending"
 	sortDesc       = "desc"
 
-	// Sorting Fields
-	spotPrice = "spot-price"
-	odPrice   = "on-demand-price"
+	// Sort filter default
 
-	// JSON field paths
-	instanceNamePath                   = ".InstanceType"
-	vcpuPath                           = ".VCpuInfo.DefaultVCpus"
-	memoryPath                         = ".MemoryInfo.SizeInMiB"
-	gpuMemoryTotalPath                 = ".GpuInfo.TotalGpuMemoryInMiB"
-	networkInterfacesPath              = ".NetworkInfo.MaximumNetworkInterfaces"
-	spotPricePath                      = ".SpotPrice"
-	odPricePath                        = ".OndemandPricePerHour"
-	instanceStoragePath                = ".InstanceStorageInfo.TotalSizeInGB"
-	ebsOptimizedBaselineBandwidthPath  = ".EbsInfo.EbsOptimizedInfo.BaselineBandwidthInMbps"
-	ebsOptimizedBaselineThroughputPath = ".EbsInfo.EbsOptimizedInfo.BaselineThroughputInMBps"
-	ebsOptimizedBaselineIOPSPath       = ".EbsInfo.EbsOptimizedInfo.BaselineIops"
+	instanceNamePath = ".InstanceType"
 )
 
 var (
@@ -181,22 +168,6 @@ Full docs can be found at github.com/aws/amazon-` + binName
 		sortAsc,
 		sortDescending,
 		sortDesc,
-	}
-
-	// map quantity cli flags to json paths for easier cli sorting
-	sortingKeysMap := map[string]string{
-		vcpus:                          vcpuPath,
-		memory:                         memoryPath,
-		gpuMemoryTotal:                 gpuMemoryTotalPath,
-		networkInterfaces:              networkInterfacesPath,
-		spotPrice:                      spotPricePath,
-		odPrice:                        odPricePath,
-		instanceStorage:                instanceStoragePath,
-		ebsOptimizedBaselineBandwidth:  ebsOptimizedBaselineBandwidthPath,
-		ebsOptimizedBaselineThroughput: ebsOptimizedBaselineThroughputPath,
-		ebsOptimizedBaselineIOPS:       ebsOptimizedBaselineIOPSPath,
-		gpus:                           gpus,
-		inferenceAccelerators:          inferenceAccelerators,
 	}
 
 	// Registers flags with specific input types from the cli pkg
@@ -417,11 +388,6 @@ Full docs can be found at github.com/aws/amazon-` + binName
 		} else {
 			log.Println("There were no transformations on the filters to display")
 		}
-	}
-
-	// determine if user used a shorthand for sorting flag
-	if sortFieldShorthandPath, ok := sortingKeysMap[*sortField]; ok {
-		sortField = &sortFieldShorthandPath
 	}
 
 	// fetch instance types without truncating results
