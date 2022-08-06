@@ -19,13 +19,11 @@ import (
 	"strings"
 
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/instancetypes"
-	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/sorter"
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/evertras/bubble-table/table"
 )
 
 const (
@@ -185,26 +183,6 @@ func (m sortingModel) resizeView(msg tea.WindowSizeMsg) sortingModel {
 	m.shorthandList = *shorthandList
 
 	return m
-}
-
-// sortTable sorts the table based on the sorting direction and sorting filter
-// TODO: maybe move this to tableView and then call it in bubble tea when change of state occurs
-func (m sortingModel) sortTable(model BubbleTeaModel, sortFilter string, sortDirection string) (table.Model, error) {
-	instanceTypes, err := sorter.Sort(m.instanceTypes, sortFilter, sortDirection)
-	if err != nil {
-		return model.tableModel.table, err
-	}
-
-	// TODO: maybe ensure dimensions are the same as old table before returning
-	// ensure truncation still occurs by maybe storing selected items and then doing the truncation process here?
-	// ensure filtering is reapplied
-
-	// TODO: To ensure that selected items remain after sorting, perhaps map instancetype to rows. That way
-	// we can quickly sort rows based on the returned sorted instance types. This way we can maybe also avoid
-	// storing instance types in the sortingModel struct because we can have a loop that not only does the mapping
-	// but also gives us a list of instance types from the visible rows
-
-	return createTable(instanceTypes), nil
 }
 
 // update updates the state of the sortingModel

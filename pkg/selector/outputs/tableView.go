@@ -19,6 +19,7 @@ import (
 	"strings"
 
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/instancetypes"
+	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/sorter"
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
@@ -123,7 +124,10 @@ func createRows(columnsData []*wideColumnsData, instanceTypes []*instancetypes.D
 		}
 
 		// add instance type as metaData
-		rowData[metaDataKey] = instanceTypes[i]
+		rowData[instanceTypeKey] = instanceTypes[i]
+
+		// add selected flag as metadata
+		rowData[selectedKey] = false
 
 		newRow := table.NewRow(rowData)
 
@@ -306,38 +310,27 @@ func (m tableModel) update(msg tea.Msg) (tableModel, tea.Cmd) {
 			// handle trimming to selected rows
 			if m.isTrimmed {
 				// undo trim
-				m.table = m.table.WithRows(m.originalRows)
-
-				// allow rows to be selected again
-				m.table = m.table.SelectableRows(true)
-				m.canSelectRows = true
-
+				m = m.untrim()
 				m.isTrimmed = false
 			} else {
 				// trim
-
-				// store current state of rows before trimming
-				m.table = m.table.Filtered(false)
-				m.originalRows = m.table.GetVisibleRows()
-				m.table = m.table.Filtered(true)
-
-				// prevent rows from being selected until trim is
-				// undone
-				m.table = m.table.SelectableRows(false)
-				m.canSelectRows = false
-
-				m.table = m.table.WithRows(m.table.SelectedRows())
+				m = m.trim()
 				m.isTrimmed = true
 			}
 		case " ":
 			// custom toggling of selected rows because bubble tea implementation
 			// breaks trimming
 			if m.canSelectRows {
-				m.table = m.table.Filtered(false)
-				originalRows := m.table.GetVisibleRows()
-				m.table = m.table.Filtered(true)
+				originalRows := m.getUnfilteredRows()
+				selectedRow := originalRows[m.table.GetHighlightedRowIndex()]
+				isSelected, ok := selectedRow.Data[selectedKey].(bool)
+				if !ok {
+					break
+				}
 
-				originalRows[m.table.GetHighlightedRowIndex()] = originalRows[m.table.GetHighlightedRowIndex()].Selected(true)
+				// flip selected flag
+				selectedRow.Data[selectedKey] = !isSelected
+				originalRows[m.table.GetHighlightedRowIndex()] = selectedRow.Selected(!isSelected)
 
 				m.table = m.table.WithRows(originalRows)
 			}
@@ -366,4 +359,88 @@ func (m tableModel) view() string {
 	}
 
 	return outputStr.String()
+}
+
+// sortTable sorts the table based on the sorting direction and sorting filter
+func (m tableModel) sortTable(sortFilter string, sortDirection string) (tableModel, error) {
+	instanceTypes, rowMap := m.getInstaceTypeFromRows()
+	_ = rowMap
+
+	// sort instance types
+	instanceTypes, err := sorter.Sort(instanceTypes, sortFilter, sortDirection)
+	if err != nil {
+		return m, err
+	}
+
+	// get sorted rows from sorted instance types
+	rows := []table.Row{}
+	for _, instance := range instanceTypes {
+		currRow := rowMap[*instance.InstanceType]
+		rows = append(rows, currRow)
+	}
+
+	m.table = m.table.WithRows(rows)
+
+	// apply truncation if needed
+	if m.isTrimmed {
+		m = m.trim()
+	}
+
+	return m, nil
+}
+
+// getInstanceTypeFromRows goes through the rows of the table model and returns both a list of instance
+// types and a mapping of instances to rows
+func (m tableModel) getInstaceTypeFromRows() ([]*instancetypes.Details, map[string]table.Row) {
+	instanceTypes := []*instancetypes.Details{}
+	rowMap := make(map[string]table.Row)
+
+	rows := m.getUnfilteredRows()
+	for _, row := range rows {
+		currInstance, ok := row.Data[instanceTypeKey].(*instancetypes.Details)
+		if !ok {
+			continue
+		}
+
+		instanceTypes = append(instanceTypes, currInstance)
+		rowMap[*currInstance.InstanceType] = row
+	}
+
+	return instanceTypes, rowMap
+}
+
+// getUnfilteredRows gets the rows in the given table model without any filtering applied
+func (m tableModel) getUnfilteredRows() []table.Row {
+	m.table = m.table.Filtered(false)
+	rows := m.table.GetVisibleRows()
+	m.table = m.table.Filtered(true)
+
+	return rows
+}
+
+// trim will trim the table to only the selected rows
+func (m tableModel) trim() tableModel {
+	// store current state of rows before trimming
+	m.originalRows = m.getUnfilteredRows()
+
+	// prevent rows from being selected until trim is
+	// undone
+	m.table = m.table.SelectableRows(false)
+	m.canSelectRows = false
+
+	m.table = m.table.WithRows(m.table.SelectedRows())
+	m.isTrimmed = true
+
+	return m
+}
+
+// untrim will return the table to the original rows
+func (m tableModel) untrim() tableModel {
+	m.table = m.table.WithRows(m.originalRows)
+
+	// allow rows to be selected again
+	m.table = m.table.SelectableRows(true)
+	m.canSelectRows = true
+
+	return m
 }

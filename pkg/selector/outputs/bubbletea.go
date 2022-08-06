@@ -24,7 +24,8 @@ const (
 	// can't get terminal dimensions on startup, so use this
 	initialDimensionVal = 30
 
-	metaDataKey = "instance type"
+	instanceTypeKey = "instance type"
+	selectedKey     = "selected"
 )
 
 const (
@@ -88,7 +89,7 @@ func (m BubbleTeaModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case stateTable:
 				// get focused instance type
 				focusedRow := m.tableModel.table.HighlightedRow()
-				focusedInstance, ok := focusedRow.Data[metaDataKey].(*instancetypes.Details)
+				focusedInstance, ok := focusedRow.Data[instanceTypeKey].(*instancetypes.Details)
 				if !ok {
 					break
 				}
