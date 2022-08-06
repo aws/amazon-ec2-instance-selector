@@ -76,7 +76,28 @@ func (m BubbleTeaModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		// don't listen for input if currently typing into text field
-		if m.tableModel.filterTextInput.Focused() || m.sortingModel.sortTextInput.Focused() {
+		if m.tableModel.filterTextInput.Focused() {
+			break
+		} else if m.sortingModel.sortTextInput.Focused() {
+			// see if we should sort and switch states to table
+			if m.currentState == stateSorting && msg.String() == "enter" {
+				jsonPath := m.sortingModel.sortTextInput.Value()
+
+				// TODO: figure out how to get direction
+				sortDirection := "asc"
+
+				var err error
+				m.tableModel, err = m.tableModel.sortTable(jsonPath, sortDirection)
+				if err != nil {
+					m.sortingModel.sortTextInput.SetValue(jsonPathError)
+					break
+				}
+
+				m.currentState = stateTable
+
+				m.sortingModel.sortTextInput.Blur()
+			}
+
 			break
 		}
 

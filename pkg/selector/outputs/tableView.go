@@ -33,8 +33,10 @@ const (
 	headerPadding          = 2
 
 	// controls
-	tableControls = "Controls: ↑/↓ - up/down • ←/→  - left/right • shift + ←/→ - pg up/down • e - expand • f - filter • t - trim toggle • space - select • q - quit"
+	tableControls = "Controls: ↑/↓ - up/down • ←/→  - left/right • shift + ←/→ - pg up/down • e - expand • f - filter • t - trim toggle • space - select • s - sort • q - quit"
 	ellipses      = "..."
+
+	jsonPathError = "INVALID JSON PATH"
 )
 
 type tableModel struct {
@@ -322,7 +324,8 @@ func (m tableModel) update(msg tea.Msg) (tableModel, tea.Cmd) {
 			// breaks trimming
 			if m.canSelectRows {
 				originalRows := m.getUnfilteredRows()
-				selectedRow := originalRows[m.table.GetHighlightedRowIndex()]
+
+				selectedRow := m.table.HighlightedRow()
 				isSelected, ok := selectedRow.Data[selectedKey].(bool)
 				if !ok {
 					break
@@ -330,7 +333,17 @@ func (m tableModel) update(msg tea.Msg) (tableModel, tea.Cmd) {
 
 				// flip selected flag
 				selectedRow.Data[selectedKey] = !isSelected
-				originalRows[m.table.GetHighlightedRowIndex()] = selectedRow.Selected(!isSelected)
+				selectedRow = selectedRow.Selected(!isSelected)
+
+				// update selected row with new selected state. Must iterate through
+				// original rows since the cursor index in the bubble tea table
+				// takes the filter into account and therefore returns an incorrect index
+				for i, row := range originalRows {
+					if row.Data[instanceTypeKey] == selectedRow.Data[instanceTypeKey] {
+						originalRows[i] = selectedRow
+						break
+					}
+				}
 
 				m.table = m.table.WithRows(originalRows)
 			}
@@ -363,7 +376,7 @@ func (m tableModel) view() string {
 
 // sortTable sorts the table based on the sorting direction and sorting filter
 func (m tableModel) sortTable(sortFilter string, sortDirection string) (tableModel, error) {
-	instanceTypes, rowMap := m.getInstaceTypeFromRows()
+	instanceTypes, rowMap := m.getInstanceTypeFromRows()
 	_ = rowMap
 
 	// sort instance types
@@ -391,11 +404,21 @@ func (m tableModel) sortTable(sortFilter string, sortDirection string) (tableMod
 
 // getInstanceTypeFromRows goes through the rows of the table model and returns both a list of instance
 // types and a mapping of instances to rows
-func (m tableModel) getInstaceTypeFromRows() ([]*instancetypes.Details, map[string]table.Row) {
+func (m tableModel) getInstanceTypeFromRows() ([]*instancetypes.Details, map[string]table.Row) {
 	instanceTypes := []*instancetypes.Details{}
 	rowMap := make(map[string]table.Row)
 
-	rows := m.getUnfilteredRows()
+	// get current rows
+	var rows []table.Row
+	if m.isTrimmed {
+		// if current table is trimmed, get the stored untrimmed rows
+		rows = m.originalRows
+	} else {
+		// since table isn't trimmed, we should get the unfiltered rows
+		// so that our rows have the most updated selected flags
+		rows = m.getUnfilteredRows()
+	}
+
 	for _, row := range rows {
 		currInstance, ok := row.Data[instanceTypeKey].(*instancetypes.Details)
 		if !ok {
