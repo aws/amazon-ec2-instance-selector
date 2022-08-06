@@ -134,7 +134,24 @@ func (m BubbleTeaModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.currentState = stateSorting
 			}
 		case "enter":
-			// TODO: sorting select
+			// sort and switch states to table
+			if m.currentState == stateSorting {
+				sortFilter := string(m.sortingModel.shorthandList.SelectedItem().(item))
+
+				// TODO: figure out how to get sort direction
+				sortDirection := "asc"
+
+				var err error
+				m.tableModel, err = m.tableModel.sortTable(sortFilter, sortDirection)
+				if err != nil {
+					m.sortingModel.sortTextInput.SetValue("INVALID SHORTHAND VALUE")
+					break
+				}
+
+				m.currentState = stateTable
+
+				m.sortingModel.sortTextInput.Blur()
+			}
 		case "esc":
 			// switch from sorting state to table state
 			if m.currentState == stateSorting {

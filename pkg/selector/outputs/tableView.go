@@ -436,7 +436,6 @@ func (m tableModel) getInstanceTypeFromRows() ([]*instancetypes.Details, map[str
 func (m tableModel) getUnfilteredRows() []table.Row {
 	m.table = m.table.Filtered(false)
 	rows := m.table.GetVisibleRows()
-	m.table = m.table.Filtered(true)
 
 	return rows
 }
