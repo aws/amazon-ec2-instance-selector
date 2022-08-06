@@ -83,8 +83,10 @@ func (m BubbleTeaModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.currentState == stateSorting && msg.String() == "enter" {
 				jsonPath := m.sortingModel.sortTextInput.Value()
 
-				// TODO: figure out how to get direction
 				sortDirection := "asc"
+				if m.sortingModel.isDescending {
+					sortDirection = "desc"
+				}
 
 				var err error
 				m.tableModel, err = m.tableModel.sortTable(jsonPath, sortDirection)
@@ -138,8 +140,10 @@ func (m BubbleTeaModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.currentState == stateSorting {
 				sortFilter := string(m.sortingModel.shorthandList.SelectedItem().(item))
 
-				// TODO: figure out how to get sort direction
 				sortDirection := "asc"
+				if m.sortingModel.isDescending {
+					sortDirection = "desc"
+				}
 
 				var err error
 				m.tableModel, err = m.tableModel.sortTable(sortFilter, sortDirection)

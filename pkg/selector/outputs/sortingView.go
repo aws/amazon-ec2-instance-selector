@@ -28,6 +28,7 @@ import (
 
 const (
 	// formatting
+	sortDirectionPadding = 2
 	sortingTitlePadding  = 3
 	sortingFooterPadding = 2
 
@@ -46,8 +47,12 @@ const (
 	ebsOptimizedBaselineIOPS       = "ebs-optimized-baseline-iops"
 
 	// controls
-	sortingListControls = "Controls: ↑/↓ - up/down • esc - return to table • enter - select filter • q - quit"
-	sortingTextControls = "Controls: ↑/↓ - up/down • enter - enter json path"
+	sortingListControls = "Controls: ↑/↓ - up/down • enter - select filter • tab - toggle direction • esc - return to table • q - quit"
+	sortingTextControls = "Controls: ↑/↓ - up/down • tab - toggle direction • enter - enter json path"
+
+	// sort direction text
+	ascendingText  = "ASCENDING"
+	descendingText = "DESCENDING"
 )
 
 // sortingModel holds the state for the sorting view
@@ -59,13 +64,21 @@ type sortingModel struct {
 	sortTextInput textinput.Model
 
 	instanceTypes []*instancetypes.Details
+
+	isDescending bool
 }
 
-// list format styles
+// format styles
 var (
-	listTitleStyle    = lipgloss.NewStyle().MarginLeft(2)
+	// list
+	listTitleStyle    = lipgloss.NewStyle().Bold(true).Underline(true)
 	listItemStyle     = lipgloss.NewStyle().PaddingLeft(4)
 	selectedItemStyle = lipgloss.NewStyle().PaddingLeft(2).Foreground(lipgloss.Color("170"))
+
+	// text
+	descendingStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("#0096FF"))
+	ascendingStyle     = lipgloss.NewStyle().Foreground(lipgloss.Color("#DAF7A6"))
+	sortDirectionStyle = lipgloss.NewStyle().Bold(true).Underline(true).PaddingLeft(2)
 )
 
 // implement Item interface for list
@@ -119,6 +132,7 @@ func initSortingView(instanceTypes []*instancetypes.Details) *sortingModel {
 		shorthandList: shorthandList,
 		sortTextInput: sortTextInput,
 		instanceTypes: instanceTypes,
+		isDescending:  false,
 	}
 }
 
@@ -169,8 +183,8 @@ func (m sortingModel) resizeView(msg tea.WindowSizeMsg) sortingModel {
 	// ensure that text input is right below last option
 	if msg.Height >= len(shorthandList.Items())+sortingTitlePadding+sortingFooterPadding {
 		shorthandList.SetHeight(len(shorthandList.Items()) + sortingTitlePadding)
-	} else if msg.Height-sortingFooterPadding > 0 {
-		shorthandList.SetHeight(msg.Height - sortingFooterPadding)
+	} else if msg.Height-sortingFooterPadding-sortDirectionPadding > 0 {
+		shorthandList.SetHeight(msg.Height - sortingFooterPadding - sortDirectionPadding)
 	} else {
 		shorthandList.SetHeight(1)
 	}
@@ -205,6 +219,8 @@ func (m sortingModel) update(msg tea.Msg) (sortingModel, tea.Cmd) {
 				m.shorthandList.Select(len(m.shorthandList.Items()))
 				m.sortTextInput.Blur()
 			}
+		case "tab":
+			m.isDescending = !m.isDescending
 		}
 
 		if m.sortTextInput.Focused() {
@@ -225,12 +241,26 @@ func (m sortingModel) update(msg tea.Msg) (sortingModel, tea.Cmd) {
 func (m sortingModel) view() string {
 	outputStr := strings.Builder{}
 
+	// draw sort direction
+	outputStr.WriteString(sortDirectionStyle.Render("Sort Direction:"))
+	outputStr.WriteString(" ")
+	if m.isDescending {
+		outputStr.WriteString(descendingStyle.Render(descendingText))
+	} else {
+		outputStr.WriteString(ascendingStyle.Render(ascendingText))
+	}
+	outputStr.WriteString("\n")
+	outputStr.WriteString("\n")
+
+	// draw list
 	outputStr.WriteString(m.shorthandList.View())
 	outputStr.WriteString("\n")
 
+	// draw text input
 	outputStr.WriteString(m.sortTextInput.View())
 	outputStr.WriteString("\n")
 
+	// draw controls
 	if m.sortTextInput.Focused() {
 		outputStr.WriteString(controlsStyle.Render(sortingTextControls))
 	} else {
