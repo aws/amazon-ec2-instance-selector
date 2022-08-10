@@ -109,8 +109,8 @@ func eksGithubReleaseHTTPServer(failLatestRelease bool, failExactRelease bool) *
 				w.WriteHeader(404)
 				return
 			}
-			w.WriteHeader(302)
 			w.Header().Add("location", "/releases/tag/v"+githubReleaseVersion)
+			w.WriteHeader(302)
 			return
 		}
 		if r.URL.Path == "/archive/v"+githubReleaseVersion+".zip" {
