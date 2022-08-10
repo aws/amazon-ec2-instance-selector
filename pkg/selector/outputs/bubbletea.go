@@ -15,6 +15,7 @@ package outputs
 
 import (
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/instancetypes"
+	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/sorter"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/muesli/termenv"
@@ -83,9 +84,9 @@ func (m BubbleTeaModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.currentState == stateSorting && msg.String() == "enter" {
 				jsonPath := m.sortingModel.sortTextInput.Value()
 
-				sortDirection := "asc"
+				sortDirection := sorter.SortAscending
 				if m.sortingModel.isDescending {
-					sortDirection = "desc"
+					sortDirection = sorter.SortDescending
 				}
 
 				var err error
@@ -140,9 +141,9 @@ func (m BubbleTeaModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.currentState == stateSorting {
 				sortFilter := string(m.sortingModel.shorthandList.SelectedItem().(item))
 
-				sortDirection := "asc"
+				sortDirection := sorter.SortAscending
 				if m.sortingModel.isDescending {
-					sortDirection = "desc"
+					sortDirection = sorter.SortDescending
 				}
 
 				var err error

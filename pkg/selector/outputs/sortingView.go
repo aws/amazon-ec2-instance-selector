@@ -19,6 +19,7 @@ import (
 	"strings"
 
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/instancetypes"
+	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/sorter"
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/textinput"
@@ -31,20 +32,6 @@ const (
 	sortDirectionPadding = 2
 	sortingTitlePadding  = 3
 	sortingFooterPadding = 2
-
-	// shorthand flags
-	gpus                           = "gpus"
-	inferenceAccelerators          = "inference-accelerators"
-	vcpus                          = "vcpus"
-	memory                         = "memory"
-	gpuMemoryTotal                 = "gpu-memory-total"
-	networkInterfaces              = "network-interfaces"
-	spotPrice                      = "spot-price"
-	odPrice                        = "on-demand-price"
-	instanceStorage                = "instance-storage"
-	ebsOptimizedBaselineBandwidth  = "ebs-optimized-baseline-bandwidth"
-	ebsOptimizedBaselineThroughput = "ebs-optimized-baseline-throughput"
-	ebsOptimizedBaselineIOPS       = "ebs-optimized-baseline-iops"
 
 	// controls
 	sortingListControls = "Controls: ↑/↓ - up/down • enter - select filter • tab - toggle direction • esc - return to table • q - quit"
@@ -151,18 +138,18 @@ func createListKeyMap() list.KeyMap {
 // createListItems creates a list item for shorthand sorting flag
 func createListItems() *[]list.Item {
 	shorthandFlags := []string{
-		gpus,
-		inferenceAccelerators,
-		vcpus,
-		memory,
-		gpuMemoryTotal,
-		networkInterfaces,
-		spotPrice,
-		odPrice,
-		instanceStorage,
-		ebsOptimizedBaselineBandwidth,
-		ebsOptimizedBaselineThroughput,
-		ebsOptimizedBaselineIOPS,
+		sorter.GPUCountField,
+		sorter.InferenceAcceleratorsField,
+		sorter.VCPUs,
+		sorter.Memory,
+		sorter.GPUMemoryTotal,
+		sorter.NetworkInterfaces,
+		sorter.SpotPrice,
+		sorter.ODPrice,
+		sorter.InstanceStorage,
+		sorter.EBSOptimizedBaselineBandwidth,
+		sorter.EBSOptimizedBaselineThroughput,
+		sorter.EBSOptimizedBaselineIOPS,
 	}
 
 	items := []list.Item{}

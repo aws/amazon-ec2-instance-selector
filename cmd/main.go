@@ -49,6 +49,9 @@ const (
 	tableWideOutput = "table-wide"
 	oneLine         = "one-line"
 	bubbleTeaOutput = "interactive"
+
+	// Sort filter default
+	instanceNamePath = ".InstanceType"
 )
 
 // Filter Flag Constants
@@ -120,20 +123,6 @@ const (
 	sortBy        = "sort-by"
 )
 
-// Sorting Constants
-const (
-	// Direction
-
-	sortAscending  = "ascending"
-	sortAsc        = "asc"
-	sortDescending = "descending"
-	sortDesc       = "desc"
-
-	// Sort filter default
-
-	instanceNamePath = ".InstanceType"
-)
-
 var (
 	// versionID is overridden at compilation with the version based on the git tag
 	versionID = "dev"
@@ -164,10 +153,10 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	resultsOutputFn := outputs.SimpleInstanceTypeOutput
 
 	cliSortDirections := []string{
-		sortAscending,
-		sortAsc,
-		sortDescending,
-		sortDesc,
+		sorter.SortAscending,
+		sorter.SortAsc,
+		sorter.SortDescending,
+		sorter.SortDesc,
 	}
 
 	// Registers flags with specific input types from the cli pkg
@@ -234,7 +223,7 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	cli.ConfigBoolFlag(verbose, cli.StringMe("v"), nil, "Verbose - will print out full instance specs")
 	cli.ConfigBoolFlag(help, cli.StringMe("h"), nil, "Help")
 	cli.ConfigBoolFlag(version, nil, nil, "Prints CLI version")
-	cli.ConfigStringOptionsFlag(sortDirection, nil, cli.StringMe(sortAscending), fmt.Sprintf("Specify the direction to sort in (%s)", strings.Join(cliSortDirections, ", ")), cliSortDirections)
+	cli.ConfigStringOptionsFlag(sortDirection, nil, cli.StringMe(sorter.SortAscending), fmt.Sprintf("Specify the direction to sort in (%s)", strings.Join(cliSortDirections, ", ")), cliSortDirections)
 	cli.ConfigStringFlag(sortBy, nil, cli.StringMe(instanceNamePath), "Specify the field to sort by. Quantity flags present in this CLI (memory, gpus, etc.) or a JSON path to the appropriate instance type field (Ex: \".MemoryInfo.SizeInMiB\") is acceptable.", nil)
 
 	// Parses the user input with the registered flags and runs type specific validation on the user input
