@@ -147,6 +147,12 @@ t3.medium      2       4          nitro       true         true                 
 t3a.medium     2       4          nitro       true         true                 x86_64        Up to 5 Gigabit      3       0       0              none      -Not Fetched-       $0.01246
 ```
 
+**Interactive Output**
+```
+$ ec2-instance-selector -o interactive
+```
+https://user-images.githubusercontent.com/68402662/184218343-6b236d4a-3fe6-42ae-9fe3-3fd3ee92a4b5.mov
+
 **Sort by memory in ascending order using shorthand**
 ```
 $ ec2-instance-selector -r us-east-1 -o table-wide --max-results 10 --sort-by memory --sort-direction asc

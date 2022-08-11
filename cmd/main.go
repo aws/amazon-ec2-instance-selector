@@ -49,6 +49,9 @@ const (
 	tableWideOutput = "table-wide"
 	oneLine         = "one-line"
 	bubbleTeaOutput = "interactive"
+
+	// Sort filter default
+	instanceNamePath = ".InstanceType"
 )
 
 // Filter Flag Constants
@@ -120,33 +123,6 @@ const (
 	sortBy        = "sort-by"
 )
 
-// Sorting Constants
-const (
-	// Direction
-
-	sortAscending  = "ascending"
-	sortAsc        = "asc"
-	sortDescending = "descending"
-	sortDesc       = "desc"
-
-	// Sorting Fields
-	spotPrice = "spot-price"
-	odPrice   = "on-demand-price"
-
-	// JSON field paths
-	instanceNamePath                   = ".InstanceType"
-	vcpuPath                           = ".VCpuInfo.DefaultVCpus"
-	memoryPath                         = ".MemoryInfo.SizeInMiB"
-	gpuMemoryTotalPath                 = ".GpuInfo.TotalGpuMemoryInMiB"
-	networkInterfacesPath              = ".NetworkInfo.MaximumNetworkInterfaces"
-	spotPricePath                      = ".SpotPrice"
-	odPricePath                        = ".OndemandPricePerHour"
-	instanceStoragePath                = ".InstanceStorageInfo.TotalSizeInGB"
-	ebsOptimizedBaselineBandwidthPath  = ".EbsInfo.EbsOptimizedInfo.BaselineBandwidthInMbps"
-	ebsOptimizedBaselineThroughputPath = ".EbsInfo.EbsOptimizedInfo.BaselineThroughputInMBps"
-	ebsOptimizedBaselineIOPSPath       = ".EbsInfo.EbsOptimizedInfo.BaselineIops"
-)
-
 var (
 	// versionID is overridden at compilation with the version based on the git tag
 	versionID = "dev"
@@ -177,26 +153,10 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	resultsOutputFn := outputs.SimpleInstanceTypeOutput
 
 	cliSortDirections := []string{
-		sortAscending,
-		sortAsc,
-		sortDescending,
-		sortDesc,
-	}
-
-	// map quantity cli flags to json paths for easier cli sorting
-	sortingKeysMap := map[string]string{
-		vcpus:                          vcpuPath,
-		memory:                         memoryPath,
-		gpuMemoryTotal:                 gpuMemoryTotalPath,
-		networkInterfaces:              networkInterfacesPath,
-		spotPrice:                      spotPricePath,
-		odPrice:                        odPricePath,
-		instanceStorage:                instanceStoragePath,
-		ebsOptimizedBaselineBandwidth:  ebsOptimizedBaselineBandwidthPath,
-		ebsOptimizedBaselineThroughput: ebsOptimizedBaselineThroughputPath,
-		ebsOptimizedBaselineIOPS:       ebsOptimizedBaselineIOPSPath,
-		gpus:                           gpus,
-		inferenceAccelerators:          inferenceAccelerators,
+		sorter.SortAscending,
+		sorter.SortAsc,
+		sorter.SortDescending,
+		sorter.SortDesc,
 	}
 
 	// Registers flags with specific input types from the cli pkg
@@ -263,7 +223,7 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	cli.ConfigBoolFlag(verbose, cli.StringMe("v"), nil, "Verbose - will print out full instance specs")
 	cli.ConfigBoolFlag(help, cli.StringMe("h"), nil, "Help")
 	cli.ConfigBoolFlag(version, nil, nil, "Prints CLI version")
-	cli.ConfigStringOptionsFlag(sortDirection, nil, cli.StringMe(sortAscending), fmt.Sprintf("Specify the direction to sort in (%s)", strings.Join(cliSortDirections, ", ")), cliSortDirections)
+	cli.ConfigStringOptionsFlag(sortDirection, nil, cli.StringMe(sorter.SortAscending), fmt.Sprintf("Specify the direction to sort in (%s)", strings.Join(cliSortDirections, ", ")), cliSortDirections)
 	cli.ConfigStringFlag(sortBy, nil, cli.StringMe(instanceNamePath), "Specify the field to sort by. Quantity flags present in this CLI (memory, gpus, etc.) or a JSON path to the appropriate instance type field (Ex: \".MemoryInfo.SizeInMiB\") is acceptable.", nil)
 
 	// Parses the user input with the registered flags and runs type specific validation on the user input
@@ -417,11 +377,6 @@ Full docs can be found at github.com/aws/amazon-` + binName
 		} else {
 			log.Println("There were no transformations on the filters to display")
 		}
-	}
-
-	// determine if user used a shorthand for sorting flag
-	if sortFieldShorthandPath, ok := sortingKeysMap[*sortField]; ok {
-		sortField = &sortFieldShorthandPath
 	}
 
 	// fetch instance types without truncating results

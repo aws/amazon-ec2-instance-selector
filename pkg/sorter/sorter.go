@@ -28,16 +28,43 @@ import (
 const (
 	// Sort direction
 
-	sortAscending  = "ascending"
-	sortAsc        = "asc"
-	sortDescending = "descending"
-	sortDesc       = "desc"
+	SortAscending  = "ascending"
+	SortAsc        = "asc"
+	SortDescending = "descending"
+	SortDesc       = "desc"
 
 	// Not all fields can be reached through a json path (Ex: gpu count)
 	// so we have special flags for such cases.
 
-	gpuCountField              = "gpus"
-	inferenceAcceleratorsField = "inference-accelerators"
+	GPUCountField              = "gpus"
+	InferenceAcceleratorsField = "inference-accelerators"
+
+	// shorthand flags
+
+	VCPUs                          = "vcpus"
+	Memory                         = "memory"
+	GPUMemoryTotal                 = "gpu-memory-total"
+	NetworkInterfaces              = "network-interfaces"
+	SpotPrice                      = "spot-price"
+	ODPrice                        = "on-demand-price"
+	InstanceStorage                = "instance-storage"
+	EBSOptimizedBaselineBandwidth  = "ebs-optimized-baseline-bandwidth"
+	EBSOptimizedBaselineThroughput = "ebs-optimized-baseline-throughput"
+	EBSOptimizedBaselineIOPS       = "ebs-optimized-baseline-iops"
+
+	// JSON field paths for shorthand flags
+
+	instanceNamePath                   = ".InstanceType"
+	vcpuPath                           = ".VCpuInfo.DefaultVCpus"
+	memoryPath                         = ".MemoryInfo.SizeInMiB"
+	gpuMemoryTotalPath                 = ".GpuInfo.TotalGpuMemoryInMiB"
+	networkInterfacesPath              = ".NetworkInfo.MaximumNetworkInterfaces"
+	spotPricePath                      = ".SpotPrice"
+	odPricePath                        = ".OndemandPricePerHour"
+	instanceStoragePath                = ".InstanceStorageInfo.TotalSizeInGB"
+	ebsOptimizedBaselineBandwidthPath  = ".EbsInfo.EbsOptimizedInfo.BaselineBandwidthInMbps"
+	ebsOptimizedBaselineThroughputPath = ".EbsInfo.EbsOptimizedInfo.BaselineThroughputInMBps"
+	ebsOptimizedBaselineIOPSPath       = ".EbsInfo.EbsOptimizedInfo.BaselineIops"
 )
 
 // sorterNode represents a sortable instance type which holds the value
@@ -58,10 +85,29 @@ type sorter struct {
 // Sort sorts the given instance types by the given field in the given direction
 //
 // sortField is a json path to a field in the instancetypes.Details struct which represents
-// the field to sort instance types by (Ex: ".MemoryInfo.SizeInMiB").
+// the field to sort instance types by (Ex: ".MemoryInfo.SizeInMiB"). Quantity flags present
+// in the CLI (memory, gpus, etc.) are also accepted.
 //
 // sortDirection represents the direction to sort in. Valid options: "ascending", "asc", "descending", "desc".
 func Sort(instanceTypes []*instancetypes.Details, sortField string, sortDirection string) ([]*instancetypes.Details, error) {
+	sortingKeysMap := map[string]string{
+		VCPUs:                          vcpuPath,
+		Memory:                         memoryPath,
+		GPUMemoryTotal:                 gpuMemoryTotalPath,
+		NetworkInterfaces:              networkInterfacesPath,
+		SpotPrice:                      spotPricePath,
+		ODPrice:                        odPricePath,
+		InstanceStorage:                instanceStoragePath,
+		EBSOptimizedBaselineBandwidth:  ebsOptimizedBaselineBandwidthPath,
+		EBSOptimizedBaselineThroughput: ebsOptimizedBaselineThroughputPath,
+		EBSOptimizedBaselineIOPS:       ebsOptimizedBaselineIOPSPath,
+	}
+
+	// determine if user used a shorthand for sorting flag
+	if sortFieldShorthandPath, ok := sortingKeysMap[sortField]; ok {
+		sortField = sortFieldShorthandPath
+	}
+
 	sorter, err := newSorter(instanceTypes, sortField, sortDirection)
 	if err != nil {
 		return nil, fmt.Errorf("an error occurred when preparing to sort instance types: %v", err)
@@ -84,12 +130,12 @@ func Sort(instanceTypes []*instancetypes.Details, sortField string, sortDirectio
 func newSorter(instanceTypes []*instancetypes.Details, sortField string, sortDirection string) (*sorter, error) {
 	var isDescending bool
 	switch sortDirection {
-	case sortDescending, sortDesc:
+	case SortDescending, SortDesc:
 		isDescending = true
-	case sortAscending, sortAsc:
+	case SortAscending, SortAsc:
 		isDescending = false
 	default:
-		return nil, fmt.Errorf("invalid sort direction: %s (valid options: %s, %s, %s, %s)", sortDirection, sortAscending, sortAsc, sortDescending, sortDesc)
+		return nil, fmt.Errorf("invalid sort direction: %s (valid options: %s, %s, %s, %s)", sortDirection, SortAscending, SortAsc, SortDescending, SortDesc)
 	}
 
 	sortField = formatSortField(sortField)
@@ -117,7 +163,7 @@ func newSorter(instanceTypes []*instancetypes.Details, sortField string, sortDir
 // matches one of the special flags.
 func formatSortField(sortField string) string {
 	// check to see if the sorting field matched one of the special exceptions
-	if sortField == gpuCountField || sortField == inferenceAcceleratorsField {
+	if sortField == GPUCountField || sortField == InferenceAcceleratorsField {
 		return sortField
 	}
 
@@ -130,13 +176,13 @@ func newSorterNode(instanceType *instancetypes.Details, sortField string) (*sort
 	// some important fields (such as gpu count) can not be accessed directly in the instancetypes.Details
 	// struct, so we have special hard-coded flags to handle such cases
 	switch sortField {
-	case gpuCountField:
+	case GPUCountField:
 		gpuCount := getTotalGpusCount(instanceType)
 		return &sorterNode{
 			instanceType: instanceType,
 			fieldValue:   reflect.ValueOf(gpuCount),
 		}, nil
-	case inferenceAcceleratorsField:
+	case InferenceAcceleratorsField:
 		acceleratorsCount := getTotalAcceleratorsCount(instanceType)
 		return &sorterNode{
 			instanceType: instanceType,

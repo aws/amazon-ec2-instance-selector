@@ -29,15 +29,13 @@ const (
 	outlinePadding = 8
 
 	// controls
-	verboseControls = "Controls: ↑/↓ - up/down • enter - return to table • q - quit"
+	verboseControls = "Controls: ↑/↓ - up/down • esc - return to table • q - quit"
 )
 
 // verboseModel represents the current state of the verbose view
 type verboseModel struct {
 	// model for verbose output viewport
 	viewport viewport.Model
-
-	instanceTypes []*instancetypes.Details
 
 	// the instance which the verbose output is focused on
 	focusedInstanceName *string
@@ -65,8 +63,7 @@ func initVerboseModel(instanceTypes []*instancetypes.Details) *verboseModel {
 	viewportModel.MouseWheelEnabled = true
 
 	return &verboseModel{
-		viewport:      viewportModel,
-		instanceTypes: instanceTypes,
+		viewport: viewportModel,
 	}
 }
 
@@ -114,7 +111,7 @@ func (m verboseModel) view() string {
 	outputStr.WriteString("\n")
 
 	// controls
-	outputStr.WriteString(lipgloss.NewStyle().Faint(true).Render(verboseControls))
+	outputStr.WriteString(controlsStyle.Render(verboseControls))
 	outputStr.WriteString("\n")
 
 	return outputStr.String()

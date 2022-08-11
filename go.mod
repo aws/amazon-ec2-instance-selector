@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/aws/aws-sdk-go v1.44.59
 	github.com/blang/semver/v4 v4.0.0
-	github.com/charmbracelet/bubbles v0.11.0
+	github.com/charmbracelet/bubbles v0.13.0
 	github.com/charmbracelet/bubbletea v0.21.0
 	github.com/charmbracelet/lipgloss v0.5.0
 	github.com/evertras/bubble-table v0.14.4
@@ -32,6 +32,7 @@ require (
 	github.com/muesli/cancelreader v0.2.0 // indirect
 	github.com/muesli/reflow v0.3.0 // indirect
 	github.com/rivo/uniseg v0.2.0 // indirect
+	github.com/sahilm/fuzzy v0.1.0 // indirect
 	github.com/smartystreets/goconvey v1.6.4 // indirect
 	go.uber.org/atomic v1.4.0 // indirect
 	golang.org/x/sys v0.0.0-20220209214540-3681064d5158 // indirect
