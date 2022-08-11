@@ -236,8 +236,7 @@ func (m sortingModel) view() string {
 	} else {
 		outputStr.WriteString(ascendingStyle.Render(ascendingText))
 	}
-	outputStr.WriteString("\n")
-	outputStr.WriteString("\n")
+	outputStr.WriteString("\n\n")
 
 	// draw list
 	outputStr.WriteString(m.shorthandList.View())
