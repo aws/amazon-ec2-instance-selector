@@ -99,9 +99,9 @@ func (d itemDelegate) Render(w io.Writer, m list.Model, index int, listItem list
 	fmt.Fprintf(w, fn(str))
 }
 
-// initSortingView initializes and returns a new tableModel based on the given
+// initSortingModel initializes and returns a new tableModel based on the given
 // instance type details
-func initSortingView(instanceTypes []*instancetypes.Details) *sortingModel {
+func initSortingModel(instanceTypes []*instancetypes.Details) *sortingModel {
 	shorthandList := list.New(*createListItems(), itemDelegate{}, initialDimensionVal, initialDimensionVal)
 	shorthandList.Title = "Select sorting filter:"
 	shorthandList.Styles.Title = listTitleStyle

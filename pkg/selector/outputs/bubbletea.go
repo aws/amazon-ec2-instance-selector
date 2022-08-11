@@ -62,7 +62,7 @@ func NewBubbleTeaModel(instanceTypes []*instancetypes.Details) BubbleTeaModel {
 		currentState: stateTable,
 		tableModel:   *initTableModel(instanceTypes),
 		verboseModel: *initVerboseModel(instanceTypes),
-		sortingModel: *initSortingView(instanceTypes),
+		sortingModel: *initSortingModel(instanceTypes),
 	}
 }
 
