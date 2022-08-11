@@ -29,7 +29,7 @@ const (
 	outlinePadding = 8
 
 	// controls
-	verboseControls = "Controls: ↑/↓ - up/down • e - return to table • q - quit"
+	verboseControls = "Controls: ↑/↓ - up/down • esc - return to table • q - quit"
 )
 
 // verboseModel represents the current state of the verbose view

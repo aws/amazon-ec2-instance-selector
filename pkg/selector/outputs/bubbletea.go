@@ -109,8 +109,8 @@ func (m BubbleTeaModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+c", "q":
 			return m, tea.Quit
 		case "e":
-			switch m.currentState {
-			case stateTable:
+			// switch from table state to verbose state
+			if m.currentState == stateTable {
 				// get focused instance type
 				focusedRow := m.tableModel.table.HighlightedRow()
 				focusedInstance, ok := focusedRow.Data[instanceTypeKey].(*instancetypes.Details)
@@ -127,9 +127,6 @@ func (m BubbleTeaModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 				// switch from table state to verbose state
 				m.currentState = stateVerbose
-			case stateVerbose:
-				// switch from verbose state to table state
-				m.currentState = stateTable
 			}
 		case "s":
 			// switch from table view to sorting view
@@ -158,8 +155,8 @@ func (m BubbleTeaModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.sortingModel.sortTextInput.Blur()
 			}
 		case "esc":
-			// switch from sorting state to table state
-			if m.currentState == stateSorting {
+			// switch from sorting state or verbose state to table state
+			if m.currentState == stateSorting || m.currentState == stateVerbose {
 				m.currentState = stateTable
 			}
 		}
