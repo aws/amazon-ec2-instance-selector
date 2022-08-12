@@ -55,7 +55,6 @@ for os_arch in "${PLATFORMS[@]}"; do
     docker build \
         --build-arg GOOS=${os} \
         --build-arg GOARCH=${arch} \
-        --build-arg GOPROXY=${GOPROXY} \
         -t ${img_tag} \
         ${REPO_ROOT_PATH}
 done
