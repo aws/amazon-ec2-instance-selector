@@ -249,12 +249,17 @@ func (m tableModel) resizeView(msg tea.WindowSizeMsg) tableModel {
 
 	// handle height changes
 	if headerAndFooterPadding >= msg.Height {
-		// height too short to fit rows
-		m.table = m.table.WithPageSize(0)
-		m.tableRowsPerPage = 0
+		// height too short to fit footer and header
+		// so only display 1 row
+		m.table = m.table.WithPageSize(1)
+		m.table = m.table.WithFooterVisibility(false)
+		m.table = m.table.WithHeaderVisibility(false)
+		m.tableRowsPerPage = 1
 	} else {
 		newRowsPerPage := msg.Height - headerAndFooterPadding
 		m.table = m.table.WithPageSize(newRowsPerPage)
+		m.table = m.table.WithFooterVisibility(true)
+		m.table = m.table.WithHeaderVisibility(true)
 		m.tableRowsPerPage = newRowsPerPage
 	}
 
