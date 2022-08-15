@@ -10,7 +10,6 @@ mkdir -p "${BIN_DIR}"
 
 VERSION=$(make -s -f ${MAKE_FILE_PATH} version)
 PLATFORMS=("linux/amd64")
-PASS_THRU_ARGS=""
 
 USAGE=$(cat << 'EOM'
   Usage: build-binaries  [-p <platform pairs>]
@@ -19,7 +18,6 @@ USAGE=$(cat << 'EOM'
   Example: build-binaries -p "linux/amd64,linux/arm"
           Optional:
             -p          Platform pair list (os/architecture) [DEFAULT: linux/amd64]
-            -d          DIRECT: Set GOPROXY=direct to bypass go proxies
             -v          VERSION: The application version of the docker image [DEFAULT: output of `make version`]
 EOM
 )
@@ -29,9 +27,6 @@ while getopts "dp:v:" opt; do
   case ${opt} in
     p ) # Platform Pairs
         IFS=',' read -ra PLATFORMS <<< "$OPTARG"
-      ;;
-    d ) # sets GOPROXY=direct
-        PASS_THRU_ARGS="$PASS_THRU_ARGS -d"
       ;;
     v ) # Image Version
         VERSION="$OPTARG"
@@ -52,7 +47,7 @@ for os_arch in "${PLATFORMS[@]}"; do
     bin_name="${base_bin_name}-${os}-${arch}"
 
     docker container rm $container_name || :
-    $SCRIPTPATH/build-docker-images -p $os_arch -v $VERSION -r $repo_name $PASS_THRU_ARGS
+    $SCRIPTPATH/build-docker-images -p $os_arch -v $VERSION -r $repo_name
     docker container create --rm --name $container_name "$repo_name:$VERSION-$os-$arch"
     docker container cp $container_name:/ec2-instance-selector $BIN_DIR/$bin_name
 
