@@ -18,7 +18,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/aws/aws-sdk-go-v2/config"
 	"io/ioutil"
 	"regexp"
 	"strconv"
@@ -29,8 +28,9 @@ import (
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/selector"
 	h "github.com/aws/amazon-ec2-instance-selector/v2/pkg/test"
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
-	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/ec2/ec2iface"
 )
 
@@ -75,7 +75,7 @@ func (m mockedEC2) DescribeInstanceTypesPages(input *ec2.DescribeInstanceTypesIn
 
 func (m mockedEC2) DescribeInstanceTypeOfferingsPages(input *ec2.DescribeInstanceTypeOfferingsInput, fn ioFn) error {
 	if m.DescribeInstanceTypeOfferingsRespFn != nil {
-		fn(m.DescribeInstanceTypeOfferingsRespFn(*input.Filters[0].Values[0]), true)
+		fn(m.DescribeInstanceTypeOfferingsRespFn(input.Filters[0].Values[0]), true)
 	} else {
 		fn(&m.DescribeInstanceTypeOfferingsResp, true)
 	}
@@ -531,11 +531,11 @@ type ec2PricingMock struct {
 	spotCacheCount                     int
 }
 
-func (p *ec2PricingMock) GetOnDemandInstanceTypeCost(instanceType string) (float64, error) {
+func (p *ec2PricingMock) GetOnDemandInstanceTypeCost(instanceType ec2types.InstanceType) (float64, error) {
 	return p.GetOndemandInstanceTypeCostResp, p.GetOndemandInstanceTypeCostErr
 }
 
-func (p *ec2PricingMock) GetSpotInstanceTypeNDayAvgCost(instanceType string, availabilityZones []string, days int) (float64, error) {
+func (p *ec2PricingMock) GetSpotInstanceTypeNDayAvgCost(instanceType ec2types.InstanceType, availabilityZones []string, days int) (float64, error) {
 	return p.GetSpotInstanceTypeNDayAvgCostResp, p.GetSpotInstanceTypeNDayAvgCostErr
 }
 

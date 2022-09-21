@@ -21,11 +21,9 @@ import (
 
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/ec2pricing"
 	h "github.com/aws/amazon-ec2-instance-selector/v2/pkg/test"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/service/pricing"
 	"github.com/aws/aws-sdk-go/service/ec2/ec2iface"
-	"github.com/aws/aws-sdk-go/service/pricing"
 	"github.com/aws/aws-sdk-go/service/pricing/pricingiface"
 )
 
@@ -34,12 +32,6 @@ const (
 	describeSpotPriceHistoryPages = "DescribeSpotPriceHistoryPages"
 	mockFilesPath                 = "../../test/static"
 )
-
-var sess = session.Session{
-	Config: &aws.Config{
-		Region: aws.String("us-east-1"),
-	},
-}
 
 // Mocking helpers
 
@@ -71,11 +63,9 @@ func setupMock(t *testing.T, api string, file string) mockedPricing {
 	h.Assert(t, err == nil, "Error reading mock file "+string(mockFilename))
 	switch api {
 	case getProductsPages:
-		var productsMap map[string]interface{}
-		err = json.Unmarshal(mockFile, &productsMap)
-		h.Assert(t, err == nil, "Error parsing mock json file contents "+mockFilename)
+		priceList := []string{string(mockFile)}
 		productsOutput := pricing.GetProductsOutput{
-			PriceList: []aws.JSONValue{productsMap},
+			PriceList: priceList,
 		}
 		return mockedPricing{
 			GetProductsPagesResp: productsOutput,
