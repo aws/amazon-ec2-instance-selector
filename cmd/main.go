@@ -14,7 +14,9 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"github.com/aws/aws-sdk-go-v2/config"
 	"log"
 	"os"
 	"os/signal"
@@ -251,8 +253,13 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	}
 	// TODO: Add next line back from the config
 	//flags[region] = sess.Config.Region
+	cfg, err := config.LoadDefaultConfig(context.Background())
+	if err != nil {
+		panic("configuration error, " + err.Error())
+	}
+
 	cacheTTLDuration := time.Hour * time.Duration(*cli.IntMe(flags[cacheTTL]))
-	instanceSelector := selector.NewWithCache(cacheTTLDuration, *cli.StringMe(flags[cacheDir]))
+	instanceSelector := selector.NewWithCache(cfg, cacheTTLDuration, *cli.StringMe(flags[cacheDir]))
 	shutdown := func() {
 		if err := instanceSelector.Save(); err != nil {
 			log.Printf("There was an error saving pricing caches: %v", err)

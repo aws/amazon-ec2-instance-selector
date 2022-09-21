@@ -30,7 +30,6 @@ import (
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/selector/outputs"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/aws/middleware"
-	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"go.uber.org/multierr"
@@ -101,13 +100,9 @@ const (
 )
 
 // New creates an instance of Selector provided an aws session
-func New() *Selector {
+func New(cfg aws.Config) *Selector {
 	serviceRegistry := NewRegistry()
 	serviceRegistry.RegisterAWSServices()
-	cfg, err := config.LoadDefaultConfig(context.TODO())
-	if err != nil {
-		panic("configuration error, " + err.Error())
-	}
 	ec2Client := ec2.NewFromConfig(cfg, func(options *ec2.Options) {
 		options.APIOptions = append(options.APIOptions, middleware.AddUserAgentKeyValue(sdkName, versionID))
 	})
@@ -120,13 +115,9 @@ func New() *Selector {
 	}
 }
 
-func NewWithCache(ttl time.Duration, cacheDir string) *Selector {
+func NewWithCache(cfg aws.Config, ttl time.Duration, cacheDir string) *Selector {
 	serviceRegistry := NewRegistry()
 	serviceRegistry.RegisterAWSServices()
-	cfg, err := config.LoadDefaultConfig(context.TODO())
-	if err != nil {
-		panic("configuration error, " + err.Error())
-	}
 	ec2Client := ec2.NewFromConfig(cfg, func(options *ec2.Options) {
 		options.APIOptions = append(options.APIOptions, middleware.AddUserAgentKeyValue(sdkName, versionID))
 	})

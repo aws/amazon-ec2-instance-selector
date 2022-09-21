@@ -14,9 +14,11 @@
 package selector_test
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/aws/aws-sdk-go-v2/config"
 	"io/ioutil"
 	"regexp"
 	"strconv"
@@ -150,7 +152,8 @@ func getSelector(ec2Mock mockedEC2) selector.Selector {
 // Tests
 
 func TestNew(t *testing.T) {
-	itf := selector.New()
+	cfg, _ := config.LoadDefaultConfig(context.Background())
+	itf := selector.New(cfg)
 	h.Assert(t, itf != nil, "selector instance created without error")
 }
 
