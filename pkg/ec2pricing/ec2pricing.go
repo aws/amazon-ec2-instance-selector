@@ -14,12 +14,13 @@
 package ec2pricing
 
 import (
+	"context"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/ec2"
-	"github.com/aws/aws-sdk-go/service/pricing"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	"github.com/aws/aws-sdk-go-v2/service/pricing"
 	"go.uber.org/multierr"
 )
 
@@ -40,8 +41,8 @@ type EC2Pricing struct {
 
 // EC2PricingIface is the EC2Pricing interface mainly used to mock out ec2pricing during testing
 type EC2PricingIface interface {
-	GetOnDemandInstanceTypeCost(instanceType string) (float64, error)
-	GetSpotInstanceTypeNDayAvgCost(instanceType string, availabilityZones []string, days int) (float64, error)
+	GetOnDemandInstanceTypeCost(instanceType ec2types.InstanceType) (float64, error)
+	GetSpotInstanceTypeNDayAvgCost(instanceType ec2types.InstanceType, availabilityZones []string, days int) (float64, error)
 	RefreshOnDemandCache() error
 	RefreshSpotCache(days int) error
 	OnDemandCacheCount() int
@@ -50,21 +51,40 @@ type EC2PricingIface interface {
 }
 
 // New creates an instance of instance-selector EC2Pricing
-func New(sess *session.Session) *EC2Pricing {
+func New() *EC2Pricing {
 	// use us-east-1 since pricing only has endpoints in us-east-1 and ap-south-1
-	pricingClient := pricing.New(sess.Copy(aws.NewConfig().WithRegion("us-east-1")))
+	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion("us-east-1"))
+	if err != nil {
+		panic("configuration error, " + err.Error())
+	}
+
+	pricingClient := pricing.NewFromConfig(cfg)
+	ec2Client := ec2.NewFromConfig(cfg)
 	return &EC2Pricing{
-		ODPricing:   LoadODCacheOrNew(pricingClient, *sess.Config.Region, 0, ""),
-		SpotPricing: LoadSpotCacheOrNew(ec2.New(sess), *sess.Config.Region, 0, "", DefaultSpotDaysBack),
+		ODPricing:   LoadODCacheOrNew(pricingClient, cfg.Region, 0, ""),
+		SpotPricing: LoadSpotCacheOrNew(ec2Client, cfg.Region, 0, "", DefaultSpotDaysBack),
 	}
 }
 
-func NewWithCache(sess *session.Session, ttl time.Duration, cacheDir string) *EC2Pricing {
+func NewWithCache(ttl time.Duration, cacheDir string) *EC2Pricing {
+	ctx := context.TODO()
 	// use us-east-1 since pricing only has endpoints in us-east-1 and ap-south-1
-	pricingClient := pricing.New(sess.Copy(aws.NewConfig().WithRegion("us-east-1")))
+	PricingConfig, err := config.LoadDefaultConfig(ctx, config.WithRegion("us-east-1"))
+	if err != nil {
+		panic("configuration error, " + err.Error())
+	}
+
+	// Now reload config so we can grab the intended region. TODO: There's going to be a better way to do this!
+	cfg, err := config.LoadDefaultConfig(ctx)
+	if err != nil {
+		panic("configuration error, " + err.Error())
+	}
+
+	pricingClient := pricing.NewFromConfig(PricingConfig)
+	ec2Client := ec2.NewFromConfig(cfg)
 	return &EC2Pricing{
-		ODPricing:   LoadODCacheOrNew(pricingClient, *sess.Config.Region, ttl, cacheDir),
-		SpotPricing: LoadSpotCacheOrNew(ec2.New(sess), *sess.Config.Region, ttl, cacheDir, DefaultSpotDaysBack),
+		ODPricing:   LoadODCacheOrNew(pricingClient, cfg.Region, ttl, cacheDir),
+		SpotPricing: LoadSpotCacheOrNew(ec2Client, cfg.Region, ttl, cacheDir, DefaultSpotDaysBack),
 	}
 }
 
@@ -80,7 +100,7 @@ func (p *EC2Pricing) SpotCacheCount() int {
 
 // GetSpotInstanceTypeNDayAvgCost retrieves the spot price history for a given AZ from the past N days and averages the price
 // Passing an empty list for availabilityZones will retrieve avg cost for all AZs in the current AWSSession's region
-func (p *EC2Pricing) GetSpotInstanceTypeNDayAvgCost(instanceType string, availabilityZones []string, days int) (float64, error) {
+func (p *EC2Pricing) GetSpotInstanceTypeNDayAvgCost(instanceType ec2types.InstanceType, availabilityZones []string, days int) (float64, error) {
 	if len(availabilityZones) == 0 {
 		return p.SpotPricing.Get(instanceType, "", days)
 	}
@@ -101,7 +121,7 @@ func (p *EC2Pricing) GetSpotInstanceTypeNDayAvgCost(instanceType string, availab
 }
 
 // GetOnDemandInstanceTypeCost retrieves the on-demand hourly cost for the specified instance type
-func (p *EC2Pricing) GetOnDemandInstanceTypeCost(instanceType string) (float64, error) {
+func (p *EC2Pricing) GetOnDemandInstanceTypeCost(instanceType ec2types.InstanceType) (float64, error) {
 	return p.ODPricing.Get(instanceType)
 }
 

@@ -14,6 +14,7 @@
 package selector_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/selector"
@@ -35,7 +36,8 @@ func TestTransformBaseInstanceType(t *testing.T) {
 	filters := selector.Filters{
 		InstanceTypeBase: &instanceTypeBase,
 	}
-	filters, err := itf.TransformBaseInstanceType(filters)
+	ctx := context.Background()
+	filters, err := itf.TransformBaseInstanceType(ctx, filters)
 	h.Ok(t, err)
 	h.Assert(t, *filters.BareMetal == false, " should filter out bare metal instances")
 	h.Assert(t, *filters.Fpga == false, "should filter out FPGA instances")
@@ -56,7 +58,8 @@ func TestTransformBaseInstanceTypeWithGPU(t *testing.T) {
 	filters := selector.Filters{
 		InstanceTypeBase: &instanceTypeBase,
 	}
-	filters, err := itf.TransformBaseInstanceType(filters)
+	ctx := context.Background()
+	filters, err := itf.TransformBaseInstanceType(ctx, filters)
 	h.Ok(t, err)
 	h.Assert(t, *filters.BareMetal == false, " should filter out bare metal instances")
 	h.Assert(t, *filters.Fpga == false, "should filter out FPGA instances")
@@ -70,7 +73,8 @@ func TestTransformFamilyFlexibile(t *testing.T) {
 	filters := selector.Filters{
 		Flexible: &flexible,
 	}
-	filters, err := itf.TransformFlexible(filters)
+	ctx := context.Background()
+	filters, err := itf.TransformFlexible(ctx, filters)
 	h.Ok(t, err)
 	h.Assert(t, *filters.BareMetal == false, " should filter out bare metal instances")
 	h.Assert(t, *filters.Fpga == false, "should filter out FPGA instances")

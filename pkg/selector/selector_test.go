@@ -26,8 +26,8 @@ import (
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/instancetypes"
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/selector"
 	h "github.com/aws/amazon-ec2-instance-selector/v2/pkg/test"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/ec2/ec2iface"
 )
@@ -150,25 +150,25 @@ func getSelector(ec2Mock mockedEC2) selector.Selector {
 // Tests
 
 func TestNew(t *testing.T) {
-	itf := selector.New(session.Must(session.NewSession()))
+	itf := selector.New()
 	h.Assert(t, itf != nil, "selector instance created without error")
 }
 
 func TestFilterVerbose(t *testing.T) {
 	itf := getSelector(setupMock(t, describeInstanceTypesPages, "t3_micro.json"))
 	filters := selector.Filters{
-		VCpusRange: &selector.IntRangeFilter{LowerBound: 2, UpperBound: 2},
+		VCpusRange: &selector.Int32RangeFilter{LowerBound: 2, UpperBound: 2},
 	}
 	results, err := itf.FilterVerbose(filters)
 	h.Ok(t, err)
 	h.Assert(t, len(results) == 1, "Should only return 1 instance type with 2 vcpus but actually returned "+strconv.Itoa(len(results)))
-	h.Assert(t, *results[0].InstanceType == "t3.micro", "Should return t3.micro, got %s instead", results[0].InstanceType)
+	h.Assert(t, results[0].InstanceType == "t3.micro", "Should return t3.micro, got %s instead", results[0].InstanceType)
 }
 
 func TestFilterVerbose_NoResults(t *testing.T) {
 	itf := getSelector(setupMock(t, describeInstanceTypesPages, "t3_micro.json"))
 	filters := selector.Filters{
-		VCpusRange: &selector.IntRangeFilter{LowerBound: 4, UpperBound: 4},
+		VCpusRange: &selector.Int32RangeFilter{LowerBound: 4, UpperBound: 4},
 	}
 	results, err := itf.FilterVerbose(filters)
 	h.Ok(t, err)
@@ -178,7 +178,7 @@ func TestFilterVerbose_NoResults(t *testing.T) {
 func TestFilterVerbose_Failure(t *testing.T) {
 	itf := getSelector(mockedEC2{DescribeInstanceTypesPagesErr: errors.New("error")})
 	filters := selector.Filters{
-		VCpusRange: &selector.IntRangeFilter{LowerBound: 4, UpperBound: 4},
+		VCpusRange: &selector.Int32RangeFilter{LowerBound: 4, UpperBound: 4},
 	}
 	results, err := itf.FilterVerbose(filters)
 	h.Assert(t, results == nil, "Results should be nil")
@@ -193,13 +193,13 @@ func TestFilterVerbose_AZFilteredIn(t *testing.T) {
 	}
 	itf := getSelector(ec2Mock)
 	filters := selector.Filters{
-		VCpusRange:        &selector.IntRangeFilter{LowerBound: 2, UpperBound: 2},
+		VCpusRange:        &selector.Int32RangeFilter{LowerBound: 2, UpperBound: 2},
 		AvailabilityZones: &[]string{"us-east-2a"},
 	}
 	results, err := itf.FilterVerbose(filters)
 	h.Ok(t, err)
 	h.Assert(t, len(results) == 1, "Should only return 1 instance type with 2 vcpus but actually returned "+strconv.Itoa(len(results)))
-	h.Assert(t, *results[0].InstanceType == "t3.micro", "Should return t3.micro, got %s instead", results[0].InstanceType)
+	h.Assert(t, results[0].InstanceType == "t3.micro", "Should return t3.micro, got %s instead", results[0].InstanceType)
 }
 
 func TestFilterVerbose_AZFilteredOut(t *testing.T) {
@@ -220,7 +220,7 @@ func TestFilterVerbose_AZFilteredOut(t *testing.T) {
 func TestFilterVerboseAZ_FilteredErr(t *testing.T) {
 	itf := getSelector(mockedEC2{})
 	filters := selector.Filters{
-		VCpusRange:        &selector.IntRangeFilter{LowerBound: 2, UpperBound: 2},
+		VCpusRange:        &selector.Int32RangeFilter{LowerBound: 2, UpperBound: 2},
 		AvailabilityZones: &[]string{"blah"},
 	}
 	_, err := itf.FilterVerbose(filters)
@@ -232,7 +232,7 @@ func TestFilterVerbose_Gpus(t *testing.T) {
 	gpuMemory, err := bytequantity.ParseToByteQuantity("128g")
 	h.Ok(t, err)
 	filters := selector.Filters{
-		GpusRange: &selector.IntRangeFilter{LowerBound: 8, UpperBound: 8},
+		GpusRange: &selector.Int32RangeFilter{LowerBound: 8, UpperBound: 8},
 		GpuMemoryRange: &selector.ByteQuantityRangeFilter{
 			LowerBound: gpuMemory,
 			UpperBound: gpuMemory,
@@ -241,13 +241,13 @@ func TestFilterVerbose_Gpus(t *testing.T) {
 	results, err := itf.FilterVerbose(filters)
 	h.Ok(t, err)
 	h.Assert(t, len(results) == 1, "Should only return 1 instance type with 2 vcpus but actually returned "+strconv.Itoa(len(results)))
-	h.Assert(t, *results[0].InstanceType == "p3.16xlarge", "Should return p3.16xlarge, got %s instead", *results[0].InstanceType)
+	h.Assert(t, results[0].InstanceType == "p3.16xlarge", "Should return p3.16xlarge, got %s instead", results[0].InstanceType)
 }
 
 func TestFilter(t *testing.T) {
 	itf := getSelector(setupMock(t, describeInstanceTypesPages, "t3_micro.json"))
 	filters := selector.Filters{
-		VCpusRange: &selector.IntRangeFilter{LowerBound: 2, UpperBound: 2},
+		VCpusRange: &selector.Int32RangeFilter{LowerBound: 2, UpperBound: 2},
 	}
 	results, err := itf.Filter(filters)
 	h.Ok(t, err)
@@ -257,10 +257,11 @@ func TestFilter(t *testing.T) {
 
 func TestFilter_MoreFilters(t *testing.T) {
 	itf := getSelector(setupMock(t, describeInstanceTypesPages, "t3_micro.json"))
+	X8664Architecture := ec2types.ArchitectureTypeX8664
 	filters := selector.Filters{
-		VCpusRange:      &selector.IntRangeFilter{LowerBound: 2, UpperBound: 2},
+		VCpusRange:      &selector.Int32RangeFilter{LowerBound: 2, UpperBound: 2},
 		BareMetal:       aws.Bool(false),
-		CPUArchitecture: aws.String("x86_64"),
+		CPUArchitecture: &X8664Architecture,
 		Hypervisor:      aws.String("nitro"),
 		EnaSupport:      aws.Bool(true),
 	}
@@ -273,14 +274,14 @@ func TestFilter_MoreFilters(t *testing.T) {
 func TestFilter_TruncateToMaxResults(t *testing.T) {
 	itf := getSelector(setupMock(t, describeInstanceTypesPages, "25_instances.json"))
 	filters := selector.Filters{
-		VCpusRange: &selector.IntRangeFilter{LowerBound: 0, UpperBound: 100},
+		VCpusRange: &selector.Int32RangeFilter{LowerBound: 0, UpperBound: 100},
 	}
 	results, err := itf.Filter(filters)
 	h.Ok(t, err)
 	h.Assert(t, len(results) > 1, "Should return > 1 instance types since max results is not set")
 
 	filters = selector.Filters{
-		VCpusRange: &selector.IntRangeFilter{LowerBound: 0, UpperBound: 100},
+		VCpusRange: &selector.Int32RangeFilter{LowerBound: 0, UpperBound: 100},
 		MaxResults: aws.Int(1),
 	}
 	results, err = itf.Filter(filters)
@@ -288,7 +289,7 @@ func TestFilter_TruncateToMaxResults(t *testing.T) {
 	h.Assert(t, len(results) == 1, "Should return 1 instance types since max results is set")
 
 	filters = selector.Filters{
-		VCpusRange: &selector.IntRangeFilter{LowerBound: 0, UpperBound: 100},
+		VCpusRange: &selector.Int32RangeFilter{LowerBound: 0, UpperBound: 100},
 		MaxResults: aws.Int(30),
 	}
 	results, err = itf.Filter(filters)
@@ -299,7 +300,7 @@ func TestFilter_TruncateToMaxResults(t *testing.T) {
 func TestFilter_Failure(t *testing.T) {
 	itf := getSelector(mockedEC2{DescribeInstanceTypesPagesErr: errors.New("error")})
 	filters := selector.Filters{
-		VCpusRange: &selector.IntRangeFilter{LowerBound: 4, UpperBound: 4},
+		VCpusRange: &selector.Int32RangeFilter{LowerBound: 4, UpperBound: 4},
 	}
 	results, err := itf.Filter(filters)
 	h.Assert(t, results == nil, "Results should be nil")
@@ -595,12 +596,13 @@ func TestFilter_PricePerHour_OD(t *testing.T) {
 		GetOndemandInstanceTypeCostResp: 0.0104,
 		onDemandCacheCount:              1,
 	}
+	onDemandUsage := ec2types.UsageClassTypeOnDemand
 	filters := selector.Filters{
 		PricePerHour: &selector.Float64RangeFilter{
 			LowerBound: 0.0104,
 			UpperBound: 0.0104,
 		},
-		UsageClass: aws.String("on-demand"),
+		UsageClass: &onDemandUsage,
 	}
 	results, err := itf.Filter(filters)
 	h.Ok(t, err)
@@ -613,12 +615,13 @@ func TestFilter_PricePerHour_Spot(t *testing.T) {
 		GetSpotInstanceTypeNDayAvgCostResp: 0.0104,
 		spotCacheCount:                     1,
 	}
+	spotUsage := ec2types.UsageClassTypeSpot
 	filters := selector.Filters{
 		PricePerHour: &selector.Float64RangeFilter{
 			LowerBound: 0.0104,
 			UpperBound: 0.0104,
 		},
-		UsageClass: aws.String("spot"),
+		UsageClass: &spotUsage,
 	}
 	results, err := itf.Filter(filters)
 	h.Ok(t, err)

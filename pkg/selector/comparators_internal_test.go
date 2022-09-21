@@ -261,22 +261,22 @@ func TestSupportSyntaxToBool_Nil(t *testing.T) {
 }
 
 func TestCalculateVCpusToMemoryRatio(t *testing.T) {
-	vcpus := aws.Int64(4)
+	vcpus := aws.Int32(4)
 	memory := aws.Int64(4096)
 	ratio := calculateVCpusToMemoryRatio(vcpus, memory)
 	h.Assert(t, *ratio == 1.00, "ratio should equal 1:1")
 
-	vcpus = aws.Int64(2)
+	vcpus = aws.Int32(2)
 	memory = aws.Int64(4096)
 	ratio = calculateVCpusToMemoryRatio(vcpus, memory)
 	h.Assert(t, *ratio == 2.00, "ratio should equal 1:2")
 
-	vcpus = aws.Int64(1)
+	vcpus = aws.Int32(1)
 	memory = aws.Int64(512)
 	ratio = calculateVCpusToMemoryRatio(vcpus, memory)
 	h.Assert(t, *ratio == 1.0, "ratio should take the ceiling which equals 1:1")
 
-	vcpus = aws.Int64(0)
+	vcpus = aws.Int32(0)
 	memory = aws.Int64(512)
 	ratio = calculateVCpusToMemoryRatio(vcpus, memory)
 	h.Assert(t, ratio == nil, "ratio should be nil when vcpus is 0")
@@ -287,7 +287,7 @@ func TestCalculateVCpusToMemoryRatio_Nil(t *testing.T) {
 	ratio := calculateVCpusToMemoryRatio(nil, memory)
 	h.Assert(t, ratio == nil, "nil vcpus should evaluate to nil")
 
-	vcpus := aws.Int64(2)
+	vcpus := aws.Int32(2)
 	ratio = calculateVCpusToMemoryRatio(vcpus, nil)
 	h.Assert(t, ratio == nil, "nil memory should evaluate to nil")
 

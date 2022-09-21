@@ -178,6 +178,10 @@ func (cl *CommandLineInterface) SetUntouchedFlagValuesToNil() error {
 				return
 			}
 			switch v := cl.Flags[f.Name].(type) {
+			case *int32:
+				if reflect.ValueOf(*v).IsZero() {
+					cl.Flags[f.Name] = nil
+				}
 			case *int:
 				if reflect.ValueOf(*v).IsZero() {
 					cl.Flags[f.Name] = nil
@@ -259,6 +263,11 @@ func (cl *CommandLineInterface) ProcessRangeFilterFlags() error {
 			cl.Flags[flagName] = &selector.IntRangeFilter{
 				LowerBound: *cl.IntMe(cl.Flags[rangeHelperMin]),
 				UpperBound: *cl.IntMe(cl.Flags[rangeHelperMax]),
+			}
+		case *int32:
+			cl.Flags[flagName] = &selector.Int32RangeFilter{
+				LowerBound: *cl.Int32Me(cl.Flags[rangeHelperMin]),
+				UpperBound: *cl.Int32Me(cl.Flags[rangeHelperMax]),
 			}
 		case *bytequantity.ByteQuantity:
 			cl.Flags[flagName] = &selector.ByteQuantityRangeFilter{
