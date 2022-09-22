@@ -168,6 +168,6 @@ func TestNewBubbleTeaModel_Rows(t *testing.T) {
 		currInstanceName := instanceTypes[i].InstanceType
 		currRowName := rows[i].Data["Instance Type"]
 
-		h.Assert(t, *currInstanceName == currRowName, "Rows should be in following order: %s. Actual order: [%s]", OneLineOutput(instanceTypes), getRowsInstances(rows))
+		h.Assert(t, string(currInstanceName) == currRowName, "Rows should be in following order: %s. Actual order: [%s]", OneLineOutput(instanceTypes), getRowsInstances(rows))
 	}
 }
