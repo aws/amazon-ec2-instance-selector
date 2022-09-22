@@ -46,7 +46,7 @@ type mockedEC2 struct {
 	awsapi.SelectorInterface
 	DescribeInstanceTypesResp           ec2.DescribeInstanceTypesOutput
 	DescribeInstanceTypesErr            error
-	DescribeInstanceTypeOfferingsRespFn func(zone string) *ec2.DescribeInstanceTypeOfferingsOutput
+	DescribeInstanceTypeOfferingsRespFn func(zone string) ec2.DescribeInstanceTypeOfferingsOutput
 	DescribeInstanceTypeOfferingsResp   ec2.DescribeInstanceTypeOfferingsOutput
 	DescribeInstanceTypeOfferingsErr    error
 	DescribeAvailabilityZonesResp       ec2.DescribeAvailabilityZonesOutput
@@ -62,7 +62,14 @@ func (m mockedEC2) DescribeInstanceTypes(ctx context.Context, input *ec2.Describ
 }
 
 func (m mockedEC2) DescribeInstanceTypeOfferings(ctx context.Context, input *ec2.DescribeInstanceTypeOfferingsInput, optFns ...func(*ec2.Options)) (*ec2.DescribeInstanceTypeOfferingsOutput, error) {
-	return &m.DescribeInstanceTypeOfferingsResp, m.DescribeInstanceTypeOfferingsErr
+	var response ec2.DescribeInstanceTypeOfferingsOutput
+	if m.DescribeInstanceTypeOfferingsRespFn != nil {
+		response = m.DescribeInstanceTypeOfferingsRespFn(input.Filters[0].Values[0])
+	} else {
+		response = m.DescribeInstanceTypeOfferingsResp
+	}
+
+	return &response, m.DescribeInstanceTypeOfferingsErr
 }
 
 func mockMultiRespDescribeInstanceTypesOfferings(t *testing.T, locationToFile map[string]string) mockedEC2 {
@@ -78,9 +85,9 @@ func mockMultiRespDescribeInstanceTypesOfferings(t *testing.T, locationToFile ma
 		locationToResp[zone] = ditoo
 	}
 	return mockedEC2{
-		DescribeInstanceTypeOfferingsRespFn: func(input string) *ec2.DescribeInstanceTypeOfferingsOutput {
+		DescribeInstanceTypeOfferingsRespFn: func(input string) ec2.DescribeInstanceTypeOfferingsOutput {
 			resp := locationToResp[input]
-			return &resp
+			return resp
 		},
 	}
 }
