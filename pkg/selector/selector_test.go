@@ -23,6 +23,7 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/awsapi"
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/bytequantity"
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/instancetypes"
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/selector"
@@ -31,7 +32,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
-	"github.com/aws/aws-sdk-go/service/ec2/ec2iface"
 )
 
 const (
@@ -48,7 +48,7 @@ type itFn = func(page *ec2.DescribeInstanceTypesOutput, lastPage bool) bool
 type ioFn = func(page *ec2.DescribeInstanceTypeOfferingsOutput, lastPage bool) bool
 
 type mockedEC2 struct {
-	ec2iface.EC2API
+	awsapi.EC2Interface
 	DescribeInstanceTypesPagesResp      ec2.DescribeInstanceTypesOutput
 	DescribeInstanceTypesPagesErr       error
 	DescribeInstanceTypesResp           ec2.DescribeInstanceTypesOutput
@@ -494,8 +494,9 @@ func TestFilter_AllowAndDenyList(t *testing.T) {
 
 func TestFilter_X8664_AMD64(t *testing.T) {
 	itf := getSelector(setupMock(t, describeInstanceTypesPages, "t3_micro.json"))
+	ArchitectureType := selector.ArchitectureTypeAMD64
 	filters := selector.Filters{
-		CPUArchitecture: aws.String("amd64"),
+		CPUArchitecture: &ArchitectureType,
 	}
 	results, err := itf.Filter(filters)
 	h.Ok(t, err)
@@ -505,15 +506,17 @@ func TestFilter_X8664_AMD64(t *testing.T) {
 
 func TestFilter_VirtType_PV(t *testing.T) {
 	itf := getSelector(setupMock(t, describeInstanceTypesPages, "pv_instances.json"))
+	pvType := selector.VirtualizationTypePv
 	filters := selector.Filters{
-		VirtualizationType: aws.String("pv"),
+		VirtualizationType: &pvType,
 	}
 	results, err := itf.Filter(filters)
 	h.Ok(t, err)
 	h.Assert(t, len(results) > 0, "Should return at least 1 instance type when filtering with VirtualizationType: pv")
 
+	paravirtualType := ec2types.VirtualizationTypeParavirtual
 	filters = selector.Filters{
-		VirtualizationType: aws.String("paravirtual"),
+		VirtualizationType: &paravirtualType,
 	}
 	results, err = itf.Filter(filters)
 	h.Ok(t, err)

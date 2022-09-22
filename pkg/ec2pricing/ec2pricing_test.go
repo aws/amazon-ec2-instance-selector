@@ -19,12 +19,11 @@ import (
 	"io/ioutil"
 	"testing"
 
+	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/awsapi"
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/ec2pricing"
 	h "github.com/aws/amazon-ec2-instance-selector/v2/pkg/test"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/pricing"
-	"github.com/aws/aws-sdk-go/service/ec2/ec2iface"
-	"github.com/aws/aws-sdk-go/service/pricing/pricingiface"
 )
 
 const (
@@ -39,8 +38,8 @@ type gpFn = func(page *pricing.GetProductsOutput, lastPage bool) bool
 type dspFn = func(page *ec2.DescribeSpotPriceHistoryOutput, lastPage bool) bool
 
 type mockedPricing struct {
-	pricingiface.PricingAPI
-	ec2iface.EC2API
+	awsapi.PricingInterface
+	awsapi.SelectorInterface
 	GetProductsPagesResp              pricing.GetProductsOutput
 	GetProductsPagesErr               error
 	DescribeSpotPriceHistoryPagesResp ec2.DescribeSpotPriceHistoryOutput

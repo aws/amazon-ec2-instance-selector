@@ -27,6 +27,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/awsapi"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/mitchellh/go-homedir"
@@ -43,7 +44,7 @@ type SpotPricing struct {
 	FullRefreshTTL time.Duration
 	DirectoryPath  string
 	cache          *cache.Cache
-	ec2Client      *ec2.Client
+	ec2Client      awsapi.EC2Interface
 	sync.RWMutex
 }
 
@@ -53,7 +54,7 @@ type spotPricingEntry struct {
 	Zone      string
 }
 
-func LoadSpotCacheOrNew(ec2Client *ec2.Client, region string, fullRefreshTTL time.Duration, directoryPath string, days int) *SpotPricing {
+func LoadSpotCacheOrNew(ec2Client awsapi.EC2Interface, region string, fullRefreshTTL time.Duration, directoryPath string, days int) *SpotPricing {
 	expandedDirPath, err := homedir.Expand(directoryPath)
 	if err != nil {
 		log.Printf("Unable to load spot pricing cache directory %s: %v", expandedDirPath, err)

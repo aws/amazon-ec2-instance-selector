@@ -15,13 +15,13 @@ package selector
 
 import (
 	"encoding/json"
+	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/awsapi"
 	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"regexp"
 
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/bytequantity"
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/ec2pricing"
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/instancetypes"
-	"github.com/aws/aws-sdk-go-v2/service/ec2"
 )
 
 // InstanceTypesOutput can be implemented to provide custom output to instance type results
@@ -40,7 +40,7 @@ func (fn InstanceTypesOutputFn) Output(instanceTypes []*instancetypes.Details) [
 
 // Selector is used to filter instance type resource specs
 type Selector struct {
-	EC2                   *ec2.Client
+	EC2                   awsapi.SelectorInterface
 	EC2Pricing            ec2pricing.EC2PricingIface
 	InstanceTypesProvider *instancetypes.Provider
 	ServiceRegistry       ServiceRegistry
@@ -292,3 +292,13 @@ func (CPUManufacturer) Values() []CPUManufacturer {
 		"intel",
 	}
 }
+
+// ArchitectureTypeAMD64 is a legacy type we support for b/c that isn't in the API
+const (
+	ArchitectureTypeAMD64 ec2types.ArchitectureType = "amd64"
+)
+
+// ArchitectureTypeAMD64 is a legacy type we support for b/c that isn't in the API
+const (
+	VirtualizationTypePv ec2types.VirtualizationType = "pv"
+)

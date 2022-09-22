@@ -18,7 +18,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"io/ioutil"
 	"log"
 	"os"
@@ -28,6 +27,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/awsapi"
+	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/aws-sdk-go-v2/service/pricing"
 	pricingtypes "github.com/aws/aws-sdk-go-v2/service/pricing/types"
 	"github.com/aws/aws-sdk-go/aws/endpoints"
@@ -45,7 +46,7 @@ type OnDemandPricing struct {
 	FullRefreshTTL time.Duration
 	DirectoryPath  string
 	cache          *cache.Cache
-	pricingClient  *pricing.Client
+	pricingClient  awsapi.PricingInterface
 	sync.RWMutex
 }
 
@@ -86,7 +87,7 @@ type PriceDimensionInfo struct {
 	PricePerUnit map[string]string `json:"pricePerUnit"`
 }
 
-func LoadODCacheOrNew(pricingClient *pricing.Client, region string, fullRefreshTTL time.Duration, directoryPath string) *OnDemandPricing {
+func LoadODCacheOrNew(pricingClient awsapi.PricingInterface, region string, fullRefreshTTL time.Duration, directoryPath string) *OnDemandPricing {
 	expandedDirPath, err := homedir.Expand(directoryPath)
 	if err != nil {
 		log.Printf("Unable to load on-demand pricing cache directory %s: %v", expandedDirPath, err)
