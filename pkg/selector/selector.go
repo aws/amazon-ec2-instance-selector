@@ -568,6 +568,15 @@ func exec(instanceType ec2types.InstanceType, filterName string, filter filterPa
 		default:
 			return false, fmt.Errorf(invalidInstanceSpecTypeMsg)
 		}
+	case *ec2types.InstanceTypeHypervisor:
+		switch iSpec := instanceSpec.(type) {
+		case ec2types.InstanceTypeHypervisor:
+			if !isSupportedInstanceTypeHypervisorType(iSpec, filter) {
+				return false, nil
+			}
+		default:
+			return false, fmt.Errorf(invalidInstanceSpecTypeMsg)
+		}
 	case *ec2types.RootDeviceType:
 		switch iSpec := instanceSpec.(type) {
 		case []ec2types.RootDeviceType:
@@ -625,9 +634,7 @@ func (itf Selector) RetrieveInstanceTypesSupportedInLocations(locations []string
 
 		p := ec2.NewDescribeInstanceTypeOfferingsPaginator(itf.EC2, instanceTypeOfferingsInput)
 
-		// Iterate through the Amazon S3 object pages.
 		for p.HasMorePages() {
-			// next page takes a context
 			instanceTypeOfferings, err := p.NextPage(context.TODO())
 			if err != nil {
 				return nil, fmt.Errorf("Encountered an error when describing instance type offerings: %w", err)

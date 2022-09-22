@@ -26,7 +26,6 @@ import (
 func TestTransformBaseInstanceType(t *testing.T) {
 	ec2Mock := mockedEC2{
 		DescribeInstanceTypesResp:         setupMock(t, describeInstanceTypes, "c4_large.json").DescribeInstanceTypesResp,
-		DescribeInstanceTypesPagesResp:    setupMock(t, describeInstanceTypesPages, "25_instances.json").DescribeInstanceTypesPagesResp,
 		DescribeInstanceTypeOfferingsResp: setupMock(t, describeInstanceTypeOfferings, "us-east-2a.json").DescribeInstanceTypeOfferingsResp,
 	}
 	itf := selector.Selector{
@@ -48,7 +47,6 @@ func TestTransformBaseInstanceType(t *testing.T) {
 func TestTransformBaseInstanceTypeWithGPU(t *testing.T) {
 	ec2Mock := mockedEC2{
 		DescribeInstanceTypesResp:         setupMock(t, describeInstanceTypes, "g2_2xlarge.json").DescribeInstanceTypesResp,
-		DescribeInstanceTypesPagesResp:    setupMock(t, describeInstanceTypesPages, "g2_2xlarge_group.json").DescribeInstanceTypesPagesResp,
 		DescribeInstanceTypeOfferingsResp: setupMock(t, describeInstanceTypeOfferings, "us-east-2a.json").DescribeInstanceTypeOfferingsResp,
 	}
 	itf := selector.Selector{

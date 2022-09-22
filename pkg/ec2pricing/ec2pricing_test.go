@@ -14,8 +14,10 @@
 package ec2pricing_test
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"io/ioutil"
 	"testing"
 
@@ -27,54 +29,45 @@ import (
 )
 
 const (
-	getProductsPages              = "GetProductsPages"
-	describeSpotPriceHistoryPages = "DescribeSpotPriceHistoryPages"
-	mockFilesPath                 = "../../test/static"
+	getProducts              = "GetProducts"
+	describeSpotPriceHistory = "DescribeSpotPriceHistory"
+	mockFilesPath            = "../../test/static"
 )
 
 // Mocking helpers
 
-type gpFn = func(page *pricing.GetProductsOutput, lastPage bool) bool
-type dspFn = func(page *ec2.DescribeSpotPriceHistoryOutput, lastPage bool) bool
-
 type mockedPricing struct {
 	awsapi.PricingInterface
-	awsapi.SelectorInterface
-	GetProductsPagesResp              pricing.GetProductsOutput
-	GetProductsPagesErr               error
+	GetProductsResp pricing.GetProductsOutput
+	GetProductsErr  error
+}
+
+func (m mockedPricing) GetProducts(ctx context.Context, input *pricing.GetProductsInput, optFns ...func(*pricing.Options)) (*pricing.GetProductsOutput, error) {
+	return &m.GetProductsResp, m.GetProductsErr
+}
+
+type mockedSpotEC2 struct {
+	awsapi.EC2Interface
 	DescribeSpotPriceHistoryPagesResp ec2.DescribeSpotPriceHistoryOutput
 	DescribeSpotPriceHistoryPagesErr  error
 }
 
-func (m mockedPricing) GetProductsPages(input *pricing.GetProductsInput, fn gpFn) error {
-	fn(&m.GetProductsPagesResp, true)
-	return m.GetProductsPagesErr
+func (m mockedSpotEC2) DescribeSpotPriceHistory(ctx context.Context, input *ec2.DescribeSpotPriceHistoryInput, optFns ...func(*ec2.Options)) (*ec2.DescribeSpotPriceHistoryOutput, error) {
+	return &m.DescribeSpotPriceHistoryPagesResp, m.DescribeSpotPriceHistoryPagesErr
 }
 
-func (m mockedPricing) DescribeSpotPriceHistoryPages(input *ec2.DescribeSpotPriceHistoryInput, fn dspFn) error {
-	fn(&m.DescribeSpotPriceHistoryPagesResp, true)
-	return m.DescribeSpotPriceHistoryPagesErr
-}
-
-func setupMock(t *testing.T, api string, file string) mockedPricing {
+func setupOdMock(t *testing.T, api string, file string) mockedPricing {
 	mockFilename := fmt.Sprintf("%s/%s/%s", mockFilesPath, api, file)
 	mockFile, err := ioutil.ReadFile(mockFilename)
 	h.Assert(t, err == nil, "Error reading mock file "+string(mockFilename))
 	switch api {
-	case getProductsPages:
+	case getProducts:
 		priceList := []string{string(mockFile)}
 		productsOutput := pricing.GetProductsOutput{
 			PriceList: priceList,
 		}
 		return mockedPricing{
-			GetProductsPagesResp: productsOutput,
-		}
-	case describeSpotPriceHistoryPages:
-		dspho := ec2.DescribeSpotPriceHistoryOutput{}
-		err = json.Unmarshal(mockFile, &dspho)
-		h.Assert(t, err == nil, "Error parsing mock json file contents"+mockFilename)
-		return mockedPricing{
-			DescribeSpotPriceHistoryPagesResp: dspho,
+			GetProductsResp: productsOutput,
 		}
 
 	default:
@@ -83,48 +76,67 @@ func setupMock(t *testing.T, api string, file string) mockedPricing {
 	return mockedPricing{}
 }
 
+func setupEc2Mock(t *testing.T, api string, file string) mockedSpotEC2 {
+	mockFilename := fmt.Sprintf("%s/%s/%s", mockFilesPath, api, file)
+	mockFile, err := ioutil.ReadFile(mockFilename)
+	h.Assert(t, err == nil, "Error reading mock file "+string(mockFilename))
+	switch api {
+	case describeSpotPriceHistory:
+		dspho := ec2.DescribeSpotPriceHistoryOutput{}
+		err = json.Unmarshal(mockFile, &dspho)
+		h.Assert(t, err == nil, "Error parsing mock json file contents"+mockFilename)
+		return mockedSpotEC2{
+			DescribeSpotPriceHistoryPagesResp: dspho,
+		}
+
+	default:
+		h.Assert(t, false, "Unable to mock the provided API type "+api)
+	}
+	return mockedSpotEC2{}
+}
+
 func TestGetOndemandInstanceTypeCost_m5large(t *testing.T) {
-	pricingMock := setupMock(t, getProductsPages, "m5_large.json")
+	pricingMock := setupOdMock(t, getProducts, "m5_large.json")
 	ec2pricingClient := ec2pricing.EC2Pricing{
 		ODPricing: ec2pricing.LoadODCacheOrNew(pricingMock, "us-east-1", 0, ""),
 	}
-	price, err := ec2pricingClient.GetOnDemandInstanceTypeCost("m5.large")
+	price, err := ec2pricingClient.GetOnDemandInstanceTypeCost(ec2types.InstanceTypeM5Large)
 	h.Ok(t, err)
 	h.Equals(t, float64(0.096), price)
 }
 
 func TestRefreshOnDemandCache(t *testing.T) {
-	pricingMock := setupMock(t, getProductsPages, "m5_large.json")
+	pricingMock := setupOdMock(t, getProducts, "m5_large.json")
 	ec2pricingClient := ec2pricing.EC2Pricing{
 		ODPricing: ec2pricing.LoadODCacheOrNew(pricingMock, "us-east-1", 0, ""),
 	}
 	err := ec2pricingClient.RefreshOnDemandCache()
 	h.Ok(t, err)
 
-	price, err := ec2pricingClient.GetOnDemandInstanceTypeCost("m5.large")
+	price, err := ec2pricingClient.GetOnDemandInstanceTypeCost(ec2types.InstanceTypeM5Large)
 	h.Ok(t, err)
 	h.Equals(t, float64(0.096), price)
 }
 
 func TestGetSpotInstanceTypeNDayAvgCost(t *testing.T) {
-	ec2Mock := setupMock(t, describeSpotPriceHistoryPages, "m5_large.json")
+	ec2Mock := setupEc2Mock(t, describeSpotPriceHistory, "m5_large.json")
 	ec2pricingClient := ec2pricing.EC2Pricing{
 		SpotPricing: ec2pricing.LoadSpotCacheOrNew(ec2Mock, "us-east-1", 0, "", 30),
 	}
-	price, err := ec2pricingClient.GetSpotInstanceTypeNDayAvgCost("m5.large", []string{"us-east-1a"}, 30)
+	price, err := ec2pricingClient.GetSpotInstanceTypeNDayAvgCost(ec2types.InstanceTypeM5Large, []string{"us-east-1a"}, 30)
 	h.Ok(t, err)
 	h.Equals(t, float64(0.041486231229302666), price)
 }
 
 func TestRefreshSpotCache(t *testing.T) {
-	ec2Mock := setupMock(t, describeSpotPriceHistoryPages, "m5_large.json")
+	ec2Mock := setupEc2Mock(t, describeSpotPriceHistory, "m5_large.json")
 	ec2pricingClient := ec2pricing.EC2Pricing{
 		SpotPricing: ec2pricing.LoadSpotCacheOrNew(ec2Mock, "us-east-1", 0, "", 30),
 	}
 	err := ec2pricingClient.RefreshSpotCache(30)
 	h.Ok(t, err)
 
-	price, err := ec2pricingClient.GetSpotInstanceTypeNDayAvgCost("m5.large", []string{"us-east-1a"}, 30)
+	price, err := ec2pricingClient.GetSpotInstanceTypeNDayAvgCost(ec2types.InstanceTypeM5Large, []string{"us-east-1a"}, 30)
 	h.Ok(t, err)
 	h.Equals(t, float64(0.041486231229302666), price)
 }

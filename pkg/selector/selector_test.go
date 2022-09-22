@@ -35,7 +35,6 @@ import (
 )
 
 const (
-	describeInstanceTypesPages    = "DescribeInstanceTypesPages"
 	describeInstanceTypes         = "DescribeInstanceTypes"
 	describeInstanceTypeOfferings = "DescribeInstanceTypeOfferings"
 	describeAvailabilityZones     = "DescribeAvailabilityZones"
@@ -43,14 +42,8 @@ const (
 )
 
 // Mocking helpers
-
-type itFn = func(page *ec2.DescribeInstanceTypesOutput, lastPage bool) bool
-type ioFn = func(page *ec2.DescribeInstanceTypeOfferingsOutput, lastPage bool) bool
-
 type mockedEC2 struct {
-	awsapi.EC2Interface
-	DescribeInstanceTypesPagesResp      ec2.DescribeInstanceTypesOutput
-	DescribeInstanceTypesPagesErr       error
+	awsapi.SelectorInterface
 	DescribeInstanceTypesResp           ec2.DescribeInstanceTypesOutput
 	DescribeInstanceTypesErr            error
 	DescribeInstanceTypeOfferingsRespFn func(zone string) *ec2.DescribeInstanceTypeOfferingsOutput
@@ -60,26 +53,16 @@ type mockedEC2 struct {
 	DescribeAvailabilityZonesErr        error
 }
 
-func (m mockedEC2) DescribeAvailabilityZones(input *ec2.DescribeAvailabilityZonesInput) (*ec2.DescribeAvailabilityZonesOutput, error) {
+func (m mockedEC2) DescribeAvailabilityZones(ctx context.Context, input *ec2.DescribeAvailabilityZonesInput, optFns ...func(*ec2.Options)) (*ec2.DescribeAvailabilityZonesOutput, error) {
 	return &m.DescribeAvailabilityZonesResp, m.DescribeAvailabilityZonesErr
 }
 
-func (m mockedEC2) DescribeInstanceTypes(input *ec2.DescribeInstanceTypesInput) (*ec2.DescribeInstanceTypesOutput, error) {
+func (m mockedEC2) DescribeInstanceTypes(ctx context.Context, input *ec2.DescribeInstanceTypesInput, optFns ...func(*ec2.Options)) (*ec2.DescribeInstanceTypesOutput, error) {
 	return &m.DescribeInstanceTypesResp, m.DescribeInstanceTypesErr
 }
 
-func (m mockedEC2) DescribeInstanceTypesPages(input *ec2.DescribeInstanceTypesInput, fn itFn) error {
-	fn(&m.DescribeInstanceTypesPagesResp, true)
-	return m.DescribeInstanceTypesPagesErr
-}
-
-func (m mockedEC2) DescribeInstanceTypeOfferingsPages(input *ec2.DescribeInstanceTypeOfferingsInput, fn ioFn) error {
-	if m.DescribeInstanceTypeOfferingsRespFn != nil {
-		fn(m.DescribeInstanceTypeOfferingsRespFn(input.Filters[0].Values[0]), true)
-	} else {
-		fn(&m.DescribeInstanceTypeOfferingsResp, true)
-	}
-	return m.DescribeInstanceTypeOfferingsErr
+func (m mockedEC2) DescribeInstanceTypeOfferings(ctx context.Context, input *ec2.DescribeInstanceTypeOfferingsInput, optFns ...func(*ec2.Options)) (*ec2.DescribeInstanceTypeOfferingsOutput, error) {
+	return &m.DescribeInstanceTypeOfferingsResp, m.DescribeInstanceTypeOfferingsErr
 }
 
 func mockMultiRespDescribeInstanceTypesOfferings(t *testing.T, locationToFile map[string]string) mockedEC2 {
@@ -113,13 +96,6 @@ func setupMock(t *testing.T, api string, file string) mockedEC2 {
 		h.Assert(t, err == nil, "Error parsing mock json file contents"+mockFilename)
 		return mockedEC2{
 			DescribeInstanceTypesResp: dito,
-		}
-	case describeInstanceTypesPages:
-		dito := ec2.DescribeInstanceTypesOutput{}
-		err = json.Unmarshal(mockFile, &dito)
-		h.Assert(t, err == nil, "Error parsing mock json file contents"+mockFilename)
-		return mockedEC2{
-			DescribeInstanceTypesPagesResp: dito,
 		}
 	case describeInstanceTypeOfferings:
 		ditoo := ec2.DescribeInstanceTypeOfferingsOutput{}
@@ -158,7 +134,7 @@ func TestNew(t *testing.T) {
 }
 
 func TestFilterVerbose(t *testing.T) {
-	itf := getSelector(setupMock(t, describeInstanceTypesPages, "t3_micro.json"))
+	itf := getSelector(setupMock(t, describeInstanceTypes, "t3_micro.json"))
 	filters := selector.Filters{
 		VCpusRange: &selector.Int32RangeFilter{LowerBound: 2, UpperBound: 2},
 	}
@@ -169,7 +145,7 @@ func TestFilterVerbose(t *testing.T) {
 }
 
 func TestFilterVerbose_NoResults(t *testing.T) {
-	itf := getSelector(setupMock(t, describeInstanceTypesPages, "t3_micro.json"))
+	itf := getSelector(setupMock(t, describeInstanceTypes, "t3_micro.json"))
 	filters := selector.Filters{
 		VCpusRange: &selector.Int32RangeFilter{LowerBound: 4, UpperBound: 4},
 	}
@@ -179,7 +155,7 @@ func TestFilterVerbose_NoResults(t *testing.T) {
 }
 
 func TestFilterVerbose_Failure(t *testing.T) {
-	itf := getSelector(mockedEC2{DescribeInstanceTypesPagesErr: errors.New("error")})
+	itf := getSelector(mockedEC2{DescribeInstanceTypesErr: errors.New("error")})
 	filters := selector.Filters{
 		VCpusRange: &selector.Int32RangeFilter{LowerBound: 4, UpperBound: 4},
 	}
@@ -190,7 +166,7 @@ func TestFilterVerbose_Failure(t *testing.T) {
 
 func TestFilterVerbose_AZFilteredIn(t *testing.T) {
 	ec2Mock := mockedEC2{
-		DescribeInstanceTypesPagesResp:    setupMock(t, describeInstanceTypesPages, "t3_micro.json").DescribeInstanceTypesPagesResp,
+		DescribeInstanceTypesResp:         setupMock(t, describeInstanceTypes, "t3_micro.json").DescribeInstanceTypesResp,
 		DescribeInstanceTypeOfferingsResp: setupMock(t, describeInstanceTypeOfferings, "us-east-2a.json").DescribeInstanceTypeOfferingsResp,
 		DescribeAvailabilityZonesResp:     setupMock(t, describeAvailabilityZones, "us-east-2.json").DescribeAvailabilityZonesResp,
 	}
@@ -207,7 +183,7 @@ func TestFilterVerbose_AZFilteredIn(t *testing.T) {
 
 func TestFilterVerbose_AZFilteredOut(t *testing.T) {
 	ec2Mock := mockedEC2{
-		DescribeInstanceTypesPagesResp:    setupMock(t, describeInstanceTypesPages, "t3_micro.json").DescribeInstanceTypesPagesResp,
+		DescribeInstanceTypesResp:         setupMock(t, describeInstanceTypes, "t3_micro.json").DescribeInstanceTypesResp,
 		DescribeInstanceTypeOfferingsResp: setupMock(t, describeInstanceTypeOfferings, "us-east-2a_only_c5d12x.json").DescribeInstanceTypeOfferingsResp,
 		DescribeAvailabilityZonesResp:     setupMock(t, describeAvailabilityZones, "us-east-2.json").DescribeAvailabilityZonesResp,
 	}
@@ -231,7 +207,7 @@ func TestFilterVerboseAZ_FilteredErr(t *testing.T) {
 }
 
 func TestFilterVerbose_Gpus(t *testing.T) {
-	itf := getSelector(setupMock(t, describeInstanceTypesPages, "t3_micro_and_p3_16xl.json"))
+	itf := getSelector(setupMock(t, describeInstanceTypes, "t3_micro_and_p3_16xl.json"))
 	gpuMemory, err := bytequantity.ParseToByteQuantity("128g")
 	h.Ok(t, err)
 	filters := selector.Filters{
@@ -248,7 +224,7 @@ func TestFilterVerbose_Gpus(t *testing.T) {
 }
 
 func TestFilter(t *testing.T) {
-	itf := getSelector(setupMock(t, describeInstanceTypesPages, "t3_micro.json"))
+	itf := getSelector(setupMock(t, describeInstanceTypes, "t3_micro.json"))
 	filters := selector.Filters{
 		VCpusRange: &selector.Int32RangeFilter{LowerBound: 2, UpperBound: 2},
 	}
@@ -259,13 +235,14 @@ func TestFilter(t *testing.T) {
 }
 
 func TestFilter_MoreFilters(t *testing.T) {
-	itf := getSelector(setupMock(t, describeInstanceTypesPages, "t3_micro.json"))
+	itf := getSelector(setupMock(t, describeInstanceTypes, "t3_micro.json"))
 	X8664Architecture := ec2types.ArchitectureTypeX8664
+	NitroInstanceType := ec2types.InstanceTypeHypervisorNitro
 	filters := selector.Filters{
 		VCpusRange:      &selector.Int32RangeFilter{LowerBound: 2, UpperBound: 2},
 		BareMetal:       aws.Bool(false),
 		CPUArchitecture: &X8664Architecture,
-		Hypervisor:      aws.String("nitro"),
+		Hypervisor:      &NitroInstanceType,
 		EnaSupport:      aws.Bool(true),
 	}
 	results, err := itf.Filter(filters)
@@ -275,7 +252,7 @@ func TestFilter_MoreFilters(t *testing.T) {
 }
 
 func TestFilter_TruncateToMaxResults(t *testing.T) {
-	itf := getSelector(setupMock(t, describeInstanceTypesPages, "25_instances.json"))
+	itf := getSelector(setupMock(t, describeInstanceTypes, "25_instances.json"))
 	filters := selector.Filters{
 		VCpusRange: &selector.Int32RangeFilter{LowerBound: 0, UpperBound: 100},
 	}
@@ -301,7 +278,7 @@ func TestFilter_TruncateToMaxResults(t *testing.T) {
 }
 
 func TestFilter_Failure(t *testing.T) {
-	itf := getSelector(mockedEC2{DescribeInstanceTypesPagesErr: errors.New("error")})
+	itf := getSelector(mockedEC2{DescribeInstanceTypesErr: errors.New("error")})
 	filters := selector.Filters{
 		VCpusRange: &selector.Int32RangeFilter{LowerBound: 4, UpperBound: 4},
 	}
@@ -383,8 +360,7 @@ func TestAggregateFilterTransform_InvalidInstanceType(t *testing.T) {
 
 func TestFilter_InstanceTypeBase(t *testing.T) {
 	ec2Mock := mockedEC2{
-		DescribeInstanceTypesResp:         setupMock(t, describeInstanceTypes, "c4_large.json").DescribeInstanceTypesResp,
-		DescribeInstanceTypesPagesResp:    setupMock(t, describeInstanceTypesPages, "25_instances.json").DescribeInstanceTypesPagesResp,
+		DescribeInstanceTypesResp:         setupMock(t, describeInstanceTypes, "25_instances.json").DescribeInstanceTypesResp,
 		DescribeInstanceTypeOfferingsResp: setupMock(t, describeInstanceTypeOfferings, "us-east-2a.json").DescribeInstanceTypeOfferingsResp,
 	}
 	itf := getSelector(ec2Mock)
@@ -443,7 +419,7 @@ func TestRetrieveInstanceTypesSupportedInAZs_DescribeAZErr(t *testing.T) {
 
 func TestFilter_AllowList(t *testing.T) {
 	ec2Mock := mockedEC2{
-		DescribeInstanceTypesPagesResp:    setupMock(t, describeInstanceTypesPages, "25_instances.json").DescribeInstanceTypesPagesResp,
+		DescribeInstanceTypesResp:         setupMock(t, describeInstanceTypes, "25_instances.json").DescribeInstanceTypesResp,
 		DescribeInstanceTypeOfferingsResp: setupMock(t, describeInstanceTypeOfferings, "us-east-2a.json").DescribeInstanceTypeOfferingsResp,
 	}
 	itf := getSelector(ec2Mock)
@@ -459,7 +435,7 @@ func TestFilter_AllowList(t *testing.T) {
 
 func TestFilter_DenyList(t *testing.T) {
 	ec2Mock := mockedEC2{
-		DescribeInstanceTypesPagesResp:    setupMock(t, describeInstanceTypesPages, "25_instances.json").DescribeInstanceTypesPagesResp,
+		DescribeInstanceTypesResp:         setupMock(t, describeInstanceTypes, "25_instances.json").DescribeInstanceTypesResp,
 		DescribeInstanceTypeOfferingsResp: setupMock(t, describeInstanceTypeOfferings, "us-east-2a.json").DescribeInstanceTypeOfferingsResp,
 	}
 	itf := getSelector(ec2Mock)
@@ -475,7 +451,7 @@ func TestFilter_DenyList(t *testing.T) {
 
 func TestFilter_AllowAndDenyList(t *testing.T) {
 	ec2Mock := mockedEC2{
-		DescribeInstanceTypesPagesResp:    setupMock(t, describeInstanceTypesPages, "25_instances.json").DescribeInstanceTypesPagesResp,
+		DescribeInstanceTypesResp:         setupMock(t, describeInstanceTypes, "25_instances.json").DescribeInstanceTypesResp,
 		DescribeInstanceTypeOfferingsResp: setupMock(t, describeInstanceTypeOfferings, "us-east-2a.json").DescribeInstanceTypeOfferingsResp,
 	}
 	itf := getSelector(ec2Mock)
@@ -493,7 +469,7 @@ func TestFilter_AllowAndDenyList(t *testing.T) {
 }
 
 func TestFilter_X8664_AMD64(t *testing.T) {
-	itf := getSelector(setupMock(t, describeInstanceTypesPages, "t3_micro.json"))
+	itf := getSelector(setupMock(t, describeInstanceTypes, "t3_micro.json"))
 	ArchitectureType := selector.ArchitectureTypeAMD64
 	filters := selector.Filters{
 		CPUArchitecture: &ArchitectureType,
@@ -505,7 +481,7 @@ func TestFilter_X8664_AMD64(t *testing.T) {
 }
 
 func TestFilter_VirtType_PV(t *testing.T) {
-	itf := getSelector(setupMock(t, describeInstanceTypesPages, "pv_instances.json"))
+	itf := getSelector(setupMock(t, describeInstanceTypes, "pv_instances.json"))
 	pvType := selector.VirtualizationTypePv
 	filters := selector.Filters{
 		VirtualizationType: &pvType,
@@ -563,7 +539,7 @@ func (p *ec2PricingMock) Save() error {
 }
 
 func TestFilter_PricePerHour(t *testing.T) {
-	itf := getSelector(setupMock(t, describeInstanceTypesPages, "t3_micro.json"))
+	itf := getSelector(setupMock(t, describeInstanceTypes, "t3_micro.json"))
 	itf.EC2Pricing = &ec2PricingMock{
 		GetOndemandInstanceTypeCostResp: 0.0104,
 		onDemandCacheCount:              1,
@@ -580,7 +556,7 @@ func TestFilter_PricePerHour(t *testing.T) {
 }
 
 func TestFilter_PricePerHour_NoResults(t *testing.T) {
-	itf := getSelector(setupMock(t, describeInstanceTypesPages, "t3_micro.json"))
+	itf := getSelector(setupMock(t, describeInstanceTypes, "t3_micro.json"))
 	itf.EC2Pricing = &ec2PricingMock{
 		GetOndemandInstanceTypeCostResp: 0.0104,
 		onDemandCacheCount:              1,
@@ -597,7 +573,7 @@ func TestFilter_PricePerHour_NoResults(t *testing.T) {
 }
 
 func TestFilter_PricePerHour_OD(t *testing.T) {
-	itf := getSelector(setupMock(t, describeInstanceTypesPages, "t3_micro.json"))
+	itf := getSelector(setupMock(t, describeInstanceTypes, "t3_micro.json"))
 	itf.EC2Pricing = &ec2PricingMock{
 		GetOndemandInstanceTypeCostResp: 0.0104,
 		onDemandCacheCount:              1,
@@ -616,7 +592,7 @@ func TestFilter_PricePerHour_OD(t *testing.T) {
 }
 
 func TestFilter_PricePerHour_Spot(t *testing.T) {
-	itf := getSelector(setupMock(t, describeInstanceTypesPages, "t3_micro.json"))
+	itf := getSelector(setupMock(t, describeInstanceTypes, "t3_micro.json"))
 	itf.EC2Pricing = &ec2PricingMock{
 		GetSpotInstanceTypeNDayAvgCostResp: 0.0104,
 		spotCacheCount:                     1,

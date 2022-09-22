@@ -325,10 +325,10 @@ Full docs can be found at github.com/aws/amazon-` + binName
 		cpuManufacturerFilterValue = selector.CPUManufacturer(*flags[cpuManufacturer].(*string))
 	}
 
-	var hypervisorFilterValue ec2types.VirtualizationType
+	var virtualizationTypeFilterValue ec2types.VirtualizationType
 
 	if flags[virtualizationType] != nil {
-		hypervisorFilterValue = ec2types.VirtualizationType(*flags[virtualizationType].(*string))
+		virtualizationTypeFilterValue = ec2types.VirtualizationType(*flags[virtualizationType].(*string))
 	}
 
 	var deviceTypeFilterValue ec2types.RootDeviceType
@@ -341,6 +341,12 @@ Full docs can be found at github.com/aws/amazon-` + binName
 
 	if flags[usageClass] != nil {
 		usageClassFilterValue = ec2types.UsageClassType(*flags[usageClass].(*string))
+	}
+
+	var hypervisorFilterValue ec2types.InstanceTypeHypervisor
+
+	if flags[hypervisor] != nil {
+		hypervisorFilterValue = ec2types.InstanceTypeHypervisor(*flags[hypervisor].(*string))
 	}
 
 	filters := selector.Filters{
@@ -362,7 +368,7 @@ Full docs can be found at github.com/aws/amazon-` + binName
 		EnaSupport:                       cli.BoolMe(flags[enaSupport]),
 		EfaSupport:                       cli.BoolMe(flags[efaSupport]),
 		HibernationSupported:             cli.BoolMe(flags[hibernationSupport]),
-		Hypervisor:                       cli.StringMe(flags[hypervisor]),
+		Hypervisor:                       &hypervisorFilterValue,
 		BareMetal:                        cli.BoolMe(flags[baremetal]),
 		Fpga:                             cli.BoolMe(flags[fpgaSupport]),
 		Burstable:                        cli.BoolMe(flags[burstSupport]),
@@ -379,7 +385,7 @@ Full docs can be found at github.com/aws/amazon-` + binName
 		InstanceTypeBase:                 cli.StringMe(flags[instanceTypeBase]),
 		Flexible:                         cli.BoolMe(flags[flexible]),
 		Service:                          cli.StringMe(flags[service]),
-		VirtualizationType:               &hypervisorFilterValue,
+		VirtualizationType:               &virtualizationTypeFilterValue,
 		PricePerHour:                     cli.Float64RangeMe(flags[pricePerHour]),
 		InstanceStorageRange:             cli.ByteQuantityRangeMe(flags[instanceStorage]),
 		DiskType:                         cli.StringMe(flags[diskType]),

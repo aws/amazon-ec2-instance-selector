@@ -130,6 +130,20 @@ func isSupportedVirtualizationType(instanceTypeValue []ec2types.VirtualizationTy
 	return false
 }
 
+func isSupportedInstanceTypeHypervisorType(instanceTypeValue ec2types.InstanceTypeHypervisor, target *ec2types.InstanceTypeHypervisor) bool {
+	if target == nil {
+		return true
+	}
+	targetReflection := reflect.ValueOf(*target)
+	if targetReflection.IsZero() {
+		return true
+	}
+	if instanceTypeValue == *target {
+		return true
+	}
+	return false
+}
+
 func isSupportedRootDeviceType(instanceTypeValue []ec2types.RootDeviceType, target *ec2types.RootDeviceType) bool {
 	if target == nil {
 		return true

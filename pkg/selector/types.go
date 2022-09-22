@@ -174,7 +174,7 @@ type Filters struct {
 
 	// Hypervisor is used to return only a specific hypervisor backed instance type
 	// Possibly values are: xen or nitro
-	Hypervisor *string
+	Hypervisor *ec2types.InstanceTypeHypervisor
 
 	// MaxResults is the maximum number of instance types to return that match the filter criteria
 	MaxResults *int
