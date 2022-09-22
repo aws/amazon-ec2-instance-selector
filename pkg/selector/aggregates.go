@@ -44,7 +44,7 @@ func (itf Selector) TransformBaseInstanceType(ctx context.Context, filters Filte
 		return filters, err
 	}
 	if len(instanceTypesOutput.InstanceTypes) == 0 {
-		return filters, fmt.Errorf("error instance type %s is not a valid instance type", filters.InstanceTypeBase)
+		return filters, fmt.Errorf("error instance type %s is not a valid instance type", *filters.InstanceTypeBase)
 	}
 	instanceTypeInfo := instanceTypesOutput.InstanceTypes[0]
 	if filters.BareMetal == nil {
