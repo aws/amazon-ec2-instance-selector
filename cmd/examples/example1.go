@@ -11,16 +11,19 @@ import (
 )
 
 func main() {
+	// Initialize a context for the application
+	ctx := context.Background()
+
 	// Load an AWS session by looking at shared credentials or environment variables
 	// https://aws.github.io/aws-sdk-go-v2/docs/configuring-sdk
-	cfg, err := config.LoadDefaultConfig(context.Background(), config.WithRegion("us-east-2"))
+	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion("us-east-2"))
 	if err != nil {
 		fmt.Printf("Oh no, AWS session credentials cannot be found: %v", err)
 		return
 	}
 
 	// Instantiate a new instance of a selector with the AWS session
-	instanceSelector := selector.New(cfg)
+	instanceSelector := selector.New(ctx, cfg)
 
 	// Instantiate an int range filter to specify min and max vcpus
 	vcpusRange := selector.Int32RangeFilter{
@@ -46,7 +49,7 @@ func main() {
 	}
 
 	// Pass the Filter struct to the Filter function of your selector instance
-	instanceTypesSlice, err := instanceSelector.Filter(filters)
+	instanceTypesSlice, err := instanceSelector.Filter(ctx, filters)
 	if err != nil {
 		fmt.Printf("Oh no, there was an error :( %v", err)
 		return

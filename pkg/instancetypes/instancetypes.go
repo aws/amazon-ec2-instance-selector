@@ -108,7 +108,7 @@ func getCacheFilePath(region string, expandedDirPath string) string {
 	return filepath.Join(expandedDirPath, fmt.Sprintf("%s-%s", region, CacheFileName))
 }
 
-func (p *Provider) Get(instanceTypes []ec2types.InstanceType) ([]*Details, error) {
+func (p *Provider) Get(ctx context.Context, instanceTypes []ec2types.InstanceType) ([]*Details, error) {
 	instanceTypeDetails := []*Details{}
 	describeInstanceTypeOpts := &ec2.DescribeInstanceTypesInput{}
 	if len(instanceTypes) != 0 {
@@ -130,10 +130,8 @@ func (p *Provider) Get(instanceTypes []ec2types.InstanceType) ([]*Details, error
 
 	s := ec2.NewDescribeInstanceTypesPaginator(p.ec2Client, &ec2.DescribeInstanceTypesInput{})
 
-	// Iterate through the Amazon S3 object pages.
 	for s.HasMorePages() {
-		// next page takes a context
-		instanceTypeOutput, err := s.NextPage(context.TODO())
+		instanceTypeOutput, err := s.NextPage(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get a page, %w", err)
 		}

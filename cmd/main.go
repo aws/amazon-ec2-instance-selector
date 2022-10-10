@@ -253,13 +253,14 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	}
 	// TODO: Add next line back from the config
 	//flags[region] = sess.Config.Region
-	cfg, err := config.LoadDefaultConfig(context.Background())
+	primaryContext := context.Background()
+	cfg, err := config.LoadDefaultConfig(primaryContext)
 	if err != nil {
 		panic("configuration error, " + err.Error())
 	}
 
 	cacheTTLDuration := time.Hour * time.Duration(*cli.IntMe(flags[cacheTTL]))
-	instanceSelector := selector.NewWithCache(cfg, cacheTTLDuration, *cli.StringMe(flags[cacheDir]))
+	instanceSelector := selector.NewWithCache(primaryContext, cfg, cacheTTLDuration, *cli.StringMe(flags[cacheDir]))
 	shutdown := func() {
 		if err := instanceSelector.Save(); err != nil {
 			log.Printf("There was an error saving pricing caches: %v", err)
@@ -274,7 +275,7 @@ Full docs can be found at github.com/aws/amazon-` + binName
 		// If output type is `table-wide`, simply print both prices for better comparison,
 		//   even if the actual filter is applied on any one of those based on usage class
 		// Save time by hydrating all caches in parallel
-		if err := hydrateCaches(*instanceSelector); err != nil {
+		if err := hydrateCaches(primaryContext, *instanceSelector); err != nil {
 			log.Printf("%v", err)
 		}
 	} else {
@@ -282,13 +283,13 @@ Full docs can be found at github.com/aws/amazon-` + binName
 		if flags[pricePerHour] != nil {
 			if flags[usageClass] == nil || *cli.StringMe(flags[usageClass]) == "on-demand" {
 				if instanceSelector.EC2Pricing.OnDemandCacheCount() == 0 {
-					if err := instanceSelector.EC2Pricing.RefreshOnDemandCache(); err != nil {
+					if err := instanceSelector.EC2Pricing.RefreshOnDemandCache(primaryContext); err != nil {
 						log.Printf("There was a problem refreshing the on-demand pricing cache: %v", err)
 					}
 				}
 			} else {
 				if instanceSelector.EC2Pricing.SpotCacheCount() == 0 {
-					if err := instanceSelector.EC2Pricing.RefreshSpotCache(spotPricingDaysBack); err != nil {
+					if err := instanceSelector.EC2Pricing.RefreshSpotCache(primaryContext, spotPricingDaysBack); err != nil {
 						log.Printf("There was a problem refreshing the spot pricing cache: %v", err)
 					}
 				}
@@ -299,13 +300,13 @@ Full docs can be found at github.com/aws/amazon-` + binName
 		if strings.Contains(lowercaseSortField, "price") {
 			if strings.Contains(lowercaseSortField, "spot") {
 				if instanceSelector.EC2Pricing.SpotCacheCount() == 0 {
-					if err := instanceSelector.EC2Pricing.RefreshSpotCache(spotPricingDaysBack); err != nil {
+					if err := instanceSelector.EC2Pricing.RefreshSpotCache(primaryContext, spotPricingDaysBack); err != nil {
 						log.Printf("There was a problem refreshing the spot pricing cache: %v", err)
 					}
 				}
 			} else {
 				if instanceSelector.EC2Pricing.OnDemandCacheCount() == 0 {
-					if err := instanceSelector.EC2Pricing.RefreshOnDemandCache(); err != nil {
+					if err := instanceSelector.EC2Pricing.RefreshOnDemandCache(primaryContext); err != nil {
 						log.Printf("There was a problem refreshing the on-demand pricing cache: %v", err)
 					}
 				}
@@ -402,7 +403,7 @@ Full docs can be found at github.com/aws/amazon-` + binName
 
 	if flags[verbose] != nil {
 		resultsOutputFn = outputs.VerboseInstanceTypeOutput
-		transformedFilters, err := instanceSelector.AggregateFilterTransform(filters)
+		transformedFilters, err := instanceSelector.AggregateFilterTransform(primaryContext, filters)
 		if err != nil {
 			fmt.Printf("An error occurred while transforming the aggregate filters")
 			os.Exit(1)
@@ -428,7 +429,7 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	// fetch instance types without truncating results
 	prevMaxResults := filters.MaxResults
 	filters.MaxResults = nil
-	instanceTypesDetails, err := instanceSelector.FilterVerbose(filters)
+	instanceTypesDetails, err := instanceSelector.FilterVerbose(primaryContext, filters)
 	if err != nil {
 		fmt.Printf("An error occurred when filtering instance types: %v", err)
 		os.Exit(1)
@@ -479,13 +480,13 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	shutdown()
 }
 
-func hydrateCaches(instanceSelector selector.Selector) (errs error) {
+func hydrateCaches(ctx context.Context, instanceSelector selector.Selector) (errs error) {
 	wg := &sync.WaitGroup{}
 	hydrateTasks := []func(*sync.WaitGroup) error{
 		func(waitGroup *sync.WaitGroup) error {
 			defer waitGroup.Done()
 			if instanceSelector.EC2Pricing.OnDemandCacheCount() == 0 {
-				if err := instanceSelector.EC2Pricing.RefreshOnDemandCache(); err != nil {
+				if err := instanceSelector.EC2Pricing.RefreshOnDemandCache(ctx); err != nil {
 					return multierr.Append(errs, fmt.Errorf("There was a problem refreshing the on-demand pricing cache: %w", err))
 				}
 			}
@@ -494,7 +495,7 @@ func hydrateCaches(instanceSelector selector.Selector) (errs error) {
 		func(waitGroup *sync.WaitGroup) error {
 			defer waitGroup.Done()
 			if instanceSelector.EC2Pricing.SpotCacheCount() == 0 {
-				if err := instanceSelector.EC2Pricing.RefreshSpotCache(spotPricingDaysBack); err != nil {
+				if err := instanceSelector.EC2Pricing.RefreshSpotCache(ctx, spotPricingDaysBack); err != nil {
 					return multierr.Append(errs, fmt.Errorf("There was a problem refreshing the spot pricing cache: %w", err))
 				}
 			}
@@ -503,7 +504,7 @@ func hydrateCaches(instanceSelector selector.Selector) (errs error) {
 		func(waitGroup *sync.WaitGroup) error {
 			defer waitGroup.Done()
 			if instanceSelector.InstanceTypesProvider.CacheCount() == 0 {
-				if _, err := instanceSelector.InstanceTypesProvider.Get(nil); err != nil {
+				if _, err := instanceSelector.InstanceTypesProvider.Get(ctx, nil); err != nil {
 					return multierr.Append(errs, fmt.Errorf("There was a problem refreshing the instance types cache: %w", err))
 				}
 			}

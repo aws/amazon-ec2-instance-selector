@@ -87,7 +87,7 @@ type PriceDimensionInfo struct {
 	PricePerUnit map[string]string `json:"pricePerUnit"`
 }
 
-func LoadODCacheOrNew(pricingClient awsapi.PricingInterface, region string, fullRefreshTTL time.Duration, directoryPath string) *OnDemandPricing {
+func LoadODCacheOrNew(ctx context.Context, pricingClient awsapi.PricingInterface, region string, fullRefreshTTL time.Duration, directoryPath string) *OnDemandPricing {
 	expandedDirPath, err := homedir.Expand(directoryPath)
 	if err != nil {
 		log.Printf("Unable to load on-demand pricing cache directory %s: %v", expandedDirPath, err)
@@ -111,7 +111,7 @@ func LoadODCacheOrNew(pricingClient awsapi.PricingInterface, region string, full
 		return odPricing
 	}
 	// Start the cache refresh job
-	go odCacheRefreshJob(odPricing)
+	go odCacheRefreshJob(ctx, odPricing)
 	odCache, err := loadODCacheFrom(fullRefreshTTL, region, expandedDirPath)
 	if err != nil {
 		if !errors.Is(err, os.ErrNotExist) {
@@ -141,22 +141,22 @@ func getODCacheFilePath(region string, directoryPath string) string {
 	return filepath.Join(directoryPath, fmt.Sprintf("%s-%s", region, ODCacheFileName))
 }
 
-func odCacheRefreshJob(odPricing *OnDemandPricing) {
+func odCacheRefreshJob(ctx context.Context, odPricing *OnDemandPricing) {
 	if odPricing.FullRefreshTTL <= 0 {
 		return
 	}
 	refreshTicker := time.NewTicker(odPricing.FullRefreshTTL)
 	for range refreshTicker.C {
-		if err := odPricing.Refresh(); err != nil {
+		if err := odPricing.Refresh(ctx); err != nil {
 			log.Println(err)
 		}
 	}
 }
 
-func (c *OnDemandPricing) Refresh() error {
+func (c *OnDemandPricing) Refresh(ctx context.Context) error {
 	c.Lock()
 	defer c.Unlock()
-	odInstanceTypeCosts, err := c.fetchOnDemandPricing("")
+	odInstanceTypeCosts, err := c.fetchOnDemandPricing(ctx, "")
 	if err != nil {
 		return fmt.Errorf("there was a problem refreshing the on-demand instance type pricing cache: %v", err)
 	}
@@ -169,13 +169,13 @@ func (c *OnDemandPricing) Refresh() error {
 	return nil
 }
 
-func (c *OnDemandPricing) Get(instanceType ec2types.InstanceType) (float64, error) {
+func (c *OnDemandPricing) Get(ctx context.Context, instanceType ec2types.InstanceType) (float64, error) {
 	if cost, ok := c.cache.Get(string(instanceType)); ok {
 		return cost.(float64), nil
 	}
 	c.RLock()
 	defer c.RUnlock()
-	costs, err := c.fetchOnDemandPricing(instanceType)
+	costs, err := c.fetchOnDemandPricing(ctx, instanceType)
 	if err != nil {
 		return 0, fmt.Errorf("there was a problem fetching on-demand instance type pricing for %s: %v", instanceType, err)
 	}
@@ -210,7 +210,7 @@ func (c *OnDemandPricing) Clear() error {
 // fetchOnDemandPricing makes a bulk request to the pricing api to retrieve all instance type pricing if the instanceType is the empty string
 //
 //	or, if instanceType is specified, it can request a specific instance type pricing
-func (c *OnDemandPricing) fetchOnDemandPricing(instanceType ec2types.InstanceType) (map[string]float64, error) {
+func (c *OnDemandPricing) fetchOnDemandPricing(ctx context.Context, instanceType ec2types.InstanceType) (map[string]float64, error) {
 	odPricing := map[string]float64{}
 	productInput := pricing.GetProductsInput{
 		ServiceCode: c.StringMe(serviceCode),
@@ -220,10 +220,8 @@ func (c *OnDemandPricing) fetchOnDemandPricing(instanceType ec2types.InstanceTyp
 
 	p := pricing.NewGetProductsPaginator(c.pricingClient, &productInput)
 
-	// Iterate through the Amazon S3 object pages.
 	for p.HasMorePages() {
-		// next page takes a context
-		pricingOutput, err := p.NextPage(context.TODO())
+		pricingOutput, err := p.NextPage(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get a page, %w", err)
 		}
