@@ -68,15 +68,6 @@ func TestNewBubbleTeaModel_Hypervisor(t *testing.T) {
 	actualHypervisor := rows[0].Data["Hypervisor"]
 
 	h.Assert(t, actualHypervisor == expectedHypervisor, fmt.Sprintf("Hypervisor should be %s but instead is %s", expectedHypervisor, actualHypervisor))
-
-	// test nil Hypervisor
-	instanceTypes[0].Hypervisor = nil
-	model = NewBubbleTeaModel(instanceTypes)
-	rows = model.tableModel.table.GetVisibleRows()
-	expectedHypervisor = "none"
-	actualHypervisor = rows[0].Data["Hypervisor"]
-
-	h.Assert(t, actualHypervisor == expectedHypervisor, fmt.Sprintf("Hypervisor should be %s but instead is %s", expectedHypervisor, actualHypervisor))
 }
 
 func TestNewBubbleTeaModel_CPUArchitectures(t *testing.T) {
