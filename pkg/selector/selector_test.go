@@ -45,6 +45,7 @@ const (
 type mockedEC2 struct {
 	awsapi.SelectorInterface
 	DescribeInstanceTypesResp           ec2.DescribeInstanceTypesOutput
+	DescribeInstanceTypesRespFn         func(instanceType []ec2types.InstanceType) ec2.DescribeInstanceTypesOutput
 	DescribeInstanceTypesErr            error
 	DescribeInstanceTypeOfferingsRespFn func(zone string) ec2.DescribeInstanceTypeOfferingsOutput
 	DescribeInstanceTypeOfferingsResp   ec2.DescribeInstanceTypeOfferingsOutput
@@ -58,7 +59,14 @@ func (m mockedEC2) DescribeAvailabilityZones(ctx context.Context, input *ec2.Des
 }
 
 func (m mockedEC2) DescribeInstanceTypes(ctx context.Context, input *ec2.DescribeInstanceTypesInput, optFns ...func(*ec2.Options)) (*ec2.DescribeInstanceTypesOutput, error) {
-	return &m.DescribeInstanceTypesResp, m.DescribeInstanceTypesErr
+	var response ec2.DescribeInstanceTypesOutput
+	if m.DescribeInstanceTypesRespFn != nil {
+		response = m.DescribeInstanceTypesRespFn(input.InstanceTypes)
+	} else {
+		response = m.DescribeInstanceTypesResp
+	}
+
+	return &response, m.DescribeInstanceTypesErr
 }
 
 func (m mockedEC2) DescribeInstanceTypeOfferings(ctx context.Context, input *ec2.DescribeInstanceTypeOfferingsInput, optFns ...func(*ec2.Options)) (*ec2.DescribeInstanceTypeOfferingsOutput, error) {
@@ -367,7 +375,13 @@ func TestAggregateFilterTransform_InvalidInstanceType(t *testing.T) {
 
 func TestFilter_InstanceTypeBase(t *testing.T) {
 	ec2Mock := mockedEC2{
-		DescribeInstanceTypesResp:         setupMock(t, describeInstanceTypes, "25_instances.json").DescribeInstanceTypesResp,
+		DescribeInstanceTypesRespFn: func(instanceTypes []ec2types.InstanceType) ec2.DescribeInstanceTypesOutput {
+			if len(instanceTypes) == 1 {
+				return setupMock(t, describeInstanceTypes, "c4_large.json").DescribeInstanceTypesResp
+			} else {
+				return setupMock(t, describeInstanceTypes, "25_instances.json").DescribeInstanceTypesResp
+			}
+		},
 		DescribeInstanceTypeOfferingsResp: setupMock(t, describeInstanceTypeOfferings, "us-east-2a.json").DescribeInstanceTypeOfferingsResp,
 	}
 	itf := getSelector(ec2Mock)
