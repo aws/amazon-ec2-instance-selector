@@ -143,8 +143,9 @@ func getSelector(ec2Mock mockedEC2) selector.Selector {
 // Tests
 
 func TestNew(t *testing.T) {
-	cfg, _ := config.LoadDefaultConfig(context.Background())
-	itf := selector.New(cfg)
+	ctx := context.Background()
+	cfg, _ := config.LoadDefaultConfig(ctx)
+	itf := selector.New(ctx, cfg)
 	h.Assert(t, itf != nil, "selector instance created without error")
 }
 
@@ -153,7 +154,8 @@ func TestFilterVerbose(t *testing.T) {
 	filters := selector.Filters{
 		VCpusRange: &selector.Int32RangeFilter{LowerBound: 2, UpperBound: 2},
 	}
-	results, err := itf.FilterVerbose(filters)
+	ctx := context.Background()
+	results, err := itf.FilterVerbose(ctx, filters)
 	h.Ok(t, err)
 	h.Assert(t, len(results) == 1, "Should only return 1 instance type with 2 vcpus but actually returned "+strconv.Itoa(len(results)))
 	h.Assert(t, results[0].InstanceType == "t3.micro", "Should return t3.micro, got %s instead", results[0].InstanceType)
@@ -164,17 +166,19 @@ func TestFilterVerbose_NoResults(t *testing.T) {
 	filters := selector.Filters{
 		VCpusRange: &selector.Int32RangeFilter{LowerBound: 4, UpperBound: 4},
 	}
-	results, err := itf.FilterVerbose(filters)
+	ctx := context.Background()
+	results, err := itf.FilterVerbose(ctx, filters)
 	h.Ok(t, err)
 	h.Assert(t, len(results) == 0, "Should return 0 instance type with 4 vcpus")
 }
 
 func TestFilterVerbose_Failure(t *testing.T) {
+	ctx := context.Background()
 	itf := getSelector(mockedEC2{DescribeInstanceTypesErr: errors.New("error")})
 	filters := selector.Filters{
 		VCpusRange: &selector.Int32RangeFilter{LowerBound: 4, UpperBound: 4},
 	}
-	results, err := itf.FilterVerbose(filters)
+	results, err := itf.FilterVerbose(ctx, filters)
 	h.Assert(t, results == nil, "Results should be nil")
 	h.Assert(t, err != nil, "An error should be returned")
 }
@@ -190,7 +194,8 @@ func TestFilterVerbose_AZFilteredIn(t *testing.T) {
 		VCpusRange:        &selector.Int32RangeFilter{LowerBound: 2, UpperBound: 2},
 		AvailabilityZones: &[]string{"us-east-2a"},
 	}
-	results, err := itf.FilterVerbose(filters)
+	ctx := context.Background()
+	results, err := itf.FilterVerbose(ctx, filters)
 	h.Ok(t, err)
 	h.Assert(t, len(results) == 1, "Should only return 1 instance type with 2 vcpus but actually returned "+strconv.Itoa(len(results)))
 	h.Assert(t, results[0].InstanceType == "t3.micro", "Should return t3.micro, got %s instead", results[0].InstanceType)
@@ -206,7 +211,8 @@ func TestFilterVerbose_AZFilteredOut(t *testing.T) {
 	filters := selector.Filters{
 		AvailabilityZones: &[]string{"us-east-2a"},
 	}
-	results, err := itf.FilterVerbose(filters)
+	ctx := context.Background()
+	results, err := itf.FilterVerbose(ctx, filters)
 	h.Ok(t, err)
 	h.Assert(t, len(results) == 0, "Should return 0 instance types in us-east-2a but actually returned "+strconv.Itoa(len(results)))
 }
@@ -217,7 +223,8 @@ func TestFilterVerboseAZ_FilteredErr(t *testing.T) {
 		VCpusRange:        &selector.Int32RangeFilter{LowerBound: 2, UpperBound: 2},
 		AvailabilityZones: &[]string{"blah"},
 	}
-	_, err := itf.FilterVerbose(filters)
+	ctx := context.Background()
+	_, err := itf.FilterVerbose(ctx, filters)
 	h.Assert(t, err != nil, "Should error since bad zone was passed in")
 }
 
@@ -232,7 +239,8 @@ func TestFilterVerbose_Gpus(t *testing.T) {
 			UpperBound: gpuMemory,
 		},
 	}
-	results, err := itf.FilterVerbose(filters)
+	ctx := context.Background()
+	results, err := itf.FilterVerbose(ctx, filters)
 	h.Ok(t, err)
 	h.Assert(t, len(results) == 1, "Should only return 1 instance type with 2 vcpus but actually returned "+strconv.Itoa(len(results)))
 	h.Assert(t, results[0].InstanceType == "p3.16xlarge", "Should return p3.16xlarge, got %s instead", results[0].InstanceType)
@@ -243,7 +251,8 @@ func TestFilter(t *testing.T) {
 	filters := selector.Filters{
 		VCpusRange: &selector.Int32RangeFilter{LowerBound: 2, UpperBound: 2},
 	}
-	results, err := itf.Filter(filters)
+	ctx := context.Background()
+	results, err := itf.Filter(ctx, filters)
 	h.Ok(t, err)
 	h.Assert(t, len(results) == 1, "Should only return 1 instance type with 2 vcpus")
 	h.Assert(t, results[0] == "t3.micro", "Should return t3.micro, got %s instead", results[0])
@@ -260,7 +269,8 @@ func TestFilter_MoreFilters(t *testing.T) {
 		Hypervisor:      &NitroInstanceType,
 		EnaSupport:      aws.Bool(true),
 	}
-	results, err := itf.Filter(filters)
+	ctx := context.Background()
+	results, err := itf.Filter(ctx, filters)
 	h.Ok(t, err)
 	h.Assert(t, len(results) == 1, "Should only return 1 instance type with 2 vcpus")
 	h.Assert(t, results[0] == "t3.micro", "Should return t3.micro, got %s instead", results[0])
@@ -271,7 +281,8 @@ func TestFilter_TruncateToMaxResults(t *testing.T) {
 	filters := selector.Filters{
 		VCpusRange: &selector.Int32RangeFilter{LowerBound: 0, UpperBound: 100},
 	}
-	results, err := itf.Filter(filters)
+	ctx := context.Background()
+	results, err := itf.Filter(ctx, filters)
 	h.Ok(t, err)
 	h.Assert(t, len(results) > 1, "Should return > 1 instance types since max results is not set")
 
@@ -279,7 +290,7 @@ func TestFilter_TruncateToMaxResults(t *testing.T) {
 		VCpusRange: &selector.Int32RangeFilter{LowerBound: 0, UpperBound: 100},
 		MaxResults: aws.Int(1),
 	}
-	results, err = itf.Filter(filters)
+	results, err = itf.Filter(ctx, filters)
 	h.Ok(t, err)
 	h.Assert(t, len(results) == 1, "Should return 1 instance types since max results is set")
 
@@ -287,7 +298,7 @@ func TestFilter_TruncateToMaxResults(t *testing.T) {
 		VCpusRange: &selector.Int32RangeFilter{LowerBound: 0, UpperBound: 100},
 		MaxResults: aws.Int(30),
 	}
-	results, err = itf.Filter(filters)
+	results, err = itf.Filter(ctx, filters)
 	h.Ok(t, err)
 	h.Assert(t, len(results) == 25, fmt.Sprintf("Should return 25 instance types since max results is set to 30 but only %d are returned in total", len(results)))
 }
@@ -297,7 +308,8 @@ func TestFilter_Failure(t *testing.T) {
 	filters := selector.Filters{
 		VCpusRange: &selector.Int32RangeFilter{LowerBound: 4, UpperBound: 4},
 	}
-	results, err := itf.Filter(filters)
+	ctx := context.Background()
+	results, err := itf.Filter(ctx, filters)
 	h.Assert(t, results == nil, "Results should be nil")
 	h.Assert(t, err != nil, "An error should be returned")
 }
@@ -306,7 +318,8 @@ func TestRetrieveInstanceTypesSupportedInAZ_WithZoneName(t *testing.T) {
 	ec2Mock := setupMock(t, describeInstanceTypeOfferings, "us-east-2a.json")
 	ec2Mock.DescribeAvailabilityZonesResp = setupMock(t, describeAvailabilityZones, "us-east-2.json").DescribeAvailabilityZonesResp
 	itf := getSelector(ec2Mock)
-	results, err := itf.RetrieveInstanceTypesSupportedInLocations([]string{"us-east-2a"})
+	ctx := context.Background()
+	results, err := itf.RetrieveInstanceTypesSupportedInLocations(ctx, []string{"us-east-2a"})
 	h.Ok(t, err)
 	h.Assert(t, len(results) == 228, "Should return 228 entries in us-east-2a golden file w/ no resource filters applied")
 }
@@ -315,7 +328,8 @@ func TestRetrieveInstanceTypesSupportedInAZ_WithZoneID(t *testing.T) {
 	ec2Mock := setupMock(t, describeInstanceTypeOfferings, "us-east-2a.json")
 	ec2Mock.DescribeAvailabilityZonesResp = setupMock(t, describeAvailabilityZones, "us-east-2.json").DescribeAvailabilityZonesResp
 	itf := getSelector(ec2Mock)
-	results, err := itf.RetrieveInstanceTypesSupportedInLocations([]string{"use2-az1"})
+	ctx := context.Background()
+	results, err := itf.RetrieveInstanceTypesSupportedInLocations(ctx, []string{"use2-az1"})
 	h.Ok(t, err)
 	h.Assert(t, len(results) == 228, "Should return 228 entries in use2-az2 golden file w/ no resource filter applied")
 }
@@ -324,7 +338,8 @@ func TestRetrieveInstanceTypesSupportedInAZ_WithRegion(t *testing.T) {
 	ec2Mock := setupMock(t, describeInstanceTypeOfferings, "us-east-2a.json")
 	ec2Mock.DescribeAvailabilityZonesResp = setupMock(t, describeAvailabilityZones, "us-east-2.json").DescribeAvailabilityZonesResp
 	itf := getSelector(ec2Mock)
-	results, err := itf.RetrieveInstanceTypesSupportedInLocations([]string{"us-east-2"})
+	ctx := context.Background()
+	results, err := itf.RetrieveInstanceTypesSupportedInLocations(ctx, []string{"us-east-2"})
 	h.Ok(t, err)
 	h.Assert(t, len(results) == 228, "Should return 228 entries in us-east-2 golden file w/ no resource filter applied")
 }
@@ -333,7 +348,8 @@ func TestRetrieveInstanceTypesSupportedInAZ_WithBadZone(t *testing.T) {
 	ec2Mock := setupMock(t, describeInstanceTypeOfferings, "us-east-2a.json")
 	ec2Mock.DescribeAvailabilityZonesResp = setupMock(t, describeAvailabilityZones, "us-east-2.json").DescribeAvailabilityZonesResp
 	itf := getSelector(ec2Mock)
-	results, err := itf.RetrieveInstanceTypesSupportedInLocations([]string{"blah"})
+	ctx := context.Background()
+	results, err := itf.RetrieveInstanceTypesSupportedInLocations(ctx, []string{"blah"})
 	h.Assert(t, err != nil, "Should return an error since a bad zone was passed in")
 	h.Assert(t, results == nil, "Should return nil results due to error")
 }
@@ -344,7 +360,8 @@ func TestRetrieveInstanceTypesSupportedInAZ_Error(t *testing.T) {
 		DescribeAvailabilityZonesResp:    setupMock(t, describeAvailabilityZones, "us-east-2.json").DescribeAvailabilityZonesResp,
 	}
 	itf := getSelector(ec2Mock)
-	results, err := itf.RetrieveInstanceTypesSupportedInLocations([]string{"us-east-2a"})
+	ctx := context.Background()
+	results, err := itf.RetrieveInstanceTypesSupportedInLocations(ctx, []string{"us-east-2a"})
 	h.Assert(t, err != nil, "Should return an error since ec2 api mock is configured to return an error")
 	h.Assert(t, results == nil, "Should return nil results due to error")
 }
@@ -355,7 +372,8 @@ func TestAggregateFilterTransform(t *testing.T) {
 	filters := selector.Filters{
 		InstanceTypeBase: &g22Xlarge,
 	}
-	filters, err := itf.AggregateFilterTransform(filters)
+	ctx := context.Background()
+	filters, err := itf.AggregateFilterTransform(ctx, filters)
 	h.Ok(t, err)
 	h.Assert(t, filters.GpusRange != nil, "g2.2Xlarge as a base instance type should filter out non-GPU instances")
 	h.Assert(t, *filters.BareMetal == false, "g2.2Xlarge as a base instance type should filter out bare metal instances")
@@ -369,7 +387,8 @@ func TestAggregateFilterTransform_InvalidInstanceType(t *testing.T) {
 	filters := selector.Filters{
 		InstanceTypeBase: &t3Micro,
 	}
-	_, err := itf.AggregateFilterTransform(filters)
+	ctx := context.Background()
+	_, err := itf.AggregateFilterTransform(ctx, filters)
 	h.Nok(t, err)
 }
 
@@ -389,7 +408,8 @@ func TestFilter_InstanceTypeBase(t *testing.T) {
 	filters := selector.Filters{
 		InstanceTypeBase: &c4Large,
 	}
-	results, err := itf.Filter(filters)
+	ctx := context.Background()
+	results, err := itf.Filter(ctx, filters)
 	h.Ok(t, err)
 	h.Assert(t, len(results) == 3, "c4.large should return 3 similar instance types")
 }
@@ -401,12 +421,13 @@ func TestRetrieveInstanceTypesSupportedInAZs_Intersection(t *testing.T) {
 	})
 	ec2Mock.DescribeAvailabilityZonesResp = setupMock(t, describeAvailabilityZones, "us-east-2.json").DescribeAvailabilityZonesResp
 	itf := getSelector(ec2Mock)
-	results, err := itf.RetrieveInstanceTypesSupportedInLocations([]string{"us-east-2a", "us-east-2b"})
+	ctx := context.Background()
+	results, err := itf.RetrieveInstanceTypesSupportedInLocations(ctx, []string{"us-east-2a", "us-east-2b"})
 	h.Ok(t, err)
 	h.Assert(t, len(results) == 3, "Should return instance types that are included in both files")
 
 	// Check reversed zones to ensure order does not matter
-	results, err = itf.RetrieveInstanceTypesSupportedInLocations([]string{"us-east-2b", "us-east-2a"})
+	results, err = itf.RetrieveInstanceTypesSupportedInLocations(ctx, []string{"us-east-2b", "us-east-2a"})
 	h.Ok(t, err)
 	h.Assert(t, len(results) == 3, "Should return instance types that are included in both files when passed in reverse order")
 }
@@ -417,7 +438,8 @@ func TestRetrieveInstanceTypesSupportedInAZs_Duplicates(t *testing.T) {
 		DescribeAvailabilityZonesResp:     setupMock(t, describeAvailabilityZones, "us-east-2.json").DescribeAvailabilityZonesResp,
 	}
 	itf := getSelector(ec2Mock)
-	results, err := itf.RetrieveInstanceTypesSupportedInLocations([]string{"us-east-2b", "us-east-2b"})
+	ctx := context.Background()
+	results, err := itf.RetrieveInstanceTypesSupportedInLocations(ctx, []string{"us-east-2b", "us-east-2b"})
 	h.Ok(t, err)
 	h.Assert(t, len(results) == 3, "Should return instance types that are included in both files")
 }
@@ -428,13 +450,15 @@ func TestRetrieveInstanceTypesSupportedInAZs_GoodAndBadZone(t *testing.T) {
 		DescribeAvailabilityZonesResp:     setupMock(t, describeAvailabilityZones, "us-east-2.json").DescribeAvailabilityZonesResp,
 	}
 	itf := getSelector(ec2Mock)
-	_, err := itf.RetrieveInstanceTypesSupportedInLocations([]string{"us-weast-2k", "us-east-2a"})
+	ctx := context.Background()
+	_, err := itf.RetrieveInstanceTypesSupportedInLocations(ctx, []string{"us-weast-2k", "us-east-2a"})
 	h.Nok(t, err)
 }
 
 func TestRetrieveInstanceTypesSupportedInAZs_DescribeAZErr(t *testing.T) {
 	itf := getSelector(mockedEC2{DescribeAvailabilityZonesErr: fmt.Errorf("error")})
-	_, err := itf.RetrieveInstanceTypesSupportedInLocations([]string{"us-east-2a"})
+	ctx := context.Background()
+	_, err := itf.RetrieveInstanceTypesSupportedInLocations(ctx, []string{"us-east-2a"})
 	h.Nok(t, err)
 }
 
@@ -449,7 +473,8 @@ func TestFilter_AllowList(t *testing.T) {
 	filters := selector.Filters{
 		AllowList: allowRegex,
 	}
-	results, err := itf.Filter(filters)
+	ctx := context.Background()
+	results, err := itf.Filter(ctx, filters)
 	h.Ok(t, err)
 	h.Assert(t, len(results) == 1, "Allow List Regex: 'c4.large' should return 1 instance type")
 }
@@ -465,7 +490,8 @@ func TestFilter_DenyList(t *testing.T) {
 	filters := selector.Filters{
 		DenyList: denyRegex,
 	}
-	results, err := itf.Filter(filters)
+	ctx := context.Background()
+	results, err := itf.Filter(ctx, filters)
 	h.Ok(t, err)
 	h.Assert(t, len(results) == 24, "Deny List Regex: 'c4.large' should return 24 instance type matching regex but returned %d", len(results))
 }
@@ -484,7 +510,8 @@ func TestFilter_AllowAndDenyList(t *testing.T) {
 		AllowList: allowRegex,
 		DenyList:  denyRegex,
 	}
-	results, err := itf.Filter(filters)
+	ctx := context.Background()
+	results, err := itf.Filter(ctx, filters)
 	h.Ok(t, err)
 	h.Assert(t, len(results) == 4, "Allow/Deny List Regex: 'c4.large' should return 4 instance types matching the regex but returned %d", len(results))
 }
@@ -495,7 +522,8 @@ func TestFilter_X8664_AMD64(t *testing.T) {
 	filters := selector.Filters{
 		CPUArchitecture: &ArchitectureType,
 	}
-	results, err := itf.Filter(filters)
+	ctx := context.Background()
+	results, err := itf.Filter(ctx, filters)
 	h.Ok(t, err)
 	h.Assert(t, len(results) == 1, "Should only return 1 instance type with x86_64/amd64 cpu architecture")
 	h.Assert(t, results[0] == "t3.micro", "Should return t3.micro, got %s instead", results[0])
@@ -507,7 +535,8 @@ func TestFilter_VirtType_PV(t *testing.T) {
 	filters := selector.Filters{
 		VirtualizationType: &pvType,
 	}
-	results, err := itf.Filter(filters)
+	ctx := context.Background()
+	results, err := itf.Filter(ctx, filters)
 	h.Ok(t, err)
 	h.Assert(t, len(results) > 0, "Should return at least 1 instance type when filtering with VirtualizationType: pv")
 
@@ -515,7 +544,7 @@ func TestFilter_VirtType_PV(t *testing.T) {
 	filters = selector.Filters{
 		VirtualizationType: &paravirtualType,
 	}
-	results, err = itf.Filter(filters)
+	results, err = itf.Filter(ctx, filters)
 	h.Ok(t, err)
 	h.Assert(t, len(results) > 0, "Should return at least 1 instance type when filtering with VirtualizationType: paravirtual")
 }
@@ -531,19 +560,19 @@ type ec2PricingMock struct {
 	spotCacheCount                     int
 }
 
-func (p *ec2PricingMock) GetOnDemandInstanceTypeCost(instanceType ec2types.InstanceType) (float64, error) {
+func (p *ec2PricingMock) GetOnDemandInstanceTypeCost(ctx context.Context, instanceType ec2types.InstanceType) (float64, error) {
 	return p.GetOndemandInstanceTypeCostResp, p.GetOndemandInstanceTypeCostErr
 }
 
-func (p *ec2PricingMock) GetSpotInstanceTypeNDayAvgCost(instanceType ec2types.InstanceType, availabilityZones []string, days int) (float64, error) {
+func (p *ec2PricingMock) GetSpotInstanceTypeNDayAvgCost(ctx context.Context, instanceType ec2types.InstanceType, availabilityZones []string, days int) (float64, error) {
 	return p.GetSpotInstanceTypeNDayAvgCostResp, p.GetSpotInstanceTypeNDayAvgCostErr
 }
 
-func (p *ec2PricingMock) RefreshOnDemandCache() error {
+func (p *ec2PricingMock) RefreshOnDemandCache(ctx context.Context) error {
 	return p.RefreshOnDemandCacheErr
 }
 
-func (p *ec2PricingMock) RefreshSpotCache(days int) error {
+func (p *ec2PricingMock) RefreshSpotCache(ctx context.Context, days int) error {
 	return p.RefreshSpotCacheErr
 }
 
@@ -571,7 +600,8 @@ func TestFilter_PricePerHour(t *testing.T) {
 			UpperBound: 0.0104,
 		},
 	}
-	results, err := itf.Filter(filters)
+	ctx := context.Background()
+	results, err := itf.Filter(ctx, filters)
 	h.Ok(t, err)
 	h.Assert(t, len(results) == 1, fmt.Sprintf("Should return 1 instance type; got %d", len(results)))
 }
@@ -588,7 +618,8 @@ func TestFilter_PricePerHour_NoResults(t *testing.T) {
 			UpperBound: 0.0105,
 		},
 	}
-	results, err := itf.Filter(filters)
+	ctx := context.Background()
+	results, err := itf.Filter(ctx, filters)
 	h.Ok(t, err)
 	h.Assert(t, len(results) == 0, "Should return 0 instance types")
 }
@@ -607,7 +638,8 @@ func TestFilter_PricePerHour_OD(t *testing.T) {
 		},
 		UsageClass: &onDemandUsage,
 	}
-	results, err := itf.Filter(filters)
+	ctx := context.Background()
+	results, err := itf.Filter(ctx, filters)
 	h.Ok(t, err)
 	h.Assert(t, len(results) == 1, fmt.Sprintf("Should return 1 instance type; got %d", len(results)))
 }
@@ -626,7 +658,8 @@ func TestFilter_PricePerHour_Spot(t *testing.T) {
 		},
 		UsageClass: &spotUsage,
 	}
-	results, err := itf.Filter(filters)
+	ctx := context.Background()
+	results, err := itf.Filter(ctx, filters)
 	h.Ok(t, err)
 	h.Assert(t, len(results) == 1, fmt.Sprintf("Should return 1 instance type; got %d", len(results)))
 }

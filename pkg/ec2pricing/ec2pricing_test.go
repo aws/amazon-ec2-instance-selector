@@ -97,46 +97,50 @@ func setupEc2Mock(t *testing.T, api string, file string) mockedSpotEC2 {
 
 func TestGetOndemandInstanceTypeCost_m5large(t *testing.T) {
 	pricingMock := setupOdMock(t, getProducts, "m5_large.json")
+	ctx := context.Background()
 	ec2pricingClient := ec2pricing.EC2Pricing{
-		ODPricing: ec2pricing.LoadODCacheOrNew(pricingMock, "us-east-1", 0, ""),
+		ODPricing: ec2pricing.LoadODCacheOrNew(ctx, pricingMock, "us-east-1", 0, ""),
 	}
-	price, err := ec2pricingClient.GetOnDemandInstanceTypeCost(ec2types.InstanceTypeM5Large)
+	price, err := ec2pricingClient.GetOnDemandInstanceTypeCost(ctx, ec2types.InstanceTypeM5Large)
 	h.Ok(t, err)
 	h.Equals(t, float64(0.096), price)
 }
 
 func TestRefreshOnDemandCache(t *testing.T) {
 	pricingMock := setupOdMock(t, getProducts, "m5_large.json")
+	ctx := context.Background()
 	ec2pricingClient := ec2pricing.EC2Pricing{
-		ODPricing: ec2pricing.LoadODCacheOrNew(pricingMock, "us-east-1", 0, ""),
+		ODPricing: ec2pricing.LoadODCacheOrNew(ctx, pricingMock, "us-east-1", 0, ""),
 	}
-	err := ec2pricingClient.RefreshOnDemandCache()
+	err := ec2pricingClient.RefreshOnDemandCache(ctx)
 	h.Ok(t, err)
 
-	price, err := ec2pricingClient.GetOnDemandInstanceTypeCost(ec2types.InstanceTypeM5Large)
+	price, err := ec2pricingClient.GetOnDemandInstanceTypeCost(ctx, ec2types.InstanceTypeM5Large)
 	h.Ok(t, err)
 	h.Equals(t, float64(0.096), price)
 }
 
 func TestGetSpotInstanceTypeNDayAvgCost(t *testing.T) {
 	ec2Mock := setupEc2Mock(t, describeSpotPriceHistory, "m5_large.json")
+	ctx := context.Background()
 	ec2pricingClient := ec2pricing.EC2Pricing{
-		SpotPricing: ec2pricing.LoadSpotCacheOrNew(ec2Mock, "us-east-1", 0, "", 30),
+		SpotPricing: ec2pricing.LoadSpotCacheOrNew(ctx, ec2Mock, "us-east-1", 0, "", 30),
 	}
-	price, err := ec2pricingClient.GetSpotInstanceTypeNDayAvgCost(ec2types.InstanceTypeM5Large, []string{"us-east-1a"}, 30)
+	price, err := ec2pricingClient.GetSpotInstanceTypeNDayAvgCost(ctx, ec2types.InstanceTypeM5Large, []string{"us-east-1a"}, 30)
 	h.Ok(t, err)
 	h.Equals(t, float64(0.041486231229302666), price)
 }
 
 func TestRefreshSpotCache(t *testing.T) {
 	ec2Mock := setupEc2Mock(t, describeSpotPriceHistory, "m5_large.json")
+	ctx := context.Background()
 	ec2pricingClient := ec2pricing.EC2Pricing{
-		SpotPricing: ec2pricing.LoadSpotCacheOrNew(ec2Mock, "us-east-1", 0, "", 30),
+		SpotPricing: ec2pricing.LoadSpotCacheOrNew(ctx, ec2Mock, "us-east-1", 0, "", 30),
 	}
-	err := ec2pricingClient.RefreshSpotCache(30)
+	err := ec2pricingClient.RefreshSpotCache(ctx, 30)
 	h.Ok(t, err)
 
-	price, err := ec2pricingClient.GetSpotInstanceTypeNDayAvgCost(ec2types.InstanceTypeM5Large, []string{"us-east-1a"}, 30)
+	price, err := ec2pricingClient.GetSpotInstanceTypeNDayAvgCost(ctx, ec2types.InstanceTypeM5Large, []string{"us-east-1a"}, 30)
 	h.Ok(t, err)
 	h.Equals(t, float64(0.041486231229302666), price)
 }
