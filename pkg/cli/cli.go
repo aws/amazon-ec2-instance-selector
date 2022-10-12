@@ -238,6 +238,8 @@ func (cl *CommandLineInterface) ProcessRangeFilterFlags() error {
 			switch cl.Flags[rangeHelperMax].(type) {
 			case *int:
 				cl.Flags[rangeHelperMin] = cl.IntMe(0)
+			case *int32:
+				cl.Flags[rangeHelperMin] = cl.Int32Me(0)
 			case *bytequantity.ByteQuantity:
 				cl.Flags[rangeHelperMin] = cl.ByteQuantityMe(bytequantity.ByteQuantity{Quantity: 0})
 			case *float64:
@@ -249,6 +251,8 @@ func (cl *CommandLineInterface) ProcessRangeFilterFlags() error {
 			switch cl.Flags[rangeHelperMin].(type) {
 			case *int:
 				cl.Flags[rangeHelperMax] = cl.IntMe(maxInt)
+			case *int32:
+				cl.Flags[rangeHelperMax] = cl.Int32Me(max32Int)
 			case *bytequantity.ByteQuantity:
 				cl.Flags[rangeHelperMax] = cl.ByteQuantityMe(bytequantity.ByteQuantity{Quantity: maxUint64})
 			case *float64:
