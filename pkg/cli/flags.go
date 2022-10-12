@@ -14,6 +14,7 @@ import (
 
 const (
 	maxInt    = int(^uint(0) >> 1)
+	max32Int  = int(^uint32(0) >> 1)
 	maxUint64 = math.MaxUint64
 )
 
