@@ -17,7 +17,7 @@ require (
 	github.com/spf13/cobra v0.0.7
 	github.com/spf13/pflag v1.0.3
 	go.uber.org/multierr v1.1.0
-	gopkg.in/ini.v1 v1.57.0
+	gopkg.in/ini.v1 v1.67.0
 )
 
 require (
@@ -33,7 +33,6 @@ require (
 	github.com/muesli/reflow v0.3.0 // indirect
 	github.com/rivo/uniseg v0.2.0 // indirect
 	github.com/sahilm/fuzzy v0.1.0 // indirect
-	github.com/smartystreets/goconvey v1.6.4 // indirect
 	go.uber.org/atomic v1.4.0 // indirect
 	golang.org/x/sys v0.0.0-20220209214540-3681064d5158 // indirect
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
