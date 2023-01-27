@@ -3,7 +3,7 @@ module github.com/aws/amazon-ec2-instance-selector/v2
 go 1.18
 
 require (
-	github.com/aws/aws-sdk-go v1.44.59
+	github.com/aws/aws-sdk-go v1.44.189
 	github.com/blang/semver/v4 v4.0.0
 	github.com/charmbracelet/bubbles v0.13.0
 	github.com/charmbracelet/bubbletea v0.21.0
@@ -35,6 +35,6 @@ require (
 	github.com/sahilm/fuzzy v0.1.0 // indirect
 	github.com/smartystreets/goconvey v1.6.4 // indirect
 	go.uber.org/atomic v1.4.0 // indirect
-	golang.org/x/sys v0.0.0-20220209214540-3681064d5158 // indirect
-	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
+	golang.org/x/sys v0.1.0 // indirect
+	golang.org/x/term v0.1.0 // indirect
 )
