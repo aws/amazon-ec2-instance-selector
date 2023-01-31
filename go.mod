@@ -7,7 +7,7 @@ require (
 	github.com/blang/semver/v4 v4.0.0
 	github.com/charmbracelet/bubbles v0.13.0
 	github.com/charmbracelet/bubbletea v0.21.0
-	github.com/charmbracelet/lipgloss v0.5.0
+	github.com/charmbracelet/lipgloss v0.6.0
 	github.com/evertras/bubble-table v0.14.4
 	github.com/imdario/mergo v0.3.13
 	github.com/mitchellh/go-homedir v1.1.0
