@@ -210,7 +210,7 @@ Full docs can be found at github.com/aws/amazon-` + binName
 
 	cli.SuiteStringFlag(instanceTypeBase, nil, nil, "Instance Type used to retrieve similarly spec'd instance types", nil)
 	cli.SuiteBoolFlag(flexible, nil, nil, "Retrieves a group of instance types spanning multiple generations based on opinionated defaults and user overridden resource filters")
-	cli.SuiteStringFlag(service, nil, nil, "Filter instance types based on service support (Example: eks, eks-20201211, or emr-5.20.0)", nil)
+	cli.SuiteStringFlag(service, nil, nil, "Filter instance types based on service support (Example: emr-5.20.0)", nil)
 
 	// Configuration Flags - These will be grouped at the bottom of the help flags
 
@@ -240,6 +240,10 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	if flags[version] != nil {
 		fmt.Printf("%s", versionID)
 		os.Exit(0)
+	}
+
+	if flags[service] != nil {
+		log.Println("--service eks is deprecated. EKS generally supports all instance types")
 	}
 
 	sess, err := getRegionAndProfileAWSSession(cli.StringMe(flags[region]), cli.StringMe(flags[profile]))
