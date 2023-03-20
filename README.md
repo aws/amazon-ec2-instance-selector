@@ -294,7 +294,7 @@ $ ec2-instance-selector --help
 ```
 
 ```bash#help
-ec2-instance-selector is a CLI tool to filter EC2 instance types based on resource criteria. 
+ec2-instance-selector is a CLI tool to filter EC2 instance types based on resource criteria.
 Filtering allows you to select all the instance types that match your application requirements.
 Full docs can be found at github.com/aws/amazon-ec2-instance-selector
 
@@ -378,7 +378,7 @@ Filter Flags:
 Suite Flags:
       --base-instance-type string   Instance Type used to retrieve similarly spec'd instance types
       --flexible                    Retrieves a group of instance types spanning multiple generations based on opinionated defaults and user overridden resource filters
-      --service string              Filter instance types based on service support (Example: eks, eks-20201211, or emr-5.20.0)
+      --service string              Filter instance types based on service support (Example: emr-5.20.0)
 
 
 Global Flags:
