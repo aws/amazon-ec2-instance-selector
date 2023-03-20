@@ -253,14 +253,14 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	}
 	// TODO: Add next line back from the config
 	//flags[region] = sess.Config.Region
-	primaryContext := context.Background()
-	cfg, err := config.LoadDefaultConfig(primaryContext)
+	ctx := context.Background()
+	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
 		panic("configuration error, " + err.Error())
 	}
 
 	cacheTTLDuration := time.Hour * time.Duration(*cli.IntMe(flags[cacheTTL]))
-	instanceSelector := selector.NewWithCache(primaryContext, cfg, cacheTTLDuration, *cli.StringMe(flags[cacheDir]))
+	instanceSelector := selector.NewWithCache(ctx, cfg, cacheTTLDuration, *cli.StringMe(flags[cacheDir]))
 	shutdown := func() {
 		if err := instanceSelector.Save(); err != nil {
 			log.Printf("There was an error saving pricing caches: %v", err)
@@ -275,7 +275,7 @@ Full docs can be found at github.com/aws/amazon-` + binName
 		// If output type is `table-wide`, simply print both prices for better comparison,
 		//   even if the actual filter is applied on any one of those based on usage class
 		// Save time by hydrating all caches in parallel
-		if err := hydrateCaches(primaryContext, *instanceSelector); err != nil {
+		if err := hydrateCaches(ctx, *instanceSelector); err != nil {
 			log.Printf("%v", err)
 		}
 	} else {
@@ -283,13 +283,13 @@ Full docs can be found at github.com/aws/amazon-` + binName
 		if flags[pricePerHour] != nil {
 			if flags[usageClass] == nil || *cli.StringMe(flags[usageClass]) == "on-demand" {
 				if instanceSelector.EC2Pricing.OnDemandCacheCount() == 0 {
-					if err := instanceSelector.EC2Pricing.RefreshOnDemandCache(primaryContext); err != nil {
+					if err := instanceSelector.EC2Pricing.RefreshOnDemandCache(ctx); err != nil {
 						log.Printf("There was a problem refreshing the on-demand pricing cache: %v", err)
 					}
 				}
 			} else {
 				if instanceSelector.EC2Pricing.SpotCacheCount() == 0 {
-					if err := instanceSelector.EC2Pricing.RefreshSpotCache(primaryContext, spotPricingDaysBack); err != nil {
+					if err := instanceSelector.EC2Pricing.RefreshSpotCache(ctx, spotPricingDaysBack); err != nil {
 						log.Printf("There was a problem refreshing the spot pricing cache: %v", err)
 					}
 				}
@@ -300,13 +300,13 @@ Full docs can be found at github.com/aws/amazon-` + binName
 		if strings.Contains(lowercaseSortField, "price") {
 			if strings.Contains(lowercaseSortField, "spot") {
 				if instanceSelector.EC2Pricing.SpotCacheCount() == 0 {
-					if err := instanceSelector.EC2Pricing.RefreshSpotCache(primaryContext, spotPricingDaysBack); err != nil {
+					if err := instanceSelector.EC2Pricing.RefreshSpotCache(ctx, spotPricingDaysBack); err != nil {
 						log.Printf("There was a problem refreshing the spot pricing cache: %v", err)
 					}
 				}
 			} else {
 				if instanceSelector.EC2Pricing.OnDemandCacheCount() == 0 {
-					if err := instanceSelector.EC2Pricing.RefreshOnDemandCache(primaryContext); err != nil {
+					if err := instanceSelector.EC2Pricing.RefreshOnDemandCache(ctx); err != nil {
 						log.Printf("There was a problem refreshing the on-demand pricing cache: %v", err)
 					}
 				}
@@ -316,38 +316,38 @@ Full docs can be found at github.com/aws/amazon-` + binName
 
 	var cpuArchitectureFilterValue ec2types.ArchitectureType
 
-	if flags[cpuArchitecture] != nil {
-		cpuArchitectureFilterValue = ec2types.ArchitectureType(*flags[cpuArchitecture].(*string))
+	if arch, ok := flags[cpuArchitecture].(*string); ok && arch != nil {
+		cpuArchitectureFilterValue = ec2types.ArchitectureType(*arch)
 	}
 
 	var cpuManufacturerFilterValue selector.CPUManufacturer
 
-	if flags[cpuManufacturer] != nil {
-		cpuManufacturerFilterValue = selector.CPUManufacturer(*flags[cpuManufacturer].(*string))
+	if cpuMan, ok := flags[cpuManufacturer].(*string); ok && cpuMan != nil {
+		cpuManufacturerFilterValue = selector.CPUManufacturer(*cpuMan)
 	}
 
 	var virtualizationTypeFilterValue ec2types.VirtualizationType
 
-	if flags[virtualizationType] != nil {
-		virtualizationTypeFilterValue = ec2types.VirtualizationType(*flags[virtualizationType].(*string))
+	if virtType, ok := flags[virtualizationType].(*string); ok && virtType != nil {
+		virtualizationTypeFilterValue = ec2types.VirtualizationType(*virtType)
 	}
 
 	var deviceTypeFilterValue ec2types.RootDeviceType
 
-	if flags[rootDeviceType] != nil {
-		deviceTypeFilterValue = ec2types.RootDeviceType(*flags[rootDeviceType].(*string))
+	if rootDev, ok := flags[rootDeviceType].(*string); ok && rootDev != nil {
+		deviceTypeFilterValue = ec2types.RootDeviceType(*rootDev)
 	}
 
 	var usageClassFilterValue ec2types.UsageClassType
 
-	if flags[usageClass] != nil {
-		usageClassFilterValue = ec2types.UsageClassType(*flags[usageClass].(*string))
+	if useClass, ok := flags[usageClass].(*string); ok && useClass != nil {
+		usageClassFilterValue = ec2types.UsageClassType(*useClass)
 	}
 
 	var hypervisorFilterValue ec2types.InstanceTypeHypervisor
 
-	if flags[hypervisor] != nil {
-		hypervisorFilterValue = ec2types.InstanceTypeHypervisor(*flags[hypervisor].(*string))
+	if hype, ok := flags[hypervisor].(*string); ok && hype != nil {
+		hypervisorFilterValue = ec2types.InstanceTypeHypervisor(*hype)
 	}
 
 	filters := selector.Filters{
@@ -403,7 +403,7 @@ Full docs can be found at github.com/aws/amazon-` + binName
 
 	if flags[verbose] != nil {
 		resultsOutputFn = outputs.VerboseInstanceTypeOutput
-		transformedFilters, err := instanceSelector.AggregateFilterTransform(primaryContext, filters)
+		transformedFilters, err := instanceSelector.AggregateFilterTransform(ctx, filters)
 		if err != nil {
 			fmt.Printf("An error occurred while transforming the aggregate filters")
 			os.Exit(1)
@@ -429,7 +429,7 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	// fetch instance types without truncating results
 	prevMaxResults := filters.MaxResults
 	filters.MaxResults = nil
-	instanceTypesDetails, err := instanceSelector.FilterVerbose(primaryContext, filters)
+	instanceTypesDetails, err := instanceSelector.FilterVerbose(ctx, filters)
 	if err != nil {
 		fmt.Printf("An error occurred when filtering instance types: %v", err)
 		os.Exit(1)

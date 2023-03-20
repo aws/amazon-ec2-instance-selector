@@ -15,6 +15,7 @@ package ec2pricing
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -51,11 +52,11 @@ type EC2PricingIface interface {
 }
 
 // New creates an instance of instance-selector EC2Pricing
-func New(ctx context.Context) *EC2Pricing {
+func New(ctx context.Context) (*EC2Pricing, error) {
 	// use us-east-1 since pricing only has endpoints in us-east-1 and ap-south-1
 	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion("us-east-1"))
 	if err != nil {
-		panic("configuration error, " + err.Error())
+		return nil, fmt.Errorf("failed to load config for EC2 pricing client: %w", err)
 	}
 
 	pricingClient := pricing.NewFromConfig(cfg)
@@ -63,28 +64,28 @@ func New(ctx context.Context) *EC2Pricing {
 	return &EC2Pricing{
 		ODPricing:   LoadODCacheOrNew(ctx, pricingClient, cfg.Region, 0, ""),
 		SpotPricing: LoadSpotCacheOrNew(ctx, ec2Client, cfg.Region, 0, "", DefaultSpotDaysBack),
-	}
+	}, nil
 }
 
-func NewWithCache(ctx context.Context, ttl time.Duration, cacheDir string) *EC2Pricing {
+func NewWithCache(ctx context.Context, ttl time.Duration, cacheDir string) (*EC2Pricing, error) {
 	// use us-east-1 since pricing only has endpoints in us-east-1 and ap-south-1
-	PricingConfig, err := config.LoadDefaultConfig(ctx, config.WithRegion("us-east-1"))
+	pricingConfig, err := config.LoadDefaultConfig(ctx, config.WithRegion("us-east-1"))
 	if err != nil {
-		panic("configuration error, " + err.Error())
+		return nil, fmt.Errorf("failed to load config for EC2 pricing client: %w", err)
 	}
 
 	// Now reload config so we can grab the intended region. TODO: There's going to be a better way to do this!
 	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
-		panic("configuration error, " + err.Error())
+		return nil, fmt.Errorf("failed to load config for EC2 client: %w", err)
 	}
 
-	pricingClient := pricing.NewFromConfig(PricingConfig)
+	pricingClient := pricing.NewFromConfig(pricingConfig)
 	ec2Client := ec2.NewFromConfig(cfg)
 	return &EC2Pricing{
 		ODPricing:   LoadODCacheOrNew(ctx, pricingClient, cfg.Region, ttl, cacheDir),
 		SpotPricing: LoadSpotCacheOrNew(ctx, ec2Client, cfg.Region, ttl, cacheDir, DefaultSpotDaysBack),
-	}
+	}, nil
 }
 
 // OnDemandCacheCount returns the number of items in the OD cache

@@ -76,14 +76,12 @@ func isSupportedUsageClassType(instanceTypeValue []ec2types.UsageClassType, targ
 	if instanceTypeValue == nil {
 		return false
 	}
-	targetReflection := reflect.ValueOf(*target)
-	if targetReflection.IsZero() {
+	if reflect.ValueOf(*target).IsZero() {
 		return true
 	}
 
 	for _, potentialType := range instanceTypeValue {
-		resolvedTarget := *target
-		if potentialType == resolvedTarget {
+		if potentialType == *target {
 			return true
 		}
 	}
@@ -97,14 +95,12 @@ func isSupportedArchitectureType(instanceTypeValue []ec2types.ArchitectureType, 
 	if instanceTypeValue == nil {
 		return false
 	}
-	targetReflection := reflect.ValueOf(*target)
-	if targetReflection.IsZero() {
+	if reflect.ValueOf(*target).IsZero() {
 		return true
 	}
 
 	for _, potentialType := range instanceTypeValue {
-		resolvedTarget := *target
-		if potentialType == resolvedTarget {
+		if potentialType == *target {
 			return true
 		}
 	}
@@ -118,8 +114,7 @@ func isSupportedVirtualizationType(instanceTypeValue []ec2types.VirtualizationTy
 	if instanceTypeValue == nil {
 		return false
 	}
-	targetReflection := reflect.ValueOf(*target)
-	if targetReflection.IsZero() {
+	if reflect.ValueOf(*target).IsZero() {
 		return true
 	}
 	for _, potentialType := range instanceTypeValue {
@@ -134,8 +129,7 @@ func isSupportedInstanceTypeHypervisorType(instanceTypeValue ec2types.InstanceTy
 	if target == nil {
 		return true
 	}
-	targetReflection := reflect.ValueOf(*target)
-	if targetReflection.IsZero() {
+	if reflect.ValueOf(*target).IsZero() {
 		return true
 	}
 	if instanceTypeValue == *target {
@@ -151,8 +145,7 @@ func isSupportedRootDeviceType(instanceTypeValue []ec2types.RootDeviceType, targ
 	if instanceTypeValue == nil {
 		return false
 	}
-	targetReflection := reflect.ValueOf(*target)
-	if targetReflection.IsZero() {
+	if reflect.ValueOf(*target).IsZero() {
 		return true
 	}
 	for _, potentialType := range instanceTypeValue {
@@ -167,8 +160,7 @@ func isMatchingCpuArchitecture(instanceTypeValue CPUManufacturer, target *CPUMan
 	if target == nil {
 		return true
 	}
-	targetReflection := reflect.ValueOf(*target)
-	if targetReflection.IsZero() {
+	if reflect.ValueOf(*target).IsZero() {
 		return true
 	}
 	if instanceTypeValue == *target {
