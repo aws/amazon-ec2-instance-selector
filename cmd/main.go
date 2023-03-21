@@ -246,13 +246,13 @@ Full docs can be found at github.com/aws/amazon-` + binName
 		log.Println("--service eks is deprecated. EKS generally supports all instance types")
 	}
 
-	// TODO: Add next line back from the config
-	//flags[region] = sess.Config.Region
 	ctx := context.Background()
 	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
 		panic("configuration error, " + err.Error())
 	}
+
+	flags[region] = cfg.Region
 
 	cacheTTLDuration := time.Hour * time.Duration(*cli.IntMe(flags[cacheTTL]))
 	instanceSelector, err := selector.NewWithCache(ctx, cfg, cacheTTLDuration, *cli.StringMe(flags[cacheDir]))
