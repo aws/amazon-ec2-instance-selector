@@ -100,33 +100,42 @@ const (
 )
 
 // New creates an instance of Selector provided an aws session
-func New(ctx context.Context, cfg aws.Config) *Selector {
+func New(ctx context.Context, cfg aws.Config) (*Selector, error) {
 	serviceRegistry := NewRegistry()
 	serviceRegistry.RegisterAWSServices()
 	ec2Client := ec2.NewFromConfig(cfg, func(options *ec2.Options) {
 		options.APIOptions = append(options.APIOptions, middleware.AddUserAgentKeyValue(sdkName, versionID))
 	})
+	pricingClient, err := ec2pricing.New(ctx)
+	if err != nil {
+		return nil, err
+	}
 
 	return &Selector{
 		EC2:                   ec2Client,
-		EC2Pricing:            ec2pricing.New(ctx),
+		EC2Pricing:            pricingClient,
 		InstanceTypesProvider: instancetypes.LoadFromOrNew("", cfg.Region, 0, ec2Client),
 		ServiceRegistry:       serviceRegistry,
-	}
+	}, nil
 }
 
-func NewWithCache(ctx context.Context, cfg aws.Config, ttl time.Duration, cacheDir string) *Selector {
+func NewWithCache(ctx context.Context, cfg aws.Config, ttl time.Duration, cacheDir string) (*Selector, error) {
 	serviceRegistry := NewRegistry()
 	serviceRegistry.RegisterAWSServices()
 	ec2Client := ec2.NewFromConfig(cfg, func(options *ec2.Options) {
 		options.APIOptions = append(options.APIOptions, middleware.AddUserAgentKeyValue(sdkName, versionID))
 	})
+	pricingClient, err := ec2pricing.NewWithCache(ctx, ttl, cacheDir)
+	if err != nil {
+		return nil, err
+	}
+
 	return &Selector{
 		EC2:                   ec2Client,
-		EC2Pricing:            ec2pricing.NewWithCache(ctx, ttl, cacheDir),
+		EC2Pricing:            pricingClient,
 		InstanceTypesProvider: instancetypes.LoadFromOrNew(cacheDir, cfg.Region, ttl, ec2Client),
 		ServiceRegistry:       serviceRegistry,
-	}
+	}, nil
 }
 
 func (itf Selector) Save() error {

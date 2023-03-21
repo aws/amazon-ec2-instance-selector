@@ -23,7 +23,11 @@ func main() {
 	}
 
 	// Instantiate a new instance of a selector with the AWS session
-	instanceSelector := selector.New(ctx, cfg)
+	instanceSelector, err := selector.New(ctx, cfg)
+	if err != nil {
+		fmt.Printf("Oh no, there was an error :( %v", err)
+		return
+	}
 
 	// Instantiate an int range filter to specify min and max vcpus
 	vcpusRange := selector.Int32RangeFilter{

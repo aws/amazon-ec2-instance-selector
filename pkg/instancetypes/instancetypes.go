@@ -24,7 +24,6 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/awsapi"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/mitchellh/go-homedir"
@@ -47,11 +46,11 @@ type Provider struct {
 	DirectoryPath   string
 	FullRefreshTTL  time.Duration
 	lastFullRefresh *time.Time
-	ec2Client       awsapi.InstanceTypesEC2Interface
+	ec2Client       ec2.DescribeInstanceTypesAPIClient
 	cache           *cache.Cache
 }
 
-func NewProvider(directoryPath string, region string, ttl time.Duration, ec2Client awsapi.InstanceTypesEC2Interface) *Provider {
+func NewProvider(directoryPath string, region string, ttl time.Duration, ec2Client ec2.DescribeInstanceTypesAPIClient) *Provider {
 	expandedDirPath, err := homedir.Expand(directoryPath)
 	if err != nil {
 		log.Printf("Unable to expand instance type cache directory %s: %v", directoryPath, err)
@@ -65,7 +64,7 @@ func NewProvider(directoryPath string, region string, ttl time.Duration, ec2Clie
 	}
 }
 
-func LoadFromOrNew(directoryPath string, region string, ttl time.Duration, ec2Client awsapi.InstanceTypesEC2Interface) *Provider {
+func LoadFromOrNew(directoryPath string, region string, ttl time.Duration, ec2Client ec2.DescribeInstanceTypesAPIClient) *Provider {
 	expandedDirPath, err := homedir.Expand(directoryPath)
 	if err != nil {
 		log.Printf("Unable to load instance-type cache directory %s: %v", expandedDirPath, err)

@@ -21,7 +21,6 @@ import (
 	"io/ioutil"
 	"testing"
 
-	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/awsapi"
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/ec2pricing"
 	h "github.com/aws/amazon-ec2-instance-selector/v2/pkg/test"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
@@ -37,7 +36,7 @@ const (
 // Mocking helpers
 
 type mockedPricing struct {
-	awsapi.PricingInterface
+	pricing.GetProductsAPIClient
 	GetProductsResp pricing.GetProductsOutput
 	GetProductsErr  error
 }
@@ -47,7 +46,7 @@ func (m mockedPricing) GetProducts(ctx context.Context, input *pricing.GetProduc
 }
 
 type mockedSpotEC2 struct {
-	awsapi.EC2Interface
+	ec2.DescribeSpotPriceHistoryAPIClient
 	DescribeSpotPriceHistoryPagesResp ec2.DescribeSpotPriceHistoryOutput
 	DescribeSpotPriceHistoryPagesErr  error
 }

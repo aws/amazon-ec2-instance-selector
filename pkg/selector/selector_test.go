@@ -145,7 +145,7 @@ func getSelector(ec2Mock mockedEC2) selector.Selector {
 func TestNew(t *testing.T) {
 	ctx := context.Background()
 	cfg, _ := config.LoadDefaultConfig(ctx)
-	itf := selector.New(ctx, cfg)
+	itf, _ := selector.New(ctx, cfg)
 	h.Assert(t, itf != nil, "selector instance created without error")
 }
 

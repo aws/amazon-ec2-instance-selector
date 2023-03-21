@@ -246,11 +246,6 @@ Full docs can be found at github.com/aws/amazon-` + binName
 		log.Println("--service eks is deprecated. EKS generally supports all instance types")
 	}
 
-	sess, err := getRegionAndProfileAWSSession(cli.StringMe(flags[region]), cli.StringMe(flags[profile]))
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
 	// TODO: Add next line back from the config
 	//flags[region] = sess.Config.Region
 	ctx := context.Background()
@@ -260,7 +255,10 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	}
 
 	cacheTTLDuration := time.Hour * time.Duration(*cli.IntMe(flags[cacheTTL]))
-	instanceSelector := selector.NewWithCache(ctx, cfg, cacheTTLDuration, *cli.StringMe(flags[cacheDir]))
+	instanceSelector, err := selector.NewWithCache(ctx, cfg, cacheTTLDuration, *cli.StringMe(flags[cacheDir]))
+	if err != nil {
+		panic("selector error, " + err.Error())
+	}
 	shutdown := func() {
 		if err := instanceSelector.Save(); err != nil {
 			log.Printf("There was an error saving pricing caches: %v", err)
