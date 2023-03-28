@@ -485,7 +485,7 @@ Next, you can use this script to select any 2 instance types and get a nice comp
 scripts/compare.sh c6i.large c5.large
 ```
 ```
-scripts/compare.sh x2iedn.32large x2iedn.24large
+scripts/compare.sh x2iedn.32xlarge x2iedn.24xlarge
 ```
 
 ## Building
