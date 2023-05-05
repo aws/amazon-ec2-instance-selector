@@ -106,7 +106,7 @@ func LoadODCacheOrNew(ctx context.Context, pricingClient pricing.GetProductsAPIC
 		cache:          cache.New(fullRefreshTTL, fullRefreshTTL),
 	}
 	if fullRefreshTTL <= 0 {
-		_ = odPricing.Clear()
+		odPricing.Clear()
 		return odPricing
 	}
 	// Start the cache refresh job
@@ -195,7 +195,9 @@ func (c *OnDemandPricing) Save() error {
 	if err != nil {
 		return err
 	}
-	_ = os.Mkdir(c.DirectoryPath, 0755)
+	if err := os.Mkdir(c.DirectoryPath, 0755); err != nil && !errors.Is(err, os.ErrExist) {
+		return err
+	}
 	return ioutil.WriteFile(getODCacheFilePath(c.Region, c.DirectoryPath), cacheBytes, 0644)
 }
 

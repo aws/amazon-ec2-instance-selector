@@ -115,7 +115,7 @@ func (p *Provider) Get(ctx context.Context, instanceTypes []ec2types.InstanceTyp
 			if cachedIT, ok := p.cache.Get(string(it)); ok {
 				instanceTypeDetails = append(instanceTypeDetails, cachedIT.(*Details))
 			} else {
-				// need to reassign so we're not sharing the loop iterators memory space
+				// need to reassign, so we're not sharing the loop iterators memory space
 				instanceType := it
 				describeInstanceTypeOpts.InstanceTypes = append(describeInstanceTypeOpts.InstanceTypes, instanceType)
 			}
@@ -164,7 +164,9 @@ func (p *Provider) Save() error {
 	if err != nil {
 		return err
 	}
-	_ = os.Mkdir(p.DirectoryPath, 0755)
+	if err := os.Mkdir(p.DirectoryPath, 0755); err != nil && !errors.Is(err, os.ErrExist) {
+		return err
+	}
 	return ioutil.WriteFile(getCacheFilePath(p.Region, p.DirectoryPath), cacheBytes, 0644)
 }
 

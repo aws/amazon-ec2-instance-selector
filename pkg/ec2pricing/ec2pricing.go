@@ -52,6 +52,7 @@ type EC2PricingIface interface {
 
 // use us-east-1 since pricing only has endpoints in us-east-1 and ap-south-1
 // TODO: In the future we may want to allow the client to select which endpoint is used through some mechanism
+//       but that would likely happen through overriding this entire function as its signature is fixed
 func modifyPricingRegion(opt *pricing.Options) {
 	opt.Region = "us-east-1"
 }
