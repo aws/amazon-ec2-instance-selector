@@ -258,7 +258,8 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	cacheTTLDuration := time.Hour * time.Duration(*cli.IntMe(flags[cacheTTL]))
 	instanceSelector, err := selector.NewWithCache(ctx, cfg, cacheTTLDuration, *cli.StringMe(flags[cacheDir]))
 	if err != nil {
-		panic("selector error, " + err.Error())
+		fmt.Printf("An error occurred when initialising the ec2 selector: %v", err)
+		os.Exit(1)
 	}
 	shutdown := func() {
 		if err := instanceSelector.Save(); err != nil {
