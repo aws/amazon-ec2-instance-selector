@@ -201,8 +201,6 @@ func (itf Selector) AggregateFilterTransform(ctx context.Context, filters Filter
 		TransformFn(itf.TransformForService),
 	}
 	var err error
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
 	for _, transform := range transforms {
 		filters, err = transform.Transform(ctx, filters)
 		if err != nil {
