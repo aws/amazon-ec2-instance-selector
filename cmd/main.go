@@ -249,7 +249,8 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	ctx := context.Background()
 	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
-		panic("configuration error, " + err.Error())
+		fmt.Printf("Failed to load default AWS configuration: %s\n", err.Error())
+		os.Exit(1)
 	}
 
 	flags[region] = cfg.Region
