@@ -106,7 +106,7 @@ func New(ctx context.Context, cfg aws.Config) (*Selector, error) {
 	ec2Client := ec2.NewFromConfig(cfg, func(options *ec2.Options) {
 		options.APIOptions = append(options.APIOptions, middleware.AddUserAgentKeyValue(sdkName, versionID))
 	})
-	pricingClient, err := ec2pricing.New(ctx)
+	pricingClient, err := ec2pricing.New(ctx, cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -125,7 +125,7 @@ func NewWithCache(ctx context.Context, cfg aws.Config, ttl time.Duration, cacheD
 	ec2Client := ec2.NewFromConfig(cfg, func(options *ec2.Options) {
 		options.APIOptions = append(options.APIOptions, middleware.AddUserAgentKeyValue(sdkName, versionID))
 	})
-	pricingClient, err := ec2pricing.NewWithCache(ctx, ttl, cacheDir)
+	pricingClient, err := ec2pricing.NewWithCache(ctx, cfg, ttl, cacheDir)
 	if err != nil {
 		return nil, err
 	}

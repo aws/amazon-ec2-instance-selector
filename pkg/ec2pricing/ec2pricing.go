@@ -15,10 +15,9 @@ package ec2pricing
 
 import (
 	"context"
-	"fmt"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/aws-sdk-go-v2/service/pricing"
@@ -51,15 +50,15 @@ type EC2PricingIface interface {
 	Save() error
 }
 
-// New creates an instance of instance-selector EC2Pricing
-func New(ctx context.Context) (*EC2Pricing, error) {
-	// use us-east-1 since pricing only has endpoints in us-east-1 and ap-south-1
-	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion("us-east-1"))
-	if err != nil {
-		return nil, fmt.Errorf("failed to load config for EC2 pricing client: %w", err)
-	}
+// use us-east-1 since pricing only has endpoints in us-east-1 and ap-south-1
+// TODO: In the future we may want to allow the client to select which endpoint is used through some mechanism
+func modifyPricingRegion(opt *pricing.Options) {
+	opt.Region = "us-east-1"
+}
 
-	pricingClient := pricing.NewFromConfig(cfg)
+// New creates an instance of instance-selector EC2Pricing
+func New(ctx context.Context, cfg aws.Config) (*EC2Pricing, error) {
+	pricingClient := pricing.NewFromConfig(cfg, modifyPricingRegion)
 	ec2Client := ec2.NewFromConfig(cfg)
 	return &EC2Pricing{
 		ODPricing:   LoadODCacheOrNew(ctx, pricingClient, cfg.Region, 0, ""),
@@ -67,20 +66,8 @@ func New(ctx context.Context) (*EC2Pricing, error) {
 	}, nil
 }
 
-func NewWithCache(ctx context.Context, ttl time.Duration, cacheDir string) (*EC2Pricing, error) {
-	// use us-east-1 since pricing only has endpoints in us-east-1 and ap-south-1
-	pricingConfig, err := config.LoadDefaultConfig(ctx, config.WithRegion("us-east-1"))
-	if err != nil {
-		return nil, fmt.Errorf("failed to load config for EC2 pricing client: %w", err)
-	}
-
-	// Now reload config so we can grab the intended region. TODO: There's going to be a better way to do this!
-	cfg, err := config.LoadDefaultConfig(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to load config for EC2 client: %w", err)
-	}
-
-	pricingClient := pricing.NewFromConfig(pricingConfig)
+func NewWithCache(ctx context.Context, cfg aws.Config, ttl time.Duration, cacheDir string) (*EC2Pricing, error) {
+	pricingClient := pricing.NewFromConfig(cfg, modifyPricingRegion)
 	ec2Client := ec2.NewFromConfig(cfg)
 	return &EC2Pricing{
 		ODPricing:   LoadODCacheOrNew(ctx, pricingClient, cfg.Region, ttl, cacheDir),
