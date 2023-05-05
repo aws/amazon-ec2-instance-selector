@@ -313,48 +313,54 @@ Full docs can be found at github.com/aws/amazon-` + binName
 		}
 	}
 
-	var cpuArchitectureFilterValue ec2types.ArchitectureType
+	var cpuArchitectureFilterValue *ec2types.ArchitectureType
 
 	if arch, ok := flags[cpuArchitecture].(*string); ok && arch != nil {
-		cpuArchitectureFilterValue = ec2types.ArchitectureType(*arch)
+		value := ec2types.ArchitectureType(*arch)
+		cpuArchitectureFilterValue = &value
 	}
 
-	var cpuManufacturerFilterValue selector.CPUManufacturer
+	var cpuManufacturerFilterValue *selector.CPUManufacturer
 
 	if cpuMan, ok := flags[cpuManufacturer].(*string); ok && cpuMan != nil {
-		cpuManufacturerFilterValue = selector.CPUManufacturer(*cpuMan)
+		value := selector.CPUManufacturer(*cpuMan)
+		cpuManufacturerFilterValue = &value
 	}
 
-	var virtualizationTypeFilterValue ec2types.VirtualizationType
+	var virtualizationTypeFilterValue *ec2types.VirtualizationType
 
 	if virtType, ok := flags[virtualizationType].(*string); ok && virtType != nil {
-		virtualizationTypeFilterValue = ec2types.VirtualizationType(*virtType)
+		value := ec2types.VirtualizationType(*virtType)
+		virtualizationTypeFilterValue = &value
 	}
 
-	var deviceTypeFilterValue ec2types.RootDeviceType
+	var deviceTypeFilterValue *ec2types.RootDeviceType
 
 	if rootDev, ok := flags[rootDeviceType].(*string); ok && rootDev != nil {
-		deviceTypeFilterValue = ec2types.RootDeviceType(*rootDev)
+		value := ec2types.RootDeviceType(*rootDev)
+		deviceTypeFilterValue = &value
 	}
 
-	var usageClassFilterValue ec2types.UsageClassType
+	var usageClassFilterValue *ec2types.UsageClassType
 
 	if useClass, ok := flags[usageClass].(*string); ok && useClass != nil {
-		usageClassFilterValue = ec2types.UsageClassType(*useClass)
+		value := ec2types.UsageClassType(*useClass)
+		usageClassFilterValue = &value
 	}
 
-	var hypervisorFilterValue ec2types.InstanceTypeHypervisor
+	var hypervisorFilterValue *ec2types.InstanceTypeHypervisor
 
 	if hype, ok := flags[hypervisor].(*string); ok && hype != nil {
-		hypervisorFilterValue = ec2types.InstanceTypeHypervisor(*hype)
+		value := ec2types.InstanceTypeHypervisor(*hype)
+		hypervisorFilterValue = &value
 	}
 
 	filters := selector.Filters{
 		VCpusRange:                       cli.Int32RangeMe(flags[vcpus]),
 		MemoryRange:                      cli.ByteQuantityRangeMe(flags[memory]),
 		VCpusToMemoryRatio:               cli.Float64Me(flags[vcpusToMemoryRatio]),
-		CPUArchitecture:                  &cpuArchitectureFilterValue,
-		CPUManufacturer:                  &cpuManufacturerFilterValue,
+		CPUArchitecture:                  cpuArchitectureFilterValue,
+		CPUManufacturer:                  cpuManufacturerFilterValue,
 		GpusRange:                        cli.Int32RangeMe(flags[gpus]),
 		GpuMemoryRange:                   cli.ByteQuantityRangeMe(flags[gpuMemoryTotal]),
 		GPUManufacturer:                  cli.StringMe(flags[gpuManufacturer]),
@@ -363,12 +369,12 @@ Full docs can be found at github.com/aws/amazon-` + binName
 		InferenceAcceleratorManufacturer: cli.StringMe(flags[inferenceAcceleratorManufacturer]),
 		InferenceAcceleratorModel:        cli.StringMe(flags[inferenceAcceleratorModel]),
 		PlacementGroupStrategy:           cli.StringMe(flags[placementGroupStrategy]),
-		UsageClass:                       &usageClassFilterValue,
-		RootDeviceType:                   &deviceTypeFilterValue,
+		UsageClass:                       usageClassFilterValue,
+		RootDeviceType:                   deviceTypeFilterValue,
 		EnaSupport:                       cli.BoolMe(flags[enaSupport]),
 		EfaSupport:                       cli.BoolMe(flags[efaSupport]),
 		HibernationSupported:             cli.BoolMe(flags[hibernationSupport]),
-		Hypervisor:                       &hypervisorFilterValue,
+		Hypervisor:                       hypervisorFilterValue,
 		BareMetal:                        cli.BoolMe(flags[baremetal]),
 		Fpga:                             cli.BoolMe(flags[fpgaSupport]),
 		Burstable:                        cli.BoolMe(flags[burstSupport]),
@@ -385,7 +391,7 @@ Full docs can be found at github.com/aws/amazon-` + binName
 		InstanceTypeBase:                 cli.StringMe(flags[instanceTypeBase]),
 		Flexible:                         cli.BoolMe(flags[flexible]),
 		Service:                          cli.StringMe(flags[service]),
-		VirtualizationType:               &virtualizationTypeFilterValue,
+		VirtualizationType:               virtualizationTypeFilterValue,
 		PricePerHour:                     cli.Float64RangeMe(flags[pricePerHour]),
 		InstanceStorageRange:             cli.ByteQuantityRangeMe(flags[instanceStorage]),
 		DiskType:                         cli.StringMe(flags[diskType]),
