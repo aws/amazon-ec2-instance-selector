@@ -318,6 +318,10 @@ Copyright (c) 2012-2019 Patrick Mylund Nielsen and the go-cache contributors
 Copyright (c) 2017-2021 Uber Technologies, Inc.
 ** atomic; version v1.4.0 -- https://go.uber.org/atomic
 Copyright (c) 2017-2021 Uber Technologies, Inc.
+** go-localereader; version v0.0.1 -- https://github.com/mattn/go-localereader
+Copyright (c) 2022 Yasuhiro Matsumoto
+** go-osc52; version v1.0.3 -- https://github.com/aymanbagabas/go-osc52
+Copyright (c) 2022 Ayman Bagabas
 
 
 The MIT License (MIT)
