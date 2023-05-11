@@ -1071,6 +1071,7 @@ SOFTWARE.
 
 ** golang.org/x/sys; v0.0.0-20220727055044-e65921a090b8 --
 https://cs.opensource.google/go/x/sys
+** golang.org/x/sync; v0.1.0 -- https://cs.opensource.google/go/x/sync
 
 Copyright (c) 2009 The Go Authors. All rights reserved.
 
