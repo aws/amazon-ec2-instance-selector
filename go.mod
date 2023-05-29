@@ -9,7 +9,7 @@ require (
 	github.com/charmbracelet/bubbletea v0.24.0
 	github.com/charmbracelet/lipgloss v0.7.1
 	github.com/evertras/bubble-table v0.15.2
-	github.com/imdario/mergo v0.3.15
+	github.com/imdario/mergo v0.3.16
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/muesli/termenv v0.15.1
 	github.com/oliveagle/jsonpath v0.0.0-20180606110733-2e52cf6e6852
