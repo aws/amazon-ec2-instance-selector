@@ -301,7 +301,7 @@ func (c *OnDemandPricing) parseOndemandUnitPrice(priceList string) (string, floa
 	var productPriceList PricingList
 	err := json.Unmarshal([]byte(priceList), &productPriceList)
 	if err != nil {
-		return "", float64(-1.0), fmt.Errorf("unable to parse pricing doc: %s", err)
+		return "", float64(-1.0), fmt.Errorf("unable to parse pricing doc: %w", err)
 	}
 	attributes := productPriceList.Product.ProductAttributes
 	instanceTypeName := attributes["instanceType"]
