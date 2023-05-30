@@ -6,7 +6,7 @@ require (
 	github.com/aws/aws-sdk-go v1.44.271
 	github.com/blang/semver/v4 v4.0.0
 	github.com/charmbracelet/bubbles v0.15.0
-	github.com/charmbracelet/bubbletea v0.24.0
+	github.com/charmbracelet/bubbletea v0.24.1
 	github.com/charmbracelet/lipgloss v0.7.1
 	github.com/evertras/bubble-table v0.15.2
 	github.com/imdario/mergo v0.3.16
