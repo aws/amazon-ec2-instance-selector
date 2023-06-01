@@ -14,7 +14,9 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"github.com/aws/aws-sdk-go-v2/config"
 	"log"
 	"os"
 	"os/signal"
@@ -29,12 +31,10 @@ import (
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/selector"
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/selector/outputs"
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/sorter"
-	"github.com/aws/aws-sdk-go/aws/session"
+	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	tea "github.com/charmbracelet/bubbletea"
-	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"go.uber.org/multierr"
-	"gopkg.in/ini.v1"
 )
 
 const (
@@ -162,12 +162,12 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	// Registers flags with specific input types from the cli pkg
 	// Filter Flags - These will be grouped at the top of the help flags
 
-	cli.IntMinMaxRangeFlags(vcpus, cli.StringMe("c"), nil, "Number of vcpus available to the instance type.")
+	cli.Int32MinMaxRangeFlags(vcpus, cli.StringMe("c"), nil, "Number of vcpus available to the instance type.")
 	cli.ByteQuantityMinMaxRangeFlags(memory, cli.StringMe("m"), nil, "Amount of Memory available (Example: 4 GiB)")
 	cli.RatioFlag(vcpusToMemoryRatio, nil, nil, "The ratio of vcpus to GiBs of memory. (Example: 1:2)")
 	cli.StringOptionsFlag(cpuArchitecture, cli.StringMe("a"), nil, "CPU architecture [x86_64/amd64, x86_64_mac, i386, or arm64]", []string{"x86_64", "x86_64_mac", "amd64", "i386", "arm64"})
 	cli.StringOptionsFlag(cpuManufacturer, nil, nil, "CPU manufacturer [amd, intel, aws]", []string{"amd", "intel", "aws"})
-	cli.IntMinMaxRangeFlags(gpus, cli.StringMe("g"), nil, "Total Number of GPUs (Example: 4)")
+	cli.Int32MinMaxRangeFlags(gpus, cli.StringMe("g"), nil, "Total Number of GPUs (Example: 4)")
 	cli.ByteQuantityMinMaxRangeFlags(gpuMemoryTotal, nil, nil, "Number of GPUs' total memory (Example: 4 GiB)")
 	cli.StringFlag(gpuManufacturer, nil, nil, "GPU Manufacturer name (Example: NVIDIA)", nil)
 	cli.StringFlag(gpuModel, nil, nil, "GPU Model name (Example: K520)", nil)
@@ -186,7 +186,7 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	cli.StringOptionsFlag(hypervisor, nil, nil, "Hypervisor: [xen or nitro]", []string{"xen", "nitro"})
 	cli.StringSliceFlag(availabilityZones, cli.StringMe("z"), nil, "Availability zones or zone ids to check EC2 capacity offered in specific AZs")
 	cli.BoolFlag(currentGeneration, nil, nil, "Current generation instance types (explicitly set this to false to not return current generation instance types)")
-	cli.IntMinMaxRangeFlags(networkInterfaces, nil, nil, "Number of network interfaces (ENIs) that can be attached to the instance")
+	cli.Int32MinMaxRangeFlags(networkInterfaces, nil, nil, "Number of network interfaces (ENIs) that can be attached to the instance")
 	cli.IntMinMaxRangeFlags(networkPerformance, nil, nil, "Bandwidth in Gib/s of network performance (Example: 100)")
 	cli.BoolFlag(networkEncryption, nil, nil, "Instance Types that support automatic network encryption in-transit")
 	cli.BoolFlag(ipv6, nil, nil, "Instance Types that support IPv6")
@@ -246,14 +246,21 @@ Full docs can be found at github.com/aws/amazon-` + binName
 		log.Println("--service eks is deprecated. EKS generally supports all instance types")
 	}
 
-	sess, err := getRegionAndProfileAWSSession(cli.StringMe(flags[region]), cli.StringMe(flags[profile]))
+	ctx := context.Background()
+	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
-		fmt.Println(err)
+		fmt.Printf("Failed to load default AWS configuration: %s\n", err.Error())
 		os.Exit(1)
 	}
-	flags[region] = sess.Config.Region
+
+	flags[region] = cfg.Region
+
 	cacheTTLDuration := time.Hour * time.Duration(*cli.IntMe(flags[cacheTTL]))
-	instanceSelector := selector.NewWithCache(sess, cacheTTLDuration, *cli.StringMe(flags[cacheDir]))
+	instanceSelector, err := selector.NewWithCache(ctx, cfg, cacheTTLDuration, *cli.StringMe(flags[cacheDir]))
+	if err != nil {
+		fmt.Printf("An error occurred when initialising the ec2 selector: %v", err)
+		os.Exit(1)
+	}
 	shutdown := func() {
 		if err := instanceSelector.Save(); err != nil {
 			log.Printf("There was an error saving pricing caches: %v", err)
@@ -268,7 +275,7 @@ Full docs can be found at github.com/aws/amazon-` + binName
 		// If output type is `table-wide`, simply print both prices for better comparison,
 		//   even if the actual filter is applied on any one of those based on usage class
 		// Save time by hydrating all caches in parallel
-		if err := hydrateCaches(*instanceSelector); err != nil {
+		if err := hydrateCaches(ctx, *instanceSelector); err != nil {
 			log.Printf("%v", err)
 		}
 	} else {
@@ -276,13 +283,13 @@ Full docs can be found at github.com/aws/amazon-` + binName
 		if flags[pricePerHour] != nil {
 			if flags[usageClass] == nil || *cli.StringMe(flags[usageClass]) == "on-demand" {
 				if instanceSelector.EC2Pricing.OnDemandCacheCount() == 0 {
-					if err := instanceSelector.EC2Pricing.RefreshOnDemandCache(); err != nil {
+					if err := instanceSelector.EC2Pricing.RefreshOnDemandCache(ctx); err != nil {
 						log.Printf("There was a problem refreshing the on-demand pricing cache: %v", err)
 					}
 				}
 			} else {
 				if instanceSelector.EC2Pricing.SpotCacheCount() == 0 {
-					if err := instanceSelector.EC2Pricing.RefreshSpotCache(spotPricingDaysBack); err != nil {
+					if err := instanceSelector.EC2Pricing.RefreshSpotCache(ctx, spotPricingDaysBack); err != nil {
 						log.Printf("There was a problem refreshing the spot pricing cache: %v", err)
 					}
 				}
@@ -293,13 +300,13 @@ Full docs can be found at github.com/aws/amazon-` + binName
 		if strings.Contains(lowercaseSortField, "price") {
 			if strings.Contains(lowercaseSortField, "spot") {
 				if instanceSelector.EC2Pricing.SpotCacheCount() == 0 {
-					if err := instanceSelector.EC2Pricing.RefreshSpotCache(spotPricingDaysBack); err != nil {
+					if err := instanceSelector.EC2Pricing.RefreshSpotCache(ctx, spotPricingDaysBack); err != nil {
 						log.Printf("There was a problem refreshing the spot pricing cache: %v", err)
 					}
 				}
 			} else {
 				if instanceSelector.EC2Pricing.OnDemandCacheCount() == 0 {
-					if err := instanceSelector.EC2Pricing.RefreshOnDemandCache(); err != nil {
+					if err := instanceSelector.EC2Pricing.RefreshOnDemandCache(ctx); err != nil {
 						log.Printf("There was a problem refreshing the on-demand pricing cache: %v", err)
 					}
 				}
@@ -307,13 +314,55 @@ Full docs can be found at github.com/aws/amazon-` + binName
 		}
 	}
 
+	var cpuArchitectureFilterValue *ec2types.ArchitectureType
+
+	if arch, ok := flags[cpuArchitecture].(*string); ok && arch != nil {
+		value := ec2types.ArchitectureType(*arch)
+		cpuArchitectureFilterValue = &value
+	}
+
+	var cpuManufacturerFilterValue *selector.CPUManufacturer
+
+	if cpuMan, ok := flags[cpuManufacturer].(*string); ok && cpuMan != nil {
+		value := selector.CPUManufacturer(*cpuMan)
+		cpuManufacturerFilterValue = &value
+	}
+
+	var virtualizationTypeFilterValue *ec2types.VirtualizationType
+
+	if virtType, ok := flags[virtualizationType].(*string); ok && virtType != nil {
+		value := ec2types.VirtualizationType(*virtType)
+		virtualizationTypeFilterValue = &value
+	}
+
+	var deviceTypeFilterValue *ec2types.RootDeviceType
+
+	if rootDev, ok := flags[rootDeviceType].(*string); ok && rootDev != nil {
+		value := ec2types.RootDeviceType(*rootDev)
+		deviceTypeFilterValue = &value
+	}
+
+	var usageClassFilterValue *ec2types.UsageClassType
+
+	if useClass, ok := flags[usageClass].(*string); ok && useClass != nil {
+		value := ec2types.UsageClassType(*useClass)
+		usageClassFilterValue = &value
+	}
+
+	var hypervisorFilterValue *ec2types.InstanceTypeHypervisor
+
+	if hype, ok := flags[hypervisor].(*string); ok && hype != nil {
+		value := ec2types.InstanceTypeHypervisor(*hype)
+		hypervisorFilterValue = &value
+	}
+
 	filters := selector.Filters{
-		VCpusRange:                       cli.IntRangeMe(flags[vcpus]),
+		VCpusRange:                       cli.Int32RangeMe(flags[vcpus]),
 		MemoryRange:                      cli.ByteQuantityRangeMe(flags[memory]),
 		VCpusToMemoryRatio:               cli.Float64Me(flags[vcpusToMemoryRatio]),
-		CPUArchitecture:                  cli.StringMe(flags[cpuArchitecture]),
-		CPUManufacturer:                  cli.StringMe(flags[cpuManufacturer]),
-		GpusRange:                        cli.IntRangeMe(flags[gpus]),
+		CPUArchitecture:                  cpuArchitectureFilterValue,
+		CPUManufacturer:                  cpuManufacturerFilterValue,
+		GpusRange:                        cli.Int32RangeMe(flags[gpus]),
 		GpuMemoryRange:                   cli.ByteQuantityRangeMe(flags[gpuMemoryTotal]),
 		GPUManufacturer:                  cli.StringMe(flags[gpuManufacturer]),
 		GPUModel:                         cli.StringMe(flags[gpuModel]),
@@ -321,12 +370,12 @@ Full docs can be found at github.com/aws/amazon-` + binName
 		InferenceAcceleratorManufacturer: cli.StringMe(flags[inferenceAcceleratorManufacturer]),
 		InferenceAcceleratorModel:        cli.StringMe(flags[inferenceAcceleratorModel]),
 		PlacementGroupStrategy:           cli.StringMe(flags[placementGroupStrategy]),
-		UsageClass:                       cli.StringMe(flags[usageClass]),
-		RootDeviceType:                   cli.StringMe(flags[rootDeviceType]),
+		UsageClass:                       usageClassFilterValue,
+		RootDeviceType:                   deviceTypeFilterValue,
 		EnaSupport:                       cli.BoolMe(flags[enaSupport]),
 		EfaSupport:                       cli.BoolMe(flags[efaSupport]),
 		HibernationSupported:             cli.BoolMe(flags[hibernationSupport]),
-		Hypervisor:                       cli.StringMe(flags[hypervisor]),
+		Hypervisor:                       hypervisorFilterValue,
 		BareMetal:                        cli.BoolMe(flags[baremetal]),
 		Fpga:                             cli.BoolMe(flags[fpgaSupport]),
 		Burstable:                        cli.BoolMe(flags[burstSupport]),
@@ -334,7 +383,7 @@ Full docs can be found at github.com/aws/amazon-` + binName
 		AvailabilityZones:                cli.StringSliceMe(flags[availabilityZones]),
 		CurrentGeneration:                cli.BoolMe(flags[currentGeneration]),
 		MaxResults:                       cli.IntMe(flags[maxResults]),
-		NetworkInterfaces:                cli.IntRangeMe(flags[networkInterfaces]),
+		NetworkInterfaces:                cli.Int32RangeMe(flags[networkInterfaces]),
 		NetworkPerformance:               cli.IntRangeMe(flags[networkPerformance]),
 		NetworkEncryption:                cli.BoolMe(flags[networkEncryption]),
 		IPv6:                             cli.BoolMe(flags[ipv6]),
@@ -343,7 +392,7 @@ Full docs can be found at github.com/aws/amazon-` + binName
 		InstanceTypeBase:                 cli.StringMe(flags[instanceTypeBase]),
 		Flexible:                         cli.BoolMe(flags[flexible]),
 		Service:                          cli.StringMe(flags[service]),
-		VirtualizationType:               cli.StringMe(flags[virtualizationType]),
+		VirtualizationType:               virtualizationTypeFilterValue,
 		PricePerHour:                     cli.Float64RangeMe(flags[pricePerHour]),
 		InstanceStorageRange:             cli.ByteQuantityRangeMe(flags[instanceStorage]),
 		DiskType:                         cli.StringMe(flags[diskType]),
@@ -360,7 +409,7 @@ Full docs can be found at github.com/aws/amazon-` + binName
 
 	if flags[verbose] != nil {
 		resultsOutputFn = outputs.VerboseInstanceTypeOutput
-		transformedFilters, err := instanceSelector.AggregateFilterTransform(filters)
+		transformedFilters, err := instanceSelector.AggregateFilterTransform(ctx, filters)
 		if err != nil {
 			fmt.Printf("An error occurred while transforming the aggregate filters")
 			os.Exit(1)
@@ -386,7 +435,7 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	// fetch instance types without truncating results
 	prevMaxResults := filters.MaxResults
 	filters.MaxResults = nil
-	instanceTypesDetails, err := instanceSelector.FilterVerbose(filters)
+	instanceTypesDetails, err := instanceSelector.FilterVerbose(ctx, filters)
 	if err != nil {
 		fmt.Printf("An error occurred when filtering instance types: %v", err)
 		os.Exit(1)
@@ -437,13 +486,13 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	shutdown()
 }
 
-func hydrateCaches(instanceSelector selector.Selector) (errs error) {
+func hydrateCaches(ctx context.Context, instanceSelector selector.Selector) (errs error) {
 	wg := &sync.WaitGroup{}
 	hydrateTasks := []func(*sync.WaitGroup) error{
 		func(waitGroup *sync.WaitGroup) error {
 			defer waitGroup.Done()
 			if instanceSelector.EC2Pricing.OnDemandCacheCount() == 0 {
-				if err := instanceSelector.EC2Pricing.RefreshOnDemandCache(); err != nil {
+				if err := instanceSelector.EC2Pricing.RefreshOnDemandCache(ctx); err != nil {
 					return multierr.Append(errs, fmt.Errorf("There was a problem refreshing the on-demand pricing cache: %w", err))
 				}
 			}
@@ -452,7 +501,7 @@ func hydrateCaches(instanceSelector selector.Selector) (errs error) {
 		func(waitGroup *sync.WaitGroup) error {
 			defer waitGroup.Done()
 			if instanceSelector.EC2Pricing.SpotCacheCount() == 0 {
-				if err := instanceSelector.EC2Pricing.RefreshSpotCache(spotPricingDaysBack); err != nil {
+				if err := instanceSelector.EC2Pricing.RefreshSpotCache(ctx, spotPricingDaysBack); err != nil {
 					return multierr.Append(errs, fmt.Errorf("There was a problem refreshing the spot pricing cache: %w", err))
 				}
 			}
@@ -461,7 +510,7 @@ func hydrateCaches(instanceSelector selector.Selector) (errs error) {
 		func(waitGroup *sync.WaitGroup) error {
 			defer waitGroup.Done()
 			if instanceSelector.InstanceTypesProvider.CacheCount() == 0 {
-				if _, err := instanceSelector.InstanceTypesProvider.Get(nil); err != nil {
+				if _, err := instanceSelector.InstanceTypesProvider.Get(ctx, nil); err != nil {
 					return multierr.Append(errs, fmt.Errorf("There was a problem refreshing the instance types cache: %w", err))
 				}
 			}
@@ -489,71 +538,6 @@ func getOutputFn(outputFlag *string, currentFn selector.InstanceTypesOutputFn) s
 		}
 	}
 	return outputFn
-}
-
-func getRegionAndProfileAWSSession(regionName *string, profileName *string) (*session.Session, error) {
-	sessOpts := session.Options{SharedConfigState: session.SharedConfigEnable}
-	if regionName != nil {
-		sessOpts.Config.Region = regionName
-	}
-
-	if profileName != nil {
-		sessOpts.Profile = *profileName
-		if sessOpts.Config.Region == nil {
-			if profileRegion, err := getProfileRegion(*profileName); err != nil {
-				log.Println(err)
-			} else {
-				sessOpts.Config.Region = &profileRegion
-			}
-		}
-	}
-
-	sess := session.Must(session.NewSessionWithOptions(sessOpts))
-	if sess.Config.Region != nil && *sess.Config.Region != "" {
-		return sess, nil
-	}
-	if defaultProfileRegion, err := getProfileRegion(defaultProfile); err == nil {
-		sess.Config.Region = &defaultProfileRegion
-		return sess, nil
-	}
-
-	if defaultRegion, ok := os.LookupEnv(defaultRegionEnvVar); ok && defaultRegion != "" {
-		sess.Config.Region = &defaultRegion
-		return sess, nil
-	}
-
-	errorMsg := "Unable to find a region in the usual places: \n"
-	errorMsg = errorMsg + "\t - --region flag\n"
-	errorMsg = errorMsg + fmt.Sprintf("\t - %s environment variable\n", awsRegionEnvVar)
-	if profileName != nil {
-		errorMsg = errorMsg + fmt.Sprintf("\t - profile region in %s\n", awsConfigFile)
-	}
-	errorMsg = errorMsg + fmt.Sprintf("\t - default profile region in %s\n", awsConfigFile)
-	errorMsg = errorMsg + fmt.Sprintf("\t - %s environment variable\n", defaultRegionEnvVar)
-	return sess, fmt.Errorf(errorMsg)
-}
-
-func getProfileRegion(profileName string) (string, error) {
-	if profileName != defaultProfile {
-		profileName = fmt.Sprintf("profile %s", profileName)
-	}
-	awsConfigPath, err := homedir.Expand(awsConfigFile)
-	if err != nil {
-		return "", fmt.Errorf("Warning: unable to find home directory to parse aws config file")
-	}
-	awsConfigIni, err := ini.Load(awsConfigPath)
-	if err != nil {
-		return "", fmt.Errorf("Warning: unable to load aws config file for profile at path: %s", awsConfigPath)
-	}
-	section, err := awsConfigIni.GetSection(profileName)
-	if err != nil {
-		return "", fmt.Errorf("Warning: there is no configuration for the specified aws profile %s at %s", profileName, awsConfigPath)
-	}
-	regionConfig, err := section.GetKey("region")
-	if err != nil || regionConfig.String() == "" {
-		return "", fmt.Errorf("Warning: there is no region configured for the specified aws profile %s at %s", profileName, awsConfigPath)
-	}
-	return regionConfig.String(), nil
 }
 
 func registerShutdown(shutdown func()) {

@@ -5,6 +5,24 @@ github.com/aws/amazon-ec2-instance-selector (Apache-2.0) Third Party Licenses:
 AWS SDK for Go
 Copyright 2015 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 Copyright 2014-2015 Stripe, Inc.
+** aws-sdk-go-v2; version v1.29.33 -- https://github.com/aws/aws-sdk-go-v2
+AWS SDK for Go
+Copyright 2015 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+Copyright 2014-2015 Stripe, Inc.
+** smithy-go; version v1.13.3 -- https://github.com/aws/smithy-go
+Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+** configsources; version v1.1.22 -- https://github.com/aws/aws-sdk-go-v2/internal/configsources
+** ini; version v1.13.23 -- https://github.com/aws/aws-sdk-go-v2/internal/ini
+** endpoints; version v2.4.16 -- https://github.com/aws/aws-sdk-go-v2/internal/endpoints
+** config; version v1.17.6 -- https://github.com/aws/aws-sdk-go-v2/config
+** ec2; version v1.57.0 -- https://github.com/aws/aws-sdk-go-v2/service/ec2
+** presigned-url; version v1.9.16 -- https://github.com/aws/aws-sdk-go-v2/service/internal/presigned-url
+** ssooidc; version v1.13.4 -- https://github.com/aws/aws-sdk-go-v2/service/ssooidc
+** credentials; version v1.12.19 -- https://github.com/aws/aws-sdk-go-v2/credentials
+** imds; version v1.12.16 -- https://github.com/aws/aws-sdk-go-v2/feature/ec2/imds
+** pricing; version v1.17.0 -- https://github.com/aws/aws-sdk-go-v2/service/pricing
+** sso; version v1.11.22 -- https://github.com/aws/aws-sdk-go-v2/service/sso
+** sts; version v1.16.18 -- https://github.com/aws/aws-sdk-go-v2/service/sts
 ** cobra; version 0.0.6 -- https://github.com/spf13/cobra
 Copyright © 2015 Steve Francia <spf@spf13.com>
 ** go-yaml/yaml; version v2.2.2 -- https://github.com/go-yaml/yaml
