@@ -3,7 +3,7 @@ module github.com/aws/amazon-ec2-instance-selector/v2
 go 1.18
 
 require (
-	github.com/aws/aws-sdk-go v1.44.271
+	github.com/aws/aws-sdk-go v1.44.275
 	github.com/aws/aws-sdk-go-v2 v1.16.15
 	github.com/aws/aws-sdk-go-v2/config v1.17.6
 	github.com/aws/aws-sdk-go-v2/service/ec2 v1.57.0
