@@ -9,7 +9,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ec2 v1.98.0
 	github.com/aws/aws-sdk-go-v2/service/pricing v1.17.0
 	github.com/blang/semver/v4 v4.0.0
-	github.com/charmbracelet/bubbles v0.15.0
+	github.com/charmbracelet/bubbles v0.16.1
 	github.com/charmbracelet/bubbletea v0.24.1
 	github.com/charmbracelet/lipgloss v0.7.1
 	github.com/evertras/bubble-table v0.15.2
