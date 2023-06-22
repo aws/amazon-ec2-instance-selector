@@ -14,6 +14,7 @@
 package selector_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/selector"
@@ -25,7 +26,6 @@ import (
 func TestTransformBaseInstanceType(t *testing.T) {
 	ec2Mock := mockedEC2{
 		DescribeInstanceTypesResp:         setupMock(t, describeInstanceTypes, "c4_large.json").DescribeInstanceTypesResp,
-		DescribeInstanceTypesPagesResp:    setupMock(t, describeInstanceTypesPages, "25_instances.json").DescribeInstanceTypesPagesResp,
 		DescribeInstanceTypeOfferingsResp: setupMock(t, describeInstanceTypeOfferings, "us-east-2a.json").DescribeInstanceTypeOfferingsResp,
 	}
 	itf := selector.Selector{
@@ -35,7 +35,8 @@ func TestTransformBaseInstanceType(t *testing.T) {
 	filters := selector.Filters{
 		InstanceTypeBase: &instanceTypeBase,
 	}
-	filters, err := itf.TransformBaseInstanceType(filters)
+	ctx := context.Background()
+	filters, err := itf.TransformBaseInstanceType(ctx, filters)
 	h.Ok(t, err)
 	h.Assert(t, *filters.BareMetal == false, " should filter out bare metal instances")
 	h.Assert(t, *filters.Fpga == false, "should filter out FPGA instances")
@@ -46,7 +47,6 @@ func TestTransformBaseInstanceType(t *testing.T) {
 func TestTransformBaseInstanceTypeWithGPU(t *testing.T) {
 	ec2Mock := mockedEC2{
 		DescribeInstanceTypesResp:         setupMock(t, describeInstanceTypes, "g2_2xlarge.json").DescribeInstanceTypesResp,
-		DescribeInstanceTypesPagesResp:    setupMock(t, describeInstanceTypesPages, "g2_2xlarge_group.json").DescribeInstanceTypesPagesResp,
 		DescribeInstanceTypeOfferingsResp: setupMock(t, describeInstanceTypeOfferings, "us-east-2a.json").DescribeInstanceTypeOfferingsResp,
 	}
 	itf := selector.Selector{
@@ -56,7 +56,8 @@ func TestTransformBaseInstanceTypeWithGPU(t *testing.T) {
 	filters := selector.Filters{
 		InstanceTypeBase: &instanceTypeBase,
 	}
-	filters, err := itf.TransformBaseInstanceType(filters)
+	ctx := context.Background()
+	filters, err := itf.TransformBaseInstanceType(ctx, filters)
 	h.Ok(t, err)
 	h.Assert(t, *filters.BareMetal == false, " should filter out bare metal instances")
 	h.Assert(t, *filters.Fpga == false, "should filter out FPGA instances")
@@ -70,7 +71,8 @@ func TestTransformFamilyFlexibile(t *testing.T) {
 	filters := selector.Filters{
 		Flexible: &flexible,
 	}
-	filters, err := itf.TransformFlexible(filters)
+	ctx := context.Background()
+	filters, err := itf.TransformFlexible(ctx, filters)
 	h.Ok(t, err)
 	h.Assert(t, *filters.BareMetal == false, " should filter out bare metal instances")
 	h.Assert(t, *filters.Fpga == false, "should filter out FPGA instances")

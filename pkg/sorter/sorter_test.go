@@ -59,7 +59,7 @@ func checkSortResults(instanceTypes []*instancetypes.Details, expectedResult []s
 		actualName := instanceTypes[i].InstanceTypeInfo.InstanceType
 		expectedName := expectedResult[i]
 
-		if actualName == nil || *actualName != expectedName {
+		if string(actualName) != expectedName {
 			return false
 		}
 	}

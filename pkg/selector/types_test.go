@@ -20,12 +20,13 @@ import (
 
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/selector"
 	h "github.com/aws/amazon-ec2-instance-selector/v2/pkg/test"
+	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 )
 
 // Tests
 
 func TestMarshalIndent(t *testing.T) {
-	cpuArch := "x86_64"
+	cpuArch := ec2types.ArchitectureTypeX8664
 	allowRegex := "^abc$"
 	denyRegex := "^zyx$"
 

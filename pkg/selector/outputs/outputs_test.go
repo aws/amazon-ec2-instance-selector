@@ -23,7 +23,7 @@ import (
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/instancetypes"
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/selector/outputs"
 	h "github.com/aws/amazon-ec2-instance-selector/v2/pkg/test"
-	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
 )
 
 const (
@@ -41,7 +41,7 @@ func getInstanceTypes(t *testing.T, file string) []*instancetypes.Details {
 	instanceTypesDetails := []*instancetypes.Details{}
 	for _, it := range dito.InstanceTypes {
 		odPrice := float64(0.53)
-		instanceTypesDetails = append(instanceTypesDetails, &instancetypes.Details{InstanceTypeInfo: *it, OndemandPricePerHour: &odPrice})
+		instanceTypesDetails = append(instanceTypesDetails, &instancetypes.Details{InstanceTypeInfo: it, OndemandPricePerHour: &odPrice})
 	}
 	return instanceTypesDetails
 }

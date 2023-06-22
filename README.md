@@ -337,9 +337,9 @@ Filter Flags:
       --gpu-memory-total-max string                    Maximum Number of GPUs' total memory (Example: 4 GiB) If --gpu-memory-total-min is not specified, the lower bound will be 0
       --gpu-memory-total-min string                    Minimum Number of GPUs' total memory (Example: 4 GiB) If --gpu-memory-total-max is not specified, the upper bound will be infinity
       --gpu-model string                               GPU Model name (Example: K520)
-  -g, --gpus int                                       Total Number of GPUs (Example: 4) (sets --gpus-min and -max to the same value)
-      --gpus-max int                                   Maximum Total Number of GPUs (Example: 4) If --gpus-min is not specified, the lower bound will be 0
-      --gpus-min int                                   Minimum Total Number of GPUs (Example: 4) If --gpus-max is not specified, the upper bound will be infinity
+  -g, --gpus int32                                     Total Number of GPUs (Example: 4) (sets --gpus-min and -max to the same value)
+      --gpus-max int32                                 Maximum Total Number of GPUs (Example: 4) If --gpus-min is not specified, the lower bound will be 0
+      --gpus-min int32                                 Minimum Total Number of GPUs (Example: 4) If --gpus-max is not specified, the upper bound will be infinity
       --hibernation-support                            Hibernation supported
       --hypervisor string                              Hypervisor: [xen or nitro]
       --inference-accelerator-manufacturer string      Inference Accelerator Manufacturer name (Example: AWS)
@@ -355,9 +355,9 @@ Filter Flags:
       --memory-max string                              Maximum Amount of Memory available (Example: 4 GiB) If --memory-min is not specified, the lower bound will be 0
       --memory-min string                              Minimum Amount of Memory available (Example: 4 GiB) If --memory-max is not specified, the upper bound will be infinity
       --network-encryption                             Instance Types that support automatic network encryption in-transit
-      --network-interfaces int                         Number of network interfaces (ENIs) that can be attached to the instance (sets --network-interfaces-min and -max to the same value)
-      --network-interfaces-max int                     Maximum Number of network interfaces (ENIs) that can be attached to the instance If --network-interfaces-min is not specified, the lower bound will be 0
-      --network-interfaces-min int                     Minimum Number of network interfaces (ENIs) that can be attached to the instance If --network-interfaces-max is not specified, the upper bound will be infinity
+      --network-interfaces int32                       Number of network interfaces (ENIs) that can be attached to the instance (sets --network-interfaces-min and -max to the same value)
+      --network-interfaces-max int32                   Maximum Number of network interfaces (ENIs) that can be attached to the instance If --network-interfaces-min is not specified, the lower bound will be 0
+      --network-interfaces-min int32                   Minimum Number of network interfaces (ENIs) that can be attached to the instance If --network-interfaces-max is not specified, the upper bound will be infinity
       --network-performance int                        Bandwidth in Gib/s of network performance (Example: 100) (sets --network-performance-min and -max to the same value)
       --network-performance-max int                    Maximum Bandwidth in Gib/s of network performance (Example: 100) If --network-performance-min is not specified, the lower bound will be 0
       --network-performance-min int                    Minimum Bandwidth in Gib/s of network performance (Example: 100) If --network-performance-max is not specified, the upper bound will be infinity
@@ -368,9 +368,9 @@ Filter Flags:
       --price-per-hour-min float                       Minimum Price/hour in USD (Example: 0.09) If --price-per-hour-max is not specified, the upper bound will be infinity
       --root-device-type string                        Supported root device types: [ebs or instance-store]
   -u, --usage-class string                             Usage class: [spot or on-demand]
-  -c, --vcpus int                                      Number of vcpus available to the instance type. (sets --vcpus-min and -max to the same value)
-      --vcpus-max int                                  Maximum Number of vcpus available to the instance type. If --vcpus-min is not specified, the lower bound will be 0
-      --vcpus-min int                                  Minimum Number of vcpus available to the instance type. If --vcpus-max is not specified, the upper bound will be infinity
+  -c, --vcpus int32                                    Number of vcpus available to the instance type. (sets --vcpus-min and -max to the same value)
+      --vcpus-max int32                                Maximum Number of vcpus available to the instance type. If --vcpus-min is not specified, the lower bound will be 0
+      --vcpus-min int32                                Minimum Number of vcpus available to the instance type. If --vcpus-max is not specified, the upper bound will be infinity
       --vcpus-to-memory-ratio string                   The ratio of vcpus to GiBs of memory. (Example: 1:2)
       --virtualization-type string                     Virtualization Type supported: [hvm or pv]
 
@@ -405,30 +405,36 @@ This is a minimal example of using the instance selector go package directly:
 package main
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/bytequantity"
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/selector"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go-v2/config"
+	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 )
 
 func main() {
+	// Initialize a context for the application
+	ctx := context.Background()
+
 	// Load an AWS session by looking at shared credentials or environment variables
-	// https://docs.aws.amazon.com/sdk-for-go/api/aws/session/
-	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String("us-east-2"),
-	})
+	// https://aws.github.io/aws-sdk-go-v2/docs/configuring-sdk
+	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion("us-east-2"))
 	if err != nil {
 		fmt.Printf("Oh no, AWS session credentials cannot be found: %v", err)
 		return
 	}
 
 	// Instantiate a new instance of a selector with the AWS session
-	instanceSelector := selector.New(sess)
+	instanceSelector, err := selector.New(ctx, cfg)
+	if err != nil {
+		fmt.Printf("Oh no, there was an error :( %v", err)
+		return
+	}
 
 	// Instantiate an int range filter to specify min and max vcpus
-	vcpusRange := selector.IntRangeFilter{
+	vcpusRange := selector.Int32RangeFilter{
 		LowerBound: 2,
 		UpperBound: 4,
 	}
@@ -437,9 +443,9 @@ func main() {
 		LowerBound: bytequantity.FromGiB(2),
 		UpperBound: bytequantity.FromGiB(4),
 	}
-	// Create a string for the CPU Architecture so that it can be passed as a pointer
+	// Create a variable for the CPU Architecture so that it can be passed as a pointer
 	// when creating the Filter struct
-	cpuArch := "x86_64"
+	cpuArch := ec2types.ArchitectureTypeX8664
 
 	// Create a Filter struct with criteria you would like to filter
 	// The full struct definition can be found here for all of the supported filters:
@@ -451,7 +457,7 @@ func main() {
 	}
 
 	// Pass the Filter struct to the Filter function of your selector instance
-	instanceTypesSlice, err := instanceSelector.Filter(filters)
+	instanceTypesSlice, err := instanceSelector.Filter(ctx, filters)
 	if err != nil {
 		fmt.Printf("Oh no, there was an error :( %v", err)
 		return

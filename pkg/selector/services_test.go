@@ -18,7 +18,7 @@ import (
 
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/selector"
 	h "github.com/aws/amazon-ec2-instance-selector/v2/pkg/test"
-	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go-v2/aws"
 )
 
 // Tests
