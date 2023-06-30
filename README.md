@@ -474,7 +474,7 @@ func main() {
 $ git clone https://github.com/aws/amazon-ec2-instance-selector.git
 $ cd amazon-ec2-instance-selector/
 $ go run cmd/examples/example1.go
-[c4.large c5.large c5a.large c5ad.large c5d.large c6i.large t2.medium t3.medium t3.small t3a.medium t3a.small]
+[c4.large c5.large c5a.large c5ad.large c5d.large c6a.large c6i.large c6id.large c6in.large t2.medium t3.medium t3.small t3a.medium t3a.small]
 ```
 
 ## Building
