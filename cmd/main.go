@@ -16,7 +16,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/aws/aws-sdk-go-v2/config"
 	"log"
 	"os"
 	"os/signal"
@@ -31,6 +30,8 @@ import (
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/selector"
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/selector/outputs"
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/sorter"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
 	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/cobra"
@@ -247,7 +248,18 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	}
 
 	ctx := context.Background()
-	cfg, err := config.LoadDefaultConfig(ctx)
+	cfg, err := config.LoadDefaultConfig(ctx,
+		config.WithSharedConfigProfile(
+			aws.ToString(
+				cli.StringMe(flags[profile]),
+			),
+		),
+		config.WithRegion(
+			aws.ToString(
+				cli.StringMe(flags[region]),
+			),
+		),
+	)
 	if err != nil {
 		fmt.Printf("Failed to load default AWS configuration: %s\n", err.Error())
 		os.Exit(1)
