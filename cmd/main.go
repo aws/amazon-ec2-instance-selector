@@ -60,6 +60,8 @@ const (
 	vcpus                            = "vcpus"
 	memory                           = "memory"
 	vcpusToMemoryRatio               = "vcpus-to-memory-ratio"
+	defaultCores                     = "default-cores"
+	defaultThreadsPerCore            = "default-threads-per-core"
 	cpuArchitecture                  = "cpu-architecture"
 	cpuManufacturer                  = "cpu-manufacturer"
 	gpus                             = "gpus"
@@ -164,6 +166,8 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	// Filter Flags - These will be grouped at the top of the help flags
 
 	cli.Int32MinMaxRangeFlags(vcpus, cli.StringMe("c"), nil, "Number of vcpus available to the instance type.")
+	cli.Int32MinMaxRangeFlags(defaultCores, cli.StringMe("p"), nil, "Number of real cores available to the instance type.")
+	cli.Int32MinMaxRangeFlags(defaultThreadsPerCore, nil, nil, "Default threads per core (i.e., hyperthreading).")
 	cli.ByteQuantityMinMaxRangeFlags(memory, cli.StringMe("m"), nil, "Amount of Memory available (Example: 4 GiB)")
 	cli.RatioFlag(vcpusToMemoryRatio, nil, nil, "The ratio of vcpus to GiBs of memory. (Example: 1:2)")
 	cli.StringOptionsFlag(cpuArchitecture, cli.StringMe("a"), nil, "CPU architecture [x86_64/amd64, x86_64_mac, i386, or arm64]", []string{"x86_64", "x86_64_mac", "amd64", "i386", "arm64"})
@@ -370,6 +374,8 @@ Full docs can be found at github.com/aws/amazon-` + binName
 
 	filters := selector.Filters{
 		VCpusRange:                       cli.Int32RangeMe(flags[vcpus]),
+		DefaultCores:                     cli.Int32RangeMe(flags[defaultCores]),
+		DefaultThreadsPerCore:            cli.Int32RangeMe(flags[defaultThreadsPerCore]),
 		MemoryRange:                      cli.ByteQuantityRangeMe(flags[memory]),
 		VCpusToMemoryRatio:               cli.Float64Me(flags[vcpusToMemoryRatio]),
 		CPUArchitecture:                  cpuArchitectureFilterValue,

@@ -55,6 +55,8 @@ const (
 	rootDeviceType                   = "rootDeviceType"
 	hibernationSupported             = "hibernationSupported"
 	vcpusRange                       = "vcpusRange"
+	defaultCores                     = "defaultCores"
+	defaultThreadsPerCore            = "defaultThreadsPerCore"
 	memoryRange                      = "memoryRange"
 	gpuMemoryRange                   = "gpuMemoryRange"
 	gpusRange                        = "gpusRange"
@@ -317,6 +319,8 @@ func (itf Selector) prepareFilter(ctx context.Context, filters Filters, instance
 		rootDeviceType:                   {filters.RootDeviceType, instanceTypeInfo.SupportedRootDeviceTypes},
 		hibernationSupported:             {filters.HibernationSupported, instanceTypeInfo.HibernationSupported},
 		vcpusRange:                       {filters.VCpusRange, instanceTypeInfo.VCpuInfo.DefaultVCpus},
+		defaultCores:                     {filters.DefaultCores, instanceTypeInfo.VCpuInfo.DefaultCores},
+		defaultThreadsPerCore:            {filters.DefaultThreadsPerCore, instanceTypeInfo.VCpuInfo.DefaultThreadsPerCore},
 		memoryRange:                      {filters.MemoryRange, instanceTypeInfo.MemoryInfo.SizeInMiB},
 		gpuMemoryRange:                   {filters.GpuMemoryRange, getTotalGpuMemory(instanceTypeInfo.GpuInfo)},
 		gpusRange:                        {filters.GpusRange, getTotalGpusCount(instanceTypeInfo.GpuInfo)},
