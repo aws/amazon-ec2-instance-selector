@@ -93,6 +93,18 @@ params=(
 )
 echo "${expected[*]}" | execute_test "24 VCPUs" "${params[@]}"
 
+expected=(c7a.32xlarge m7a.32xlarge r7a.32xlarge)
+params=(
+    "--vcpus=128 --default-cores=128"
+)
+echo "${expected[*]}" | execute_test "128 vCPUs and 128 cores" "${params[@]}"
+
+expected=(c6a.metal m6a.metal r6a.metal)
+params=(
+    "--vcpus=192 --default-cores=96 --baremetal"
+)
+echo "${expected[*]}" | execute_test "192 vCPUs and 96 cores and baremetal" "${params[@]}"
+
 expected=(g2.8xlarge g3.16xlarge g4dn.12xlarge p3.8xlarge)
 params=(
     "--gpus=4"
