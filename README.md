@@ -313,7 +313,7 @@ Filter Flags:
   -z, --availability-zones strings                     Availability zones or zone ids to check EC2 capacity offered in specific AZs
       --baremetal                                      Bare Metal instance types (.metal instances)
   -b, --burst-support                                  Burstable instance types
-  -a, --cpu-architecture string                        CPU architecture [x86_64/amd64, x86_64_mac, i386, or arm64]
+  -a, --cpu-architecture string                        CPU architecture [x86_64, x86_64_mac, i386, or arm64]
       --cpu-manufacturer string                        CPU manufacturer [amd, intel, aws]
       --current-generation                             Current generation instance types (explicitly set this to false to not return current generation instance types)
       --dedicated-hosts                                Dedicated Hosts supported
