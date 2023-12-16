@@ -215,6 +215,12 @@ type Filters struct {
 	// VCpusRange filter is a range of acceptable VCpus for the instance type
 	VCpusRange *Int32RangeFilter
 
+	// DefaultCores filter is a range of acceptable real cores for the instance type
+	DefaultCores *Int32RangeFilter
+
+	// DefaultThreadsPerCore is a range of acceptable threads per core
+	DefaultThreadsPerCore *Int32RangeFilter
+
 	// VcpusToMemoryRatio is a ratio of vcpus to memory expressed as a floating point
 	VCpusToMemoryRatio *float64
 
