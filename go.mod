@@ -6,7 +6,7 @@ require (
 	github.com/aws/aws-sdk-go v1.46.6
 	github.com/aws/aws-sdk-go-v2 v1.24.0
 	github.com/aws/aws-sdk-go-v2/config v1.26.1
-	github.com/aws/aws-sdk-go-v2/service/ec2 v1.128.0
+	github.com/aws/aws-sdk-go-v2/service/ec2 v1.142.0
 	github.com/aws/aws-sdk-go-v2/service/pricing v1.21.6
 	github.com/blang/semver/v4 v4.0.0
 	github.com/charmbracelet/bubbles v0.16.1
