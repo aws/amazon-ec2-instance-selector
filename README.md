@@ -495,6 +495,7 @@ scripts/compare.sh c6i.large c5.large
 ```
 scripts/compare.sh x2iedn.32xlarge x2iedn.24xlarge
 ```
+See public docs here: https://docs.aws.amazon.com/ec2/latest/instancetypes/ac.html
 
 ## Building
 For build instructions please consult [BUILD.md](./BUILD.md).
