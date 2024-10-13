@@ -18,19 +18,17 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 
 	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/aws-sdk-go-v2/service/pricing"
 	pricingtypes "github.com/aws/aws-sdk-go-v2/service/pricing/types"
-	"github.com/aws/aws-sdk-go/aws/endpoints"
 	"github.com/mitchellh/go-homedir"
 	"github.com/patrickmn/go-cache"
 	"go.uber.org/multierr"
@@ -46,6 +44,7 @@ type OnDemandPricing struct {
 	DirectoryPath  string
 	cache          *cache.Cache
 	pricingClient  pricing.GetProductsAPIClient
+	logger         *log.Logger
 	sync.RWMutex
 }
 
@@ -96,6 +95,7 @@ func LoadODCacheOrNew(ctx context.Context, pricingClient pricing.GetProductsAPIC
 			DirectoryPath:  directoryPath,
 			cache:          cache.New(fullRefreshTTL, fullRefreshTTL),
 			pricingClient:  pricingClient,
+			logger:         log.New(io.Discard, "", 0),
 		}
 	}
 	odPricing := &OnDemandPricing{
@@ -104,6 +104,7 @@ func LoadODCacheOrNew(ctx context.Context, pricingClient pricing.GetProductsAPIC
 		DirectoryPath:  expandedDirPath,
 		pricingClient:  pricingClient,
 		cache:          cache.New(fullRefreshTTL, fullRefreshTTL),
+		logger:         log.New(io.Discard, "", 0),
 	}
 	if fullRefreshTTL <= 0 {
 		odPricing.Clear()
@@ -152,6 +153,10 @@ func odCacheRefreshJob(ctx context.Context, odPricing *OnDemandPricing) {
 	}
 }
 
+func (c *OnDemandPricing) SetLogger(logger *log.Logger) {
+	c.logger = logger
+}
+
 func (c *OnDemandPricing) Refresh(ctx context.Context) error {
 	c.Lock()
 	defer c.Unlock()
@@ -198,7 +203,7 @@ func (c *OnDemandPricing) Save() error {
 	if err := os.Mkdir(c.DirectoryPath, 0755); err != nil && !errors.Is(err, os.ErrExist) {
 		return err
 	}
-	return ioutil.WriteFile(getODCacheFilePath(c.Region, c.DirectoryPath), cacheBytes, 0644)
+	return os.WriteFile(getODCacheFilePath(c.Region, c.DirectoryPath), cacheBytes, 0644)
 }
 
 func (c *OnDemandPricing) Clear() error {
@@ -212,6 +217,11 @@ func (c *OnDemandPricing) Clear() error {
 //
 //	or, if instanceType is specified, it can request a specific instance type pricing
 func (c *OnDemandPricing) fetchOnDemandPricing(ctx context.Context, instanceType ec2types.InstanceType) (map[string]float64, error) {
+	start := time.Now()
+	calls := 0
+	defer func() {
+		c.logger.Printf("Took %s and %d calls to collect OD pricing", time.Since(start), calls)
+	}()
 	odPricing := map[string]float64{}
 	productInput := pricing.GetProductsInput{
 		ServiceCode: c.StringMe(serviceCode),
@@ -222,9 +232,10 @@ func (c *OnDemandPricing) fetchOnDemandPricing(ctx context.Context, instanceType
 	p := pricing.NewGetProductsPaginator(c.pricingClient, &productInput)
 
 	for p.HasMorePages() {
+		calls++
 		pricingOutput, err := p.NextPage(ctx)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get a page, %w", err)
+			return nil, fmt.Errorf("failed to get next OD pricing page, %w", err)
 		}
 
 		for _, priceDoc := range pricingOutput.PriceList {
@@ -241,7 +252,7 @@ func (c *OnDemandPricing) fetchOnDemandPricing(ctx context.Context, instanceType
 
 // StringMe takes an interface and returns a pointer to a string value
 // If the underlying interface kind is not string or *string then nil is returned
-func (*OnDemandPricing) StringMe(i interface{}) *string {
+func (c *OnDemandPricing) StringMe(i interface{}) *string {
 	if i == nil {
 		return nil
 	}
@@ -251,17 +262,16 @@ func (*OnDemandPricing) StringMe(i interface{}) *string {
 	case string:
 		return &v
 	default:
-		log.Printf("%s cannot be converted to a string", i)
+		c.logger.Printf("%s cannot be converted to a string", i)
 		return nil
 	}
 }
 
 func (c *OnDemandPricing) getProductsInputFilters(instanceType ec2types.InstanceType) []pricingtypes.Filter {
-	regionDescription := c.getRegionForPricingAPI()
 	filters := []pricingtypes.Filter{
 		{Type: pricingtypes.FilterTypeTermMatch, Field: c.StringMe("ServiceCode"), Value: c.StringMe(serviceCode)},
 		{Type: pricingtypes.FilterTypeTermMatch, Field: c.StringMe("operatingSystem"), Value: c.StringMe("linux")},
-		{Type: pricingtypes.FilterTypeTermMatch, Field: c.StringMe("location"), Value: c.StringMe(regionDescription)},
+		{Type: pricingtypes.FilterTypeTermMatch, Field: c.StringMe("regionCode"), Value: c.StringMe(c.Region)},
 		{Type: pricingtypes.FilterTypeTermMatch, Field: c.StringMe("capacitystatus"), Value: c.StringMe("used")},
 		{Type: pricingtypes.FilterTypeTermMatch, Field: c.StringMe("preInstalledSw"), Value: c.StringMe("NA")},
 		{Type: pricingtypes.FilterTypeTermMatch, Field: c.StringMe("tenancy"), Value: c.StringMe("shared")},
@@ -270,30 +280,6 @@ func (c *OnDemandPricing) getProductsInputFilters(instanceType ec2types.Instance
 		filters = append(filters, pricingtypes.Filter{Type: pricingtypes.FilterTypeTermMatch, Field: c.StringMe("instanceType"), Value: c.StringMe(string(instanceType))})
 	}
 	return filters
-}
-
-// getRegionForPricingAPI attempts to retrieve the region description based on the AWS session used to create
-// the ec2pricing struct. It then uses the endpoints package in the aws sdk to retrieve the region description
-// This is necessary because the pricing API uses the region description rather than a region ID
-func (c *OnDemandPricing) getRegionForPricingAPI() string {
-	endpointResolver := endpoints.DefaultResolver()
-	partitions := endpointResolver.(endpoints.EnumPartitions).Partitions()
-
-	// use us-east-1 as the default
-	regionDescription := "US East (N. Virginia)"
-	for _, partition := range partitions {
-		regions := partition.Regions()
-		if region, ok := regions[c.Region]; ok {
-			regionDescription = region.Description()
-		}
-	}
-
-	// endpoints package returns European regions with the word "Europe," but the pricing API expects the word "EU."
-	// This formatting mismatch is only present with European regions.
-	// So replace "Europe" with "EU" if it exists in the regionDescription string.
-	regionDescription = strings.ReplaceAll(regionDescription, "Europe", "EU")
-
-	return regionDescription
 }
 
 // parseOndemandUnitPrice takes a priceList from the pricing API and parses its weirdness

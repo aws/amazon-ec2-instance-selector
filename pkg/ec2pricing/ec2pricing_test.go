@@ -17,9 +17,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
-	"io/ioutil"
+	"os"
 	"testing"
+
+	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/ec2pricing"
 	h "github.com/aws/amazon-ec2-instance-selector/v2/pkg/test"
@@ -57,7 +58,7 @@ func (m mockedSpotEC2) DescribeSpotPriceHistory(ctx context.Context, input *ec2.
 
 func setupOdMock(t *testing.T, api string, file string) mockedPricing {
 	mockFilename := fmt.Sprintf("%s/%s/%s", mockFilesPath, api, file)
-	mockFile, err := ioutil.ReadFile(mockFilename)
+	mockFile, err := os.ReadFile(mockFilename)
 	h.Assert(t, err == nil, "Error reading mock file "+string(mockFilename))
 	switch api {
 	case getProducts:
@@ -77,7 +78,7 @@ func setupOdMock(t *testing.T, api string, file string) mockedPricing {
 
 func setupEc2Mock(t *testing.T, api string, file string) mockedSpotEC2 {
 	mockFilename := fmt.Sprintf("%s/%s/%s", mockFilesPath, api, file)
-	mockFile, err := ioutil.ReadFile(mockFilename)
+	mockFile, err := os.ReadFile(mockFilename)
 	h.Assert(t, err == nil, "Error reading mock file "+string(mockFilename))
 	switch api {
 	case describeSpotPriceHistory:

@@ -17,7 +17,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/imdario/mergo"
+	"dario.cat/mergo"
 )
 
 // Service is used to write custom service filter transforms

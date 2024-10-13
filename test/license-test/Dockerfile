@@ -1,4 +1,4 @@
-FROM public.ecr.aws/docker/library/golang:1.17
+FROM public.ecr.aws/docker/library/golang:1.23
 
 WORKDIR /app
 

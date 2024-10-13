@@ -3,7 +3,7 @@
 <h4>A CLI tool and go library which recommends instance types based on resource criteria like vcpus and memory.</h4>
 
 <p>
-  <a href="https://golang.org/doc/go1.17">
+  <a href="https://golang.org/doc/go1.23">
     <img src="https://img.shields.io/github/go-mod/go-version/aws/amazon-ec2-instance-selector?color=blueviolet" alt="go-version">
   </a>
   <a href="https://opensource.org/licenses/Apache-2.0">
@@ -25,7 +25,7 @@
 
 ## Summary
 
-There are over 270 different instance types available on EC2 which can make the process of selecting appropriate instance types difficult. Instance Selector helps you select compatible instance types for your application to run on. The command line interface can be passed resource criteria like vcpus, memory, network performance, and much more and then return the available, matching instance types. 
+There are over 800 different instance types available on EC2 which can make the process of selecting appropriate instance types difficult. Instance Selector helps you select compatible instance types for your application to run on. The command line interface can be passed resource criteria like vcpus, memory, network performance, and much more and then return the available, matching instance types. 
 
 If you are using spot instances to save on costs, it is a best practice to use multiple instances types within your auto-scaling group (ASG) to ensure your application doesn't experience downtime due to one instance type being interrupted. Instance Selector will help to find a set of instance types that your application can run on.
 
@@ -313,7 +313,7 @@ Filter Flags:
   -z, --availability-zones strings                     Availability zones or zone ids to check EC2 capacity offered in specific AZs
       --baremetal                                      Bare Metal instance types (.metal instances)
   -b, --burst-support                                  Burstable instance types
-  -a, --cpu-architecture string                        CPU architecture [x86_64/amd64, x86_64_mac, i386, or arm64]
+  -a, --cpu-architecture string                        CPU architecture [x86_64, amd64, x86_64_mac, i386, or arm64]
       --cpu-manufacturer string                        CPU manufacturer [amd, intel, aws]
       --current-generation                             Current generation instance types (explicitly set this to false to not return current generation instance types)
       --dedicated-hosts                                Dedicated Hosts supported
@@ -334,6 +334,9 @@ Filter Flags:
   -e, --ena-support                                    Instance types where ENA is supported or required
   -f, --fpga-support                                   FPGA instance types
       --free-tier                                      Free Tier supported
+      --generation int                                 Generation of the instance type (i.e. c7i.xlarge is 7) (sets --generation-min and -max to the same value)
+      --generation-max int                             Maximum Generation of the instance type (i.e. c7i.xlarge is 7) If --generation-min is not specified, the lower bound will be 0
+      --generation-min int                             Minimum Generation of the instance type (i.e. c7i.xlarge is 7) If --generation-max is not specified, the upper bound will be infinity
       --gpu-manufacturer string                        GPU Manufacturer name (Example: NVIDIA)
       --gpu-memory-total string                        Number of GPUs' total memory (Example: 4 GiB) (sets --gpu-memory-total-min and -max to the same value)
       --gpu-memory-total-max string                    Maximum Number of GPUs' total memory (Example: 4 GiB) If --gpu-memory-total-min is not specified, the lower bound will be 0
@@ -385,7 +388,8 @@ Suite Flags:
 
 Global Flags:
       --cache-dir string        Directory to save the pricing and instance type caches (default "~/.ec2-instance-selector/")
-      --cache-ttl int           Cache TTLs in hours for pricing and instance type caches. Setting the cache to 0 will turn off caching and cleanup any on-disk caches. (default 168)
+      --cache-ttl int           Cache TTLs in hours for pricing and instance type caches. Setting the cache to 0 will turn off caching and cleanup any on-disk caches.
+      --debug                   Debug - prints debug log messages
   -h, --help                    Help
       --max-results int         The maximum number of instance types that match your criteria to return (default 20)
   -o, --output string           Specify the output format (table, table-wide, one-line, interactive)

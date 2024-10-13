@@ -16,7 +16,7 @@ package outputs_test
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"strings"
 	"testing"
 
@@ -33,7 +33,7 @@ const (
 
 func getInstanceTypes(t *testing.T, file string) []*instancetypes.Details {
 	mockFilename := fmt.Sprintf("%s/%s/%s", mockFilesPath, describeInstanceTypes, file)
-	mockFile, err := ioutil.ReadFile(mockFilename)
+	mockFile, err := os.ReadFile(mockFilename)
 	h.Assert(t, err == nil, "Error reading mock file "+string(mockFilename))
 	dito := ec2.DescribeInstanceTypesOutput{}
 	err = json.Unmarshal(mockFile, &dito)

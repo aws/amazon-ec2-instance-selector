@@ -45,7 +45,7 @@ type wideColumnsData struct {
 	gpuMemory          string `column:"GPU Mem (GiB)"`
 	gpuInfo            string `column:"GPU Info"`
 	odPrice            string `column:"On-Demand Price/Hr"`
-	spotPrice          string `column:"Spot Price/Hr (30d avg)"`
+	spotPrice          string `column:"Spot Price/Hr"`
 }
 
 // SimpleInstanceTypeOutput is an OutputFn which outputs a slice of instance type names

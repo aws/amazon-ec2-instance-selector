@@ -18,7 +18,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"log"
+	"os"
 	"regexp"
 	"strconv"
 	"testing"
@@ -85,7 +86,7 @@ func mockMultiRespDescribeInstanceTypesOfferings(t *testing.T, locationToFile ma
 	locationToResp := map[string]ec2.DescribeInstanceTypeOfferingsOutput{}
 	for zone, file := range locationToFile {
 		mockFilename := fmt.Sprintf("%s/%s/%s", mockFilesPath, api, file)
-		mockFile, err := ioutil.ReadFile(mockFilename)
+		mockFile, err := os.ReadFile(mockFilename)
 		h.Assert(t, err == nil, "Error reading mock file "+string(mockFilename))
 		ditoo := ec2.DescribeInstanceTypeOfferingsOutput{}
 		err = json.Unmarshal(mockFile, &ditoo)
@@ -102,7 +103,7 @@ func mockMultiRespDescribeInstanceTypesOfferings(t *testing.T, locationToFile ma
 
 func setupMock(t *testing.T, api string, file string) mockedEC2 {
 	mockFilename := fmt.Sprintf("%s/%s/%s", mockFilesPath, api, file)
-	mockFile, err := ioutil.ReadFile(mockFilename)
+	mockFile, err := os.ReadFile(mockFilename)
 	h.Assert(t, err == nil, "Error reading mock file "+string(mockFilename))
 	switch api {
 	case describeInstanceTypes:
@@ -587,6 +588,7 @@ func (p *ec2PricingMock) SpotCacheCount() int {
 func (p *ec2PricingMock) Save() error {
 	return nil
 }
+func (p *ec2PricingMock) SetLogger(_ *log.Logger) {}
 
 func TestFilter_PricePerHour(t *testing.T) {
 	itf := getSelector(setupMock(t, describeInstanceTypes, "t3_micro.json"))

@@ -15,6 +15,7 @@ package ec2pricing
 
 import (
 	"context"
+	"log"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -37,6 +38,7 @@ var (
 type EC2Pricing struct {
 	ODPricing   *OnDemandPricing
 	SpotPricing *SpotPricing
+	logger      *log.Logger
 }
 
 // EC2PricingIface is the EC2Pricing interface mainly used to mock out ec2pricing during testing
@@ -48,23 +50,20 @@ type EC2PricingIface interface {
 	OnDemandCacheCount() int
 	SpotCacheCount() int
 	Save() error
+	SetLogger(*log.Logger)
 }
 
 // use us-east-1 since pricing only has endpoints in us-east-1 and ap-south-1
 // TODO: In the future we may want to allow the client to select which endpoint is used through some mechanism
-//       but that would likely happen through overriding this entire function as its signature is fixed
+//
+//	but that would likely happen through overriding this entire function as its signature is fixed
 func modifyPricingRegion(opt *pricing.Options) {
 	opt.Region = "us-east-1"
 }
 
 // New creates an instance of instance-selector EC2Pricing
 func New(ctx context.Context, cfg aws.Config) (*EC2Pricing, error) {
-	pricingClient := pricing.NewFromConfig(cfg, modifyPricingRegion)
-	ec2Client := ec2.NewFromConfig(cfg)
-	return &EC2Pricing{
-		ODPricing:   LoadODCacheOrNew(ctx, pricingClient, cfg.Region, 0, ""),
-		SpotPricing: LoadSpotCacheOrNew(ctx, ec2Client, cfg.Region, 0, "", DefaultSpotDaysBack),
-	}, nil
+	return NewWithCache(ctx, cfg, 0, "")
 }
 
 func NewWithCache(ctx context.Context, cfg aws.Config, ttl time.Duration, cacheDir string) (*EC2Pricing, error) {
@@ -74,6 +73,12 @@ func NewWithCache(ctx context.Context, cfg aws.Config, ttl time.Duration, cacheD
 		ODPricing:   LoadODCacheOrNew(ctx, pricingClient, cfg.Region, ttl, cacheDir),
 		SpotPricing: LoadSpotCacheOrNew(ctx, ec2Client, cfg.Region, ttl, cacheDir, DefaultSpotDaysBack),
 	}, nil
+}
+
+func (p *EC2Pricing) SetLogger(logger *log.Logger) {
+	p.logger = logger
+	p.ODPricing.SetLogger(logger)
+	p.SpotPricing.SetLogger(logger)
 }
 
 // OnDemandCacheCount returns the number of items in the OD cache

@@ -18,6 +18,7 @@ import (
 	"encoding/gob"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"math"
 	"os"
@@ -44,6 +45,7 @@ type SpotPricing struct {
 	DirectoryPath  string
 	cache          *cache.Cache
 	ec2Client      ec2.DescribeSpotPriceHistoryAPIClient
+	logger         *log.Logger
 	sync.RWMutex
 }
 
@@ -63,6 +65,7 @@ func LoadSpotCacheOrNew(ctx context.Context, ec2Client ec2.DescribeSpotPriceHist
 			DirectoryPath:  directoryPath,
 			cache:          cache.New(fullRefreshTTL, fullRefreshTTL),
 			ec2Client:      ec2Client,
+			logger:         log.New(io.Discard, "", 0),
 		}
 	}
 	spotPricing := &SpotPricing{
@@ -71,6 +74,7 @@ func LoadSpotCacheOrNew(ctx context.Context, ec2Client ec2.DescribeSpotPriceHist
 		DirectoryPath:  expandedDirPath,
 		ec2Client:      ec2Client,
 		cache:          cache.New(fullRefreshTTL, fullRefreshTTL),
+		logger:         log.New(io.Discard, "", 0),
 	}
 	if fullRefreshTTL <= 0 {
 		spotPricing.Clear()
@@ -119,6 +123,10 @@ func spotCacheRefreshJob(ctx context.Context, spotPricing *SpotPricing, days int
 			log.Println(err)
 		}
 	}
+}
+
+func (c *SpotPricing) SetLogger(logger *log.Logger) {
+	c.logger = logger
 }
 
 func (c *SpotPricing) Refresh(ctx context.Context, days int) error {
@@ -241,6 +249,11 @@ func (c *SpotPricing) Clear() error {
 // fetchSpotPricingTimeSeries makes a bulk request to the ec2 api to retrieve all spot instance type pricing for the past n days
 // If instanceType is empty, it will fetch for all instance types
 func (c *SpotPricing) fetchSpotPricingTimeSeries(ctx context.Context, instanceType ec2types.InstanceType, days int) (map[string][]*spotPricingEntry, error) {
+	start := time.Now()
+	calls := 0
+	defer func() {
+		c.logger.Printf("Took %s and %d calls to collect Spot pricing", time.Since(start), calls)
+	}()
 	spotTimeSeries := map[string][]*spotPricingEntry{}
 	endTime := time.Now().UTC()
 	startTime := endTime.Add(time.Hour * time.Duration(24*-1*days))
@@ -258,9 +271,10 @@ func (c *SpotPricing) fetchSpotPricingTimeSeries(ctx context.Context, instanceTy
 
 	// Iterate through the Amazon S3 object pages.
 	for p.HasMorePages() {
+		calls++
 		spotHistoryOutput, err := p.NextPage(ctx)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get a page, %w", err)
+			return nil, fmt.Errorf("failed to get a spot pricing page, %w", err)
 		}
 
 		for _, history := range spotHistoryOutput.SpotPriceHistory {
