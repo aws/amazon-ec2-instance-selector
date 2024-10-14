@@ -1,4 +1,4 @@
-module github.com/aws/amazon-ec2-instance-selector/v2
+module github.com/aws/amazon-ec2-instance-selector/v3
 
 go 1.23
 

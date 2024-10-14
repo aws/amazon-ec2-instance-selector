@@ -26,9 +26,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/ec2pricing"
-	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/instancetypes"
-	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/selector/outputs"
+	"github.com/aws/amazon-ec2-instance-selector/v3/pkg/ec2pricing"
+	"github.com/aws/amazon-ec2-instance-selector/v3/pkg/instancetypes"
+	"github.com/aws/amazon-ec2-instance-selector/v3/pkg/selector/outputs"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"

@@ -18,12 +18,12 @@ import (
 	"log"
 	"regexp"
 
-	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/awsapi"
+	"github.com/aws/amazon-ec2-instance-selector/v3/pkg/awsapi"
 	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 
-	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/bytequantity"
-	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/ec2pricing"
-	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/instancetypes"
+	"github.com/aws/amazon-ec2-instance-selector/v3/pkg/bytequantity"
+	"github.com/aws/amazon-ec2-instance-selector/v3/pkg/ec2pricing"
+	"github.com/aws/amazon-ec2-instance-selector/v3/pkg/instancetypes"
 )
 
 // InstanceTypesOutput can be implemented to provide custom output to instance type results

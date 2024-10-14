@@ -17,8 +17,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/selector"
-	h "github.com/aws/amazon-ec2-instance-selector/v2/pkg/test"
+	"github.com/aws/amazon-ec2-instance-selector/v3/pkg/selector"
+	h "github.com/aws/amazon-ec2-instance-selector/v3/pkg/test"
 )
 
 // Tests

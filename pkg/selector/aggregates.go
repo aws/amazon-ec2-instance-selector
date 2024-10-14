@@ -3,10 +3,11 @@ package selector
 import (
 	"context"
 	"fmt"
-	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/bytequantity"
+	"regexp"
+
+	"github.com/aws/amazon-ec2-instance-selector/v3/pkg/bytequantity"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
-	"regexp"
 )
 
 const (

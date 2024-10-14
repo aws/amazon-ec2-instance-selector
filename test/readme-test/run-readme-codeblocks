@@ -22,8 +22,8 @@ interpreters=($(echo $rundoc_output | jq -r '.code_blocks[] | .interpreter'))
 
 ## Execute --help check which compares the help codeblock in the README to the actual output of the binary
 rd list-blocks -T "bash#help" /aeis/README.md | jq -r '.code_blocks[0] .code' > $BUILD_DIR/readme_help.out
-docker run -t --rm codeblocks build/ec2-instance-selector --help > $BUILD_DIR/actual_help.out
-diff --ignore-all-space --ignore-blank-lines "$BUILD_DIR/actual_help.out" "$BUILD_DIR/readme_help.out"
+docker run -t --rm codeblocks build/ec2-instance-selector --help | perl -pe 's/\e\[?.*?[a-zA-Z]//g' > $BUILD_DIR/actual_help.out
+diff --ignore-all-space --ignore-blank-lines --ignore-trailing-space "$BUILD_DIR/actual_help.out" "$BUILD_DIR/readme_help.out"
 echo "✅ README help section matches actual binary output!"
 
 ## Execute go codeblocks example tests which checks the go codeblocks in the readme with a source file path
@@ -35,7 +35,7 @@ for i in "${!example_files[@]}"; do
       example_file="${example_files[$i]}"
       example_bin=$(echo $example_file | cut -d'.' -f1)
       mkdir -p $BUILD_DIR/examples
-      docker run -i -e GOOS=$OS -e GOARCH=amd64 -v $BUILD_DIR:/amazon-ec2-instance-selector/build --rm codeblocks go build -o build/examples/$example_bin $example_file
+      docker run -i -e GOOS=$OS -e GOARCH=amd64 -e CGO_ENABLED=0 -v $BUILD_DIR:/amazon-ec2-instance-selector/build --rm codeblocks go build -o build/examples/$example_bin $example_file
       $BUILD_DIR/examples/$example_bin
       echo "✅ $example_file Executed Successfully!"
    fi

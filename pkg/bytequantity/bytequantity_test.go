@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/bytequantity"
-	h "github.com/aws/amazon-ec2-instance-selector/v2/pkg/test"
+	"github.com/aws/amazon-ec2-instance-selector/v3/pkg/bytequantity"
+	h "github.com/aws/amazon-ec2-instance-selector/v3/pkg/test"
 )
 
 func TestParseToByteQuantity(t *testing.T) {

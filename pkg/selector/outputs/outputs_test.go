@@ -20,9 +20,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/instancetypes"
-	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/selector/outputs"
-	h "github.com/aws/amazon-ec2-instance-selector/v2/pkg/test"
+	"github.com/aws/amazon-ec2-instance-selector/v3/pkg/instancetypes"
+	"github.com/aws/amazon-ec2-instance-selector/v3/pkg/selector/outputs"
+	h "github.com/aws/amazon-ec2-instance-selector/v3/pkg/test"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 )
 
