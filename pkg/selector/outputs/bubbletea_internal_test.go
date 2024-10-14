@@ -16,7 +16,7 @@ package outputs
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"strings"
 	"testing"
 
@@ -36,7 +36,7 @@ const (
 func getInstanceTypeDetails(t *testing.T, file string) []*instancetypes.Details {
 	folder := "FilterVerbose"
 	mockFilename := fmt.Sprintf("%s/%s/%s", mockFilesPath, folder, file)
-	mockFile, err := ioutil.ReadFile(mockFilename)
+	mockFile, err := os.ReadFile(mockFilename)
 	h.Assert(t, err == nil, "Error reading mock file "+string(mockFilename))
 
 	instanceTypes := []*instancetypes.Details{}
@@ -133,7 +133,7 @@ func TestNewBubbleTeaModel_SpotPricing(t *testing.T) {
 	model := NewBubbleTeaModel(instanceTypes)
 	rows := model.tableModel.table.GetVisibleRows()
 	expectedODPrice := "$1.368"
-	actualODPrice := fmt.Sprintf("%v", rows[0].Data["Spot Price/Hr (30d avg)"])
+	actualODPrice := fmt.Sprintf("%v", rows[0].Data["Spot Price/Hr"])
 
 	h.Assert(t, actualODPrice == expectedODPrice, "Actual spot price should be %s, but is actually %s", expectedODPrice, actualODPrice)
 
@@ -142,7 +142,7 @@ func TestNewBubbleTeaModel_SpotPricing(t *testing.T) {
 	model = NewBubbleTeaModel(instanceTypes)
 	rows = model.tableModel.table.GetVisibleRows()
 	expectedODPrice = "-Not Fetched-"
-	actualODPrice = fmt.Sprintf("%v", rows[0].Data["Spot Price/Hr (30d avg)"])
+	actualODPrice = fmt.Sprintf("%v", rows[0].Data["Spot Price/Hr"])
 
 	h.Assert(t, actualODPrice == expectedODPrice, "Actual spot price should be %s, but is actually %s", expectedODPrice, actualODPrice)
 }

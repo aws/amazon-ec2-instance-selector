@@ -18,7 +18,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -48,8 +48,10 @@ type Provider struct {
 	lastFullRefresh *time.Time
 	ec2Client       ec2.DescribeInstanceTypesAPIClient
 	cache           *cache.Cache
+	logger          *log.Logger
 }
 
+// NewProvider creates a new Instance Types provider used to fetch Instance Type information from EC2
 func NewProvider(directoryPath string, region string, ttl time.Duration, ec2Client ec2.DescribeInstanceTypesAPIClient) *Provider {
 	expandedDirPath, err := homedir.Expand(directoryPath)
 	if err != nil {
@@ -61,9 +63,11 @@ func NewProvider(directoryPath string, region string, ttl time.Duration, ec2Clie
 		FullRefreshTTL: ttl,
 		ec2Client:      ec2Client,
 		cache:          cache.New(ttl, ttl),
+		logger:         log.New(io.Discard, "", 0),
 	}
 }
 
+// NewProvider creates a new Instance Types provider used to fetch Instance Type information from EC2 and optionally cache
 func LoadFromOrNew(directoryPath string, region string, ttl time.Duration, ec2Client ec2.DescribeInstanceTypesAPIClient) *Provider {
 	expandedDirPath, err := homedir.Expand(directoryPath)
 	if err != nil {
@@ -87,6 +91,7 @@ func LoadFromOrNew(directoryPath string, region string, ttl time.Duration, ec2Cl
 		DirectoryPath: expandedDirPath,
 		ec2Client:     ec2Client,
 		cache:         itCache,
+		logger:        log.New(io.Discard, "", 0),
 	}
 }
 
@@ -107,7 +112,17 @@ func getCacheFilePath(region string, expandedDirPath string) string {
 	return filepath.Join(expandedDirPath, fmt.Sprintf("%s-%s", region, CacheFileName))
 }
 
+func (p *Provider) SetLogger(logger *log.Logger) {
+	p.logger = logger
+}
+
 func (p *Provider) Get(ctx context.Context, instanceTypes []ec2types.InstanceType) ([]*Details, error) {
+	p.logger.Printf("Getting instance types %v", instanceTypes)
+	start := time.Now()
+	calls := 0
+	defer func() {
+		p.logger.Printf("Took %s and %d calls to collect Instance Types", time.Since(start), calls)
+	}()
 	instanceTypeDetails := []*Details{}
 	describeInstanceTypeOpts := &ec2.DescribeInstanceTypesInput{}
 	if len(instanceTypes) != 0 {
@@ -120,6 +135,10 @@ func (p *Provider) Get(ctx context.Context, instanceTypes []ec2types.InstanceTyp
 				describeInstanceTypeOpts.InstanceTypes = append(describeInstanceTypeOpts.InstanceTypes, instanceType)
 			}
 		}
+		// if we were able to retrieve all from cache, return here, else continue to do a remote lookup
+		if len(describeInstanceTypeOpts.InstanceTypes) == 0 {
+			return instanceTypeDetails, nil
+		}
 	} else if p.lastFullRefresh != nil && !p.isFullRefreshNeeded() {
 		for _, item := range p.cache.Items() {
 			instanceTypeDetails = append(instanceTypeDetails, item.Object.(*Details))
@@ -127,14 +146,14 @@ func (p *Provider) Get(ctx context.Context, instanceTypes []ec2types.InstanceTyp
 		return instanceTypeDetails, nil
 	}
 
-	s := ec2.NewDescribeInstanceTypesPaginator(p.ec2Client, &ec2.DescribeInstanceTypesInput{})
+	s := ec2.NewDescribeInstanceTypesPaginator(p.ec2Client, describeInstanceTypeOpts)
 
 	for s.HasMorePages() {
+		calls++
 		instanceTypeOutput, err := s.NextPage(ctx)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get a page, %w", err)
+			return nil, fmt.Errorf("failed to get next instance types page, %w", err)
 		}
-
 		for _, instanceTypeInfo := range instanceTypeOutput.InstanceTypes {
 			itDetails := &Details{InstanceTypeInfo: instanceTypeInfo}
 			instanceTypeDetails = append(instanceTypeDetails, itDetails)
@@ -167,7 +186,7 @@ func (p *Provider) Save() error {
 	if err := os.Mkdir(p.DirectoryPath, 0755); err != nil && !errors.Is(err, os.ErrExist) {
 		return err
 	}
-	return ioutil.WriteFile(getCacheFilePath(p.Region, p.DirectoryPath), cacheBytes, 0644)
+	return os.WriteFile(getCacheFilePath(p.Region, p.DirectoryPath), cacheBytes, 0644)
 }
 
 func (p *Provider) Clear() error {

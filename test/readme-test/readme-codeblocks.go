@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"strings"
@@ -59,7 +58,7 @@ func main() {
 }
 
 func compareBlockWithFile(codeBlock string, codePath string) bool {
-	fileContents, err := ioutil.ReadFile(codePath)
+	fileContents, err := os.ReadFile(codePath)
 	if err != nil {
 		log.Fatalf("Unable to read file contents at %s", codePath)
 	}

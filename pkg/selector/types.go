@@ -15,9 +15,11 @@ package selector
 
 import (
 	"encoding/json"
+	"log"
+	"regexp"
+
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/awsapi"
 	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
-	"regexp"
 
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/bytequantity"
 	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/ec2pricing"
@@ -44,6 +46,7 @@ type Selector struct {
 	EC2Pricing            ec2pricing.EC2PricingIface
 	InstanceTypesProvider *instancetypes.Provider
 	ServiceRegistry       ServiceRegistry
+	Logger                *log.Logger
 }
 
 // IntRangeFilter holds an upper and lower bound int
@@ -271,6 +274,13 @@ type Filters struct {
 
 	// DedicatedHosts filters on instance types that support dedicated hosts tenancy
 	DedicatedHosts *bool
+
+	// Generation filters on the instance type generation
+	// i.e. c7i.xlarge is 7
+	// NOTE that generation is only comparable per instance family
+	// For example, i3 and c5 are both 5th generation, but the Generation filter will
+	// only filter on the number in the instance type name.
+	Generation *IntRangeFilter
 }
 
 type CPUManufacturer string
@@ -287,9 +297,9 @@ const (
 // ordering of this slice is not guaranteed to be stable across updates.
 func (CPUManufacturer) Values() []CPUManufacturer {
 	return []CPUManufacturer{
-		"aws",
-		"amd",
-		"intel",
+		CPUManufacturerAWS,
+		CPUManufacturerAMD,
+		CPUManufacturerIntel,
 	}
 }
 
