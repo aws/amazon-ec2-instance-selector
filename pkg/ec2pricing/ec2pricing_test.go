@@ -22,8 +22,8 @@ import (
 
 	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 
-	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/ec2pricing"
-	h "github.com/aws/amazon-ec2-instance-selector/v2/pkg/test"
+	"github.com/aws/amazon-ec2-instance-selector/v3/pkg/ec2pricing"
+	h "github.com/aws/amazon-ec2-instance-selector/v3/pkg/test"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/pricing"
 )

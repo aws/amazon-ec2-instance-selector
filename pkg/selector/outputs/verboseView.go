@@ -18,7 +18,7 @@ import (
 	"math"
 	"strings"
 
-	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/instancetypes"
+	"github.com/aws/amazon-ec2-instance-selector/v3/pkg/instancetypes"
 	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"

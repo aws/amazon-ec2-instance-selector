@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/bytequantity"
+	"github.com/aws/amazon-ec2-instance-selector/v3/pkg/bytequantity"
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/pflag"
 )

@@ -20,8 +20,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/instancetypes"
-	h "github.com/aws/amazon-ec2-instance-selector/v2/pkg/test"
+	"github.com/aws/amazon-ec2-instance-selector/v3/pkg/instancetypes"
+	h "github.com/aws/amazon-ec2-instance-selector/v3/pkg/test"
 	"github.com/evertras/bubble-table/table"
 )
 

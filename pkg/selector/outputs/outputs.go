@@ -24,7 +24,7 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/instancetypes"
+	"github.com/aws/amazon-ec2-instance-selector/v3/pkg/instancetypes"
 )
 
 const columnTag = "column"

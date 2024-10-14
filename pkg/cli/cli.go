@@ -21,8 +21,8 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/bytequantity"
-	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/selector"
+	"github.com/aws/amazon-ec2-instance-selector/v3/pkg/bytequantity"
+	"github.com/aws/amazon-ec2-instance-selector/v3/pkg/selector"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
