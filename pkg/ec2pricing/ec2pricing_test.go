@@ -1,15 +1,14 @@
-// Copyright Amazon.com Inc. or its affiliates. All Rights Reserved.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// Licensed under the Apache License, Version 2.0 (the "License"). You may
-// not use this file except in compliance with the License. A copy of the
-// License is located at
+//     http://www.apache.org/licenses/LICENSE-2.0
 //
-//     http://aws.amazon.com/apache2.0/
-//
-// or in the "license" file accompanying this file. This file is distributed
-// on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
-// express or implied. See the License for the specific language governing
-// permissions and limitations under the License.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package ec2pricing_test
 
@@ -20,12 +19,13 @@ import (
 	"os"
 	"testing"
 
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	"github.com/aws/aws-sdk-go-v2/service/pricing"
+	"github.com/samber/lo"
 
 	"github.com/aws/amazon-ec2-instance-selector/v3/pkg/ec2pricing"
 	h "github.com/aws/amazon-ec2-instance-selector/v3/pkg/test"
-	"github.com/aws/aws-sdk-go-v2/service/ec2"
-	"github.com/aws/aws-sdk-go-v2/service/pricing"
 )
 
 const (
@@ -42,7 +42,7 @@ type mockedPricing struct {
 	GetProductsErr  error
 }
 
-func (m mockedPricing) GetProducts(ctx context.Context, input *pricing.GetProductsInput, optFns ...func(*pricing.Options)) (*pricing.GetProductsOutput, error) {
+func (m mockedPricing) GetProducts(_ context.Context, input *pricing.GetProductsInput, optFns ...func(*pricing.Options)) (*pricing.GetProductsOutput, error) {
 	return &m.GetProductsResp, m.GetProductsErr
 }
 
@@ -52,14 +52,14 @@ type mockedSpotEC2 struct {
 	DescribeSpotPriceHistoryPagesErr  error
 }
 
-func (m mockedSpotEC2) DescribeSpotPriceHistory(ctx context.Context, input *ec2.DescribeSpotPriceHistoryInput, optFns ...func(*ec2.Options)) (*ec2.DescribeSpotPriceHistoryOutput, error) {
+func (m mockedSpotEC2) DescribeSpotPriceHistory(_ context.Context, input *ec2.DescribeSpotPriceHistoryInput, optFns ...func(*ec2.Options)) (*ec2.DescribeSpotPriceHistoryOutput, error) {
 	return &m.DescribeSpotPriceHistoryPagesResp, m.DescribeSpotPriceHistoryPagesErr
 }
 
 func setupOdMock(t *testing.T, api string, file string) mockedPricing {
 	mockFilename := fmt.Sprintf("%s/%s/%s", mockFilesPath, api, file)
 	mockFile, err := os.ReadFile(mockFilename)
-	h.Assert(t, err == nil, "Error reading mock file "+string(mockFilename))
+	h.Assert(t, err == nil, "Error reading mock file "+mockFilename)
 	switch api {
 	case getProducts:
 		priceList := []string{string(mockFile)}
@@ -79,7 +79,7 @@ func setupOdMock(t *testing.T, api string, file string) mockedPricing {
 func setupEc2Mock(t *testing.T, api string, file string) mockedSpotEC2 {
 	mockFilename := fmt.Sprintf("%s/%s/%s", mockFilesPath, api, file)
 	mockFile, err := os.ReadFile(mockFilename)
-	h.Assert(t, err == nil, "Error reading mock file "+string(mockFilename))
+	h.Assert(t, err == nil, "Error reading mock file "+mockFilename)
 	switch api {
 	case describeSpotPriceHistory:
 		dspho := ec2.DescribeSpotPriceHistoryOutput{}
@@ -99,7 +99,7 @@ func TestGetOndemandInstanceTypeCost_m5large(t *testing.T) {
 	pricingMock := setupOdMock(t, getProducts, "m5_large.json")
 	ctx := context.Background()
 	ec2pricingClient := ec2pricing.EC2Pricing{
-		ODPricing: ec2pricing.LoadODCacheOrNew(ctx, pricingMock, "us-east-1", 0, ""),
+		ODPricing: lo.Must(ec2pricing.LoadODCacheOrNew(ctx, pricingMock, "us-east-1", 0, "")),
 	}
 	price, err := ec2pricingClient.GetOnDemandInstanceTypeCost(ctx, ec2types.InstanceTypeM5Large)
 	h.Ok(t, err)
@@ -110,7 +110,7 @@ func TestRefreshOnDemandCache(t *testing.T) {
 	pricingMock := setupOdMock(t, getProducts, "m5_large.json")
 	ctx := context.Background()
 	ec2pricingClient := ec2pricing.EC2Pricing{
-		ODPricing: ec2pricing.LoadODCacheOrNew(ctx, pricingMock, "us-east-1", 0, ""),
+		ODPricing: lo.Must(ec2pricing.LoadODCacheOrNew(ctx, pricingMock, "us-east-1", 0, "")),
 	}
 	err := ec2pricingClient.RefreshOnDemandCache(ctx)
 	h.Ok(t, err)
@@ -124,7 +124,7 @@ func TestGetSpotInstanceTypeNDayAvgCost(t *testing.T) {
 	ec2Mock := setupEc2Mock(t, describeSpotPriceHistory, "m5_large.json")
 	ctx := context.Background()
 	ec2pricingClient := ec2pricing.EC2Pricing{
-		SpotPricing: ec2pricing.LoadSpotCacheOrNew(ctx, ec2Mock, "us-east-1", 0, "", 30),
+		SpotPricing: lo.Must(ec2pricing.LoadSpotCacheOrNew(ctx, ec2Mock, "us-east-1", 0, "", 30)),
 	}
 	price, err := ec2pricingClient.GetSpotInstanceTypeNDayAvgCost(ctx, ec2types.InstanceTypeM5Large, []string{"us-east-1a"}, 30)
 	h.Ok(t, err)
@@ -135,7 +135,7 @@ func TestRefreshSpotCache(t *testing.T) {
 	ec2Mock := setupEc2Mock(t, describeSpotPriceHistory, "m5_large.json")
 	ctx := context.Background()
 	ec2pricingClient := ec2pricing.EC2Pricing{
-		SpotPricing: ec2pricing.LoadSpotCacheOrNew(ctx, ec2Mock, "us-east-1", 0, "", 30),
+		SpotPricing: lo.Must(ec2pricing.LoadSpotCacheOrNew(ctx, ec2Mock, "us-east-1", 0, "", 30)),
 	}
 	err := ec2pricingClient.RefreshSpotCache(ctx, 30)
 	h.Ok(t, err)

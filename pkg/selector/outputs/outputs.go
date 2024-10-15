@@ -1,15 +1,14 @@
-// Copyright Amazon.com Inc. or its affiliates. All Rights Reserved.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// Licensed under the Apache License, Version 2.0 (the "License"). You may
-// not use this file except in compliance with the License. A copy of the
-// License is located at
+//     http://www.apache.org/licenses/LICENSE-2.0
 //
-//     http://aws.amazon.com/apache2.0/
-//
-// or in the "license" file accompanying this file. This file is distributed
-// on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
-// express or implied. See the License for the specific language governing
-// permissions and limitations under the License.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 // Package outputs provides types for implementing instance type output functions as well as prebuilt output functions.
 package outputs
@@ -30,7 +29,7 @@ import (
 const columnTag = "column"
 
 // wideColumnsData stores the data that should be displayed on each column
-// of a wide output row
+// of a wide output row.
 type wideColumnsData struct {
 	instanceName       string `column:"Instance Type"`
 	vcpu               int32  `column:"VCPUs"`
@@ -48,7 +47,7 @@ type wideColumnsData struct {
 	spotPrice          string `column:"Spot Price/Hr"`
 }
 
-// SimpleInstanceTypeOutput is an OutputFn which outputs a slice of instance type names
+// SimpleInstanceTypeOutput is an OutputFn which outputs a slice of instance type names.
 func SimpleInstanceTypeOutput(instanceTypeInfoSlice []*instancetypes.Details) []string {
 	instanceTypeStrings := []string{}
 	for _, instanceTypeInfo := range instanceTypeInfoSlice {
@@ -57,7 +56,7 @@ func SimpleInstanceTypeOutput(instanceTypeInfoSlice []*instancetypes.Details) []
 	return instanceTypeStrings
 }
 
-// VerboseInstanceTypeOutput is an OutputFn which outputs a slice of instance type names
+// VerboseInstanceTypeOutput is an OutputFn which outputs a slice of instance type names.
 func VerboseInstanceTypeOutput(instanceTypeInfoSlice []*instancetypes.Details) []string {
 	output, err := json.MarshalIndent(instanceTypeInfoSlice, "", "    ")
 	if err != nil {
@@ -70,7 +69,7 @@ func VerboseInstanceTypeOutput(instanceTypeInfoSlice []*instancetypes.Details) [
 	return []string{string(output)}
 }
 
-// TableOutputShort is an OutputFn which returns a CLI table for easy reading
+// TableOutputShort is an OutputFn which returns a CLI table for easy reading.
 func TableOutputShort(instanceTypeInfoSlice []*instancetypes.Details) []string {
 	if len(instanceTypeInfoSlice) == 0 {
 		return nil
@@ -106,7 +105,7 @@ func TableOutputShort(instanceTypeInfoSlice []*instancetypes.Details) []string {
 	return []string{buf.String()}
 }
 
-// TableOutputWide is an OutputFn which returns a detailed CLI table for easy reading
+// TableOutputWide is an OutputFn which returns a detailed CLI table for easy reading.
 func TableOutputWide(instanceTypeInfoSlice []*instancetypes.Details) []string {
 	if len(instanceTypeInfoSlice) == 0 {
 		return nil
@@ -157,7 +156,7 @@ func TableOutputWide(instanceTypeInfoSlice []*instancetypes.Details) []string {
 	return []string{buf.String()}
 }
 
-// OneLineOutput is an output function which prints the instance type names on a single line separated by commas
+// OneLineOutput is an output function which prints the instance type names on a single line separated by commas.
 func OneLineOutput(instanceTypeInfoSlice []*instancetypes.Details) []string {
 	instanceTypeNames := []string{}
 	for _, instanceType := range instanceTypeInfoSlice {
@@ -196,7 +195,7 @@ func reverse(s string) string {
 }
 
 // getWideColumnsData returns the column data necessary for a wide output for each of
-// the given instance types
+// the given instance types.
 func getWideColumnsData(instanceTypes []*instancetypes.Details) []*wideColumnsData {
 	columnsData := []*wideColumnsData{}
 
@@ -254,7 +253,7 @@ func getWideColumnsData(instanceTypes []*instancetypes.Details) []*wideColumnsDa
 }
 
 // getUnderlyingValue returns the underlying value of the given
-// reflect.Value type
+// reflect.Value type.
 func getUnderlyingValue(value reflect.Value) interface{} {
 	var val interface{}
 
