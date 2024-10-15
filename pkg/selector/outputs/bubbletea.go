@@ -1,28 +1,28 @@
-// Copyright Amazon.com Inc. or its affiliates. All Rights Reserved.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// Licensed under the Apache License, Version 2.0 (the "License"). You may
-// not use this file except in compliance with the License. A copy of the
-// License is located at
+//     http://www.apache.org/licenses/LICENSE-2.0
 //
-//     http://aws.amazon.com/apache2.0/
-//
-// or in the "license" file accompanying this file. This file is distributed
-// on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
-// express or implied. See the License for the specific language governing
-// permissions and limitations under the License.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package outputs
 
 import (
-	"github.com/aws/amazon-ec2-instance-selector/v3/pkg/instancetypes"
-	"github.com/aws/amazon-ec2-instance-selector/v3/pkg/sorter"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/muesli/termenv"
+
+	"github.com/aws/amazon-ec2-instance-selector/v3/pkg/instancetypes"
+	"github.com/aws/amazon-ec2-instance-selector/v3/pkg/sorter"
 )
 
 const (
-	// can't get terminal dimensions on startup, so use this
+	// can't get terminal dimensions on startup, so use this.
 	initialDimensionVal = 30
 
 	instanceTypeKey = "instance type"
@@ -30,17 +30,15 @@ const (
 )
 
 const (
-	// table states
+	// table states.
 	stateTable   = "table"
 	stateVerbose = "verbose"
 	stateSorting = "sorting"
 )
 
-var (
-	controlsStyle = lipgloss.NewStyle().Faint(true)
-)
+var controlsStyle = lipgloss.NewStyle().Faint(true)
 
-// BubbleTeaModel is used to hold the state of the bubble tea TUI
+// BubbleTeaModel is used to hold the state of the bubble tea TUI.
 type BubbleTeaModel struct {
 	// holds the output currentState of the model
 	currentState string
@@ -56,23 +54,23 @@ type BubbleTeaModel struct {
 }
 
 // NewBubbleTeaModel initializes a new bubble tea Model which represents
-// a stylized table to display instance types
+// a stylized table to display instance types.
 func NewBubbleTeaModel(instanceTypes []*instancetypes.Details) BubbleTeaModel {
 	return BubbleTeaModel{
 		currentState: stateTable,
 		tableModel:   *initTableModel(instanceTypes),
-		verboseModel: *initVerboseModel(instanceTypes),
+		verboseModel: *initVerboseModel(),
 		sortingModel: *initSortingModel(instanceTypes),
 	}
 }
 
-// Init is used by bubble tea to initialize a bubble tea table
+// Init is used by bubble tea to initialize a bubble tea table.
 func (m BubbleTeaModel) Init() tea.Cmd {
 	return nil
 }
 
 // Update is used by bubble tea to update the state of the bubble
-// tea model based on user input
+// tea model based on user input.
 func (m BubbleTeaModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
@@ -163,7 +161,7 @@ func (m BubbleTeaModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		// This is needed to handle a bug with bubble tea
 		// where resizing causes misprints (https://github.com/Evertras/bubble-table/issues/121)
-		termenv.ClearScreen()
+		termenv.ClearScreen() //nolint:staticcheck
 
 		// handle screen resizing
 		m.tableModel = m.tableModel.resizeView(msg)
@@ -185,7 +183,7 @@ func (m BubbleTeaModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
-// View is used by bubble tea to render the bubble tea model
+// View is used by bubble tea to render the bubble tea model.
 func (m BubbleTeaModel) View() string {
 	switch m.currentState {
 	case stateTable:

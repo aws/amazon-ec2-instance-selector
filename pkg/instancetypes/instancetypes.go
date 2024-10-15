@@ -1,15 +1,14 @@
-// Copyright Amazon.com Inc. or its affiliates. All Rights Reserved.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// Licensed under the Apache License, Version 2.0 (the "License"). You may
-// not use this file except in compliance with the License. A copy of the
-// License is located at
+//     http://www.apache.org/licenses/LICENSE-2.0
 //
-//     http://aws.amazon.com/apache2.0/
-//
-// or in the "license" file accompanying this file. This file is distributed
-// on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
-// express or implied. See the License for the specific language governing
-// permissions and limitations under the License.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package instancetypes
 
@@ -30,11 +29,9 @@ import (
 	"github.com/patrickmn/go-cache"
 )
 
-var (
-	CacheFileName = "ec2-instance-types.json"
-)
+var CacheFileName = "ec2-instance-types.json"
 
-// Details hold all the information on an ec2 instance type
+// Details hold all the information on an ec2 instance type.
 type Details struct {
 	ec2types.InstanceTypeInfo
 	OndemandPricePerHour *float64
@@ -51,40 +48,37 @@ type Provider struct {
 	logger          *log.Logger
 }
 
-// NewProvider creates a new Instance Types provider used to fetch Instance Type information from EC2
-func NewProvider(directoryPath string, region string, ttl time.Duration, ec2Client ec2.DescribeInstanceTypesAPIClient) *Provider {
-	expandedDirPath, err := homedir.Expand(directoryPath)
-	if err != nil {
-		log.Printf("Unable to expand instance type cache directory %s: %v", directoryPath, err)
-	}
+// NewProvider creates a new Instance Types provider used to fetch Instance Type information from EC2.
+func NewProvider(region string, ec2Client ec2.DescribeInstanceTypesAPIClient) *Provider {
 	return &Provider{
 		Region:         region,
-		DirectoryPath:  expandedDirPath,
-		FullRefreshTTL: ttl,
+		DirectoryPath:  "",
+		FullRefreshTTL: 0,
 		ec2Client:      ec2Client,
-		cache:          cache.New(ttl, ttl),
+		cache:          cache.New(0, 0),
 		logger:         log.New(io.Discard, "", 0),
 	}
 }
 
-// NewProvider creates a new Instance Types provider used to fetch Instance Type information from EC2 and optionally cache
-func LoadFromOrNew(directoryPath string, region string, ttl time.Duration, ec2Client ec2.DescribeInstanceTypesAPIClient) *Provider {
+// NewProvider creates a new Instance Types provider used to fetch Instance Type information from EC2 and optionally cache.
+func LoadFromOrNew(directoryPath string, region string, ttl time.Duration, ec2Client ec2.DescribeInstanceTypesAPIClient) (*Provider, error) {
 	expandedDirPath, err := homedir.Expand(directoryPath)
 	if err != nil {
-		log.Printf("Unable to load instance-type cache directory %s: %v", expandedDirPath, err)
-		return NewProvider(directoryPath, region, ttl, ec2Client)
+		return nil, fmt.Errorf("unable to load instance-type cache directory %s: %w", expandedDirPath, err)
 	}
 	if ttl <= 0 {
-		provider := NewProvider(directoryPath, region, ttl, ec2Client)
-		provider.Clear()
-		return provider
+		provider := NewProvider(region, ec2Client)
+		if err := provider.Clear(); err != nil {
+			return nil, err
+		}
+		return provider, nil
 	}
 	itCache, err := loadFrom(ttl, region, expandedDirPath)
+	if err != nil && !os.IsNotExist(err) {
+		return nil, fmt.Errorf("unable to load instance-type cache from %s: %w", expandedDirPath, err)
+	}
 	if err != nil {
-		if !errors.Is(err, os.ErrNotExist) {
-			log.Printf("Unable to load instance-type cache from %s: %v", expandedDirPath, err)
-		}
-		return NewProvider(directoryPath, region, ttl, ec2Client)
+		itCache = cache.New(0, 0)
 	}
 	return &Provider{
 		Region:        region,
@@ -92,7 +86,7 @@ func LoadFromOrNew(directoryPath string, region string, ttl time.Duration, ec2Cl
 		ec2Client:     ec2Client,
 		cache:         itCache,
 		logger:        log.New(io.Discard, "", 0),
-	}
+	}, nil
 }
 
 func loadFrom(ttl time.Duration, region string, expandedDirPath string) (*cache.Cache, error) {
@@ -183,15 +177,18 @@ func (p *Provider) Save() error {
 	if err != nil {
 		return err
 	}
-	if err := os.Mkdir(p.DirectoryPath, 0755); err != nil && !errors.Is(err, os.ErrExist) {
+	if err := os.Mkdir(p.DirectoryPath, 0o755); err != nil && !errors.Is(err, os.ErrExist) {
 		return err
 	}
-	return os.WriteFile(getCacheFilePath(p.Region, p.DirectoryPath), cacheBytes, 0644)
+	return os.WriteFile(getCacheFilePath(p.Region, p.DirectoryPath), cacheBytes, 0600)
 }
 
 func (p *Provider) Clear() error {
 	p.cache.Flush()
-	return os.Remove(getCacheFilePath(p.Region, p.DirectoryPath))
+	if err := os.Remove(getCacheFilePath(p.Region, p.DirectoryPath)); err != nil && !os.IsNotExist(err) {
+		return err
+	}
+	return nil
 }
 
 func (p *Provider) CacheCount() int {

@@ -1,3 +1,16 @@
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 package selector
 
 import (
@@ -5,33 +18,36 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/aws/amazon-ec2-instance-selector/v3/pkg/bytequantity"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
+
+	"github.com/aws/amazon-ec2-instance-selector/v3/pkg/bytequantity"
 )
 
 const (
-	// AggregateLowPercentile is the default lower percentile for resource ranges on similar instance type comparisons
+	// AggregateLowPercentile is the default lower percentile for resource ranges on similar instance type comparisons.
 	AggregateLowPercentile = 0.9
-	// AggregateHighPercentile is the default upper percentile for resource ranges on similar instance type comparisons
+	// AggregateHighPercentile is the default upper percentile for resource ranges on similar instance type comparisons.
 	AggregateHighPercentile = 1.2
 )
 
-// FiltersTransform can be implemented to provide custom transforms
+var baseAllowedInstanceTypesRE = regexp.MustCompile(`^[cmr][3-9][agi]?\..*$|^t[2-9][gi]?\..*$`)
+
+// FiltersTransform can be implemented to provide custom transforms.
 type FiltersTransform interface {
 	Transform(context.Context, Filters) (Filters, error)
 }
 
-// TransformFn is the func type definition for a FiltersTransform
+// TransformFn is the func type definition for a FiltersTransform.
 type TransformFn func(context.Context, Filters) (Filters, error)
 
 // Transform implements FiltersTransform interface on TransformFn
-// This allows any TransformFn to be passed into funcs accepting FiltersTransform interface
+// This allows any TransformFn to be passed into funcs accepting FiltersTransform interface.
 func (fn TransformFn) Transform(ctx context.Context, filters Filters) (Filters, error) {
 	return fn(ctx, filters)
 }
 
-// TransformBaseInstanceType transforms lower level filters based on the instanceTypeBase specs
+// TransformBaseInstanceType transforms lower level filters based on the instanceTypeBase specs.
 func (itf Selector) TransformBaseInstanceType(ctx context.Context, filters Filters) (Filters, error) {
 	if filters.InstanceTypeBase == nil {
 		return filters, nil
@@ -83,7 +99,7 @@ func (itf Selector) TransformBaseInstanceType(ctx context.Context, filters Filte
 	return filters, nil
 }
 
-// TransformFlexible transforms lower level filters based on a set of opinions
+// TransformFlexible transforms lower level filters based on a set of opinions.
 func (itf Selector) TransformFlexible(ctx context.Context, filters Filters) (Filters, error) {
 	if filters.Flexible == nil {
 		return filters, nil
@@ -102,11 +118,7 @@ func (itf Selector) TransformFlexible(ctx context.Context, filters Filters) (Fil
 	}
 
 	if filters.AllowList == nil {
-		baseAllowedInstanceTypes, err := regexp.Compile("^[cmr][3-9][ag]?\\..*$|^a[1-9]\\..*$|^t[2-9]\\..*$")
-		if err != nil {
-			return filters, err
-		}
-		filters.AllowList = baseAllowedInstanceTypes
+		filters.AllowList = baseAllowedInstanceTypesRE
 	}
 
 	if filters.VCpusRange == nil && filters.MemoryRange == nil {
@@ -117,7 +129,7 @@ func (itf Selector) TransformFlexible(ctx context.Context, filters Filters) (Fil
 	return filters, nil
 }
 
-// TransformForService transforms lower level filters based on the service
+// TransformForService transforms lower level filters based on the service.
 func (itf Selector) TransformForService(ctx context.Context, filters Filters) (Filters, error) {
 	return itf.ServiceRegistry.ExecuteTransforms(filters)
 }

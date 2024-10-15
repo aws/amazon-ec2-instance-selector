@@ -1,15 +1,14 @@
-// Copyright Amazon.com Inc. or its affiliates. All Rights Reserved.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// Licensed under the Apache License, Version 2.0 (the "License"). You may
-// not use this file except in compliance with the License. A copy of the
-// License is located at
+//     http://www.apache.org/licenses/LICENSE-2.0
 //
-//     http://aws.amazon.com/apache2.0/
-//
-// or in the "license" file accompanying this file. This file is distributed
-// on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
-// express or implied. See the License for the specific language governing
-// permissions and limitations under the License.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package selector
 
@@ -392,7 +391,7 @@ func getCPUManufacturer(instanceTypeInfo *ec2types.InstanceTypeInfo) CPUManufact
 
 // getInstanceTypeGeneration returns the generation from an instance type name
 // i.e. c7i.xlarge -> 7
-// if any error occurs, 0 will be returned
+// if any error occurs, 0 will be returned.
 func getInstanceTypeGeneration(instanceTypeName string) *int {
 	zero := 0
 	matches := generationRE.FindStringSubmatch(instanceTypeName)
@@ -407,7 +406,7 @@ func getInstanceTypeGeneration(instanceTypeName string) *int {
 }
 
 // supportSyntaxToBool takes an instance spec field that uses ["unsupported", "supported", "required", or "default"]
-// and transforms it to a *bool to use in filter execution
+// and transforms it to a *bool to use in filter execution.
 func supportSyntaxToBool(instanceTypeSupport *string) *bool {
 	if instanceTypeSupport == nil {
 		return nil

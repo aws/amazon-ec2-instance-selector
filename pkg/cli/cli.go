@@ -1,15 +1,14 @@
-// Copyright Amazon.com Inc. or its affiliates. All Rights Reserved.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// Licensed under the Apache License, Version 2.0 (the "License"). You may
-// not use this file except in compliance with the License. A copy of the
-// License is located at
+//     http://www.apache.org/licenses/LICENSE-2.0
 //
-//     http://aws.amazon.com/apache2.0/
-//
-// or in the "license" file accompanying this file. This file is distributed
-// on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
-// express or implied. See the License for the specific language governing
-// permissions and limitations under the License.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 // Package cli provides functions to build the selector command line interface
 package cli
@@ -21,15 +20,16 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/aws/amazon-ec2-instance-selector/v3/pkg/bytequantity"
-	"github.com/aws/amazon-ec2-instance-selector/v3/pkg/selector"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+
+	"github.com/aws/amazon-ec2-instance-selector/v3/pkg/bytequantity"
+	"github.com/aws/amazon-ec2-instance-selector/v3/pkg/selector"
 )
 
 type runFunc = func(cmd *cobra.Command, args []string)
 
-// New creates an instance of CommandLineInterface
+// New creates an instance of CommandLineInterface.
 func New(binaryName string, shortUsage string, longUsage, examples string, run runFunc) CommandLineInterface {
 	cmd := &cobra.Command{
 		Use:     binaryName,
@@ -49,7 +49,7 @@ func New(binaryName string, shortUsage string, longUsage, examples string, run r
 	}
 }
 
-// ParseFlags will parse flags registered in this instance of CLI from os.Args
+// ParseFlags will parse flags registered in this instance of CLI from os.Args.
 func (cl *CommandLineInterface) ParseFlags() (map[string]interface{}, error) {
 	cl.setUsageTemplate()
 	// Remove Suite Flags so that args only include Config and Filter Flags
@@ -78,7 +78,7 @@ func (cl *CommandLineInterface) ParseFlags() (map[string]interface{}, error) {
 }
 
 // ParseAndValidateFlags will parse flags registered in this instance of CLI from os.Args
-// and then perform validation
+// and then perform validation.
 func (cl *CommandLineInterface) ParseAndValidateFlags() (map[string]interface{}, error) {
 	flags, err := cl.ParseFlags()
 	if err != nil {
@@ -91,7 +91,7 @@ func (cl *CommandLineInterface) ParseAndValidateFlags() (map[string]interface{},
 }
 
 // ProcessFlags iterates through any registered processors and executes them
-// Processors are executed before validators
+// Processors are executed before validators.
 func (cl *CommandLineInterface) ProcessFlags() error {
 	for flagName, processorFn := range cl.processors {
 		if processorFn == nil {
@@ -107,7 +107,7 @@ func (cl *CommandLineInterface) ProcessFlags() error {
 	return nil
 }
 
-// ValidateFlags iterates through any registered validators and executes them
+// ValidateFlags iterates through any registered validators and executes them.
 func (cl *CommandLineInterface) ValidateFlags() error {
 	for flagName, validationFn := range cl.validators {
 		if validationFn == nil {
@@ -174,7 +174,7 @@ func (cl *CommandLineInterface) SetUntouchedFlagValuesToNil() error {
 	cl.Command.Flags().VisitAll(func(f *pflag.Flag) {
 		if !f.Changed {
 			// If nilDefaults entry for flag is set to false, do not change default
-			if val, _ := cl.nilDefaults[f.Name]; !val {
+			if val := cl.nilDefaults[f.Name]; !val {
 				return
 			}
 			switch v := cl.Flags[f.Name].(type) {
@@ -218,7 +218,7 @@ func (cl *CommandLineInterface) SetUntouchedFlagValuesToNil() error {
 	return nil
 }
 
-// ProcessRangeFilterFlags sets min and max to the appropriate 0 or max bounds based on the 3-tuple that a user specifies for base flag, min, and/or max
+// ProcessRangeFilterFlags sets min and max to the appropriate 0 or max bounds based on the 3-tuple that a user specifies for base flag, min, and/or max.
 func (cl *CommandLineInterface) ProcessRangeFilterFlags() error {
 	for flagName := range cl.rangeFlags {
 		rangeHelperMin := fmt.Sprintf("%s-%s", flagName, "min")
@@ -245,7 +245,7 @@ func (cl *CommandLineInterface) ProcessRangeFilterFlags() error {
 			case *float64:
 				cl.Flags[rangeHelperMin] = cl.Float64Me(0.0)
 			default:
-				return fmt.Errorf("Unable to set %s", rangeHelperMax)
+				return fmt.Errorf("unable to set %s", rangeHelperMax)
 			}
 		} else if cl.Flags[rangeHelperMax] == nil {
 			switch cl.Flags[rangeHelperMin].(type) {
@@ -258,7 +258,7 @@ func (cl *CommandLineInterface) ProcessRangeFilterFlags() error {
 			case *float64:
 				cl.Flags[rangeHelperMax] = cl.Float64Me(math.MaxFloat64)
 			default:
-				return fmt.Errorf("Unable to set %s", rangeHelperMin)
+				return fmt.Errorf("unable to set %s", rangeHelperMin)
 			}
 		}
 

@@ -1,15 +1,14 @@
-// Copyright Amazon.com Inc. or its affiliates. All Rights Reserved.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// Licensed under the Apache License, Version 2.0 (the "License"). You may
-// not use this file except in compliance with the License. A copy of the
-// License is located at
+//     http://www.apache.org/licenses/LICENSE-2.0
 //
-//     http://aws.amazon.com/apache2.0/
-//
-// or in the "license" file accompanying this file. This file is distributed
-// on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
-// express or implied. See the License for the specific language governing
-// permissions and limitations under the License.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 // Package selector provides filtering logic for Amazon EC2 Instance Types based on declarative resource specfications.
 package selector
@@ -26,20 +25,19 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aws/amazon-ec2-instance-selector/v3/pkg/ec2pricing"
-	"github.com/aws/amazon-ec2-instance-selector/v3/pkg/instancetypes"
-	"github.com/aws/amazon-ec2-instance-selector/v3/pkg/selector/outputs"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"go.uber.org/multierr"
+
+	"github.com/aws/amazon-ec2-instance-selector/v3/pkg/ec2pricing"
+	"github.com/aws/amazon-ec2-instance-selector/v3/pkg/instancetypes"
+	"github.com/aws/amazon-ec2-instance-selector/v3/pkg/selector/outputs"
 )
 
-var (
-	// Version is overridden at compilation with the version based on the git tag
-	versionID = "dev"
-)
+// Version is overridden at compilation with the version based on the git tag
+var versionID = "dev"
 
 const (
 	locationFilterKey      = "location"
@@ -48,7 +46,7 @@ const (
 	regionNameLocationType = ec2types.LocationTypeRegion
 	sdkName                = "instance-selector"
 
-	// Filter Keys
+	// Filter Keys.
 
 	cpuArchitecture                  = "cpuArchitecture"
 	cpuManufacturer                  = "cpuManufacturer"
@@ -101,12 +99,12 @@ const (
 	pricePerHour = "pricePerHour"
 )
 
-// New creates an instance of Selector provided an aws session
+// New creates an instance of Selector provided an aws session.
 func New(ctx context.Context, cfg aws.Config) (*Selector, error) {
 	return NewWithCache(ctx, cfg, 0, "")
 }
 
-// NewWithCache creates an instance of Selector backed by an on-disk cache provided an aws session and cache configuration parameters
+// NewWithCache creates an instance of Selector backed by an on-disk cache provided an aws session and cache configuration parameters.
 func NewWithCache(ctx context.Context, cfg aws.Config, ttl time.Duration, cacheDir string) (*Selector, error) {
 	serviceRegistry := NewRegistry()
 	serviceRegistry.RegisterAWSServices()
@@ -118,10 +116,15 @@ func NewWithCache(ctx context.Context, cfg aws.Config, ttl time.Duration, cacheD
 		return nil, err
 	}
 
+	instanceTypeProvider, err := instancetypes.LoadFromOrNew(cacheDir, cfg.Region, ttl, ec2Client)
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize instance type provider: %w", err)
+	}
+
 	return &Selector{
 		EC2:                   ec2Client,
 		EC2Pricing:            pricingClient,
-		InstanceTypesProvider: instancetypes.LoadFromOrNew(cacheDir, cfg.Region, ttl, ec2Client),
+		InstanceTypesProvider: instanceTypeProvider,
 		ServiceRegistry:       serviceRegistry,
 		Logger:                log.New(io.Discard, "", 0),
 	}, nil
@@ -129,20 +132,20 @@ func NewWithCache(ctx context.Context, cfg aws.Config, ttl time.Duration, cacheD
 
 // SetLogger can be called to log more detailed logs about what selector is doing
 // including things like API timings
-// If SetLogger is not called, no logs will be displayed
+// If SetLogger is not called, no logs will be displayed.
 func (s *Selector) SetLogger(logger *log.Logger) {
 	s.Logger = logger
 	s.InstanceTypesProvider.SetLogger(logger)
 	s.EC2Pricing.SetLogger(logger)
 }
 
-// Save persists the selector cache data to disk if caching is configured
+// Save persists the selector cache data to disk if caching is configured.
 func (s Selector) Save() error {
 	return multierr.Append(s.EC2Pricing.Save(), s.InstanceTypesProvider.Save())
 }
 
 // Filter accepts a Filters struct which is used to select the available instance types
-// matching the criteria within Filters and returns a simple list of instance type strings
+// matching the criteria within Filters and returns a simple list of instance type strings.
 func (s Selector) Filter(ctx context.Context, filters Filters) ([]string, error) {
 	outputFn := InstanceTypesOutputFn(outputs.SimpleInstanceTypeOutput)
 	output, _, err := s.FilterWithOutput(ctx, filters, outputFn)
@@ -150,7 +153,7 @@ func (s Selector) Filter(ctx context.Context, filters Filters) ([]string, error)
 }
 
 // FilterVerbose accepts a Filters struct which is used to select the available instance types
-// matching the criteria within Filters and returns a list instanceTypeInfo
+// matching the criteria within Filters and returns a list instanceTypeInfo.
 func (s Selector) FilterVerbose(ctx context.Context, filters Filters) ([]*instancetypes.Details, error) {
 	instanceTypeInfoSlice, err := s.rawFilter(ctx, filters)
 	if err != nil {
@@ -161,7 +164,7 @@ func (s Selector) FilterVerbose(ctx context.Context, filters Filters) ([]*instan
 }
 
 // FilterWithOutput accepts a Filters struct which is used to select the available instance types
-// matching the criteria within Filters and returns a list of strings based on the custom outputFn
+// matching the criteria within Filters and returns a list of strings based on the custom outputFn.
 func (s Selector) FilterWithOutput(ctx context.Context, filters Filters, outputFn InstanceTypesOutput) ([]string, int, error) {
 	instanceTypeInfoSlice, err := s.rawFilter(ctx, filters)
 	if err != nil {
@@ -201,7 +204,7 @@ func (s Selector) AggregateFilterTransform(ctx context.Context, filters Filters)
 }
 
 // rawFilter accepts a Filters struct which is used to select the available instance types
-// matching the criteria within Filters and returns the detailed specs of matching instance types
+// matching the criteria within Filters and returns the detailed specs of matching instance types.
 func (s Selector) rawFilter(ctx context.Context, filters Filters) ([]*instancetypes.Details, error) {
 	filters, err := s.AggregateFilterTransform(ctx, filters)
 	if err != nil {
@@ -366,7 +369,7 @@ func (s Selector) prepareFilter(ctx context.Context, filters Filters, instanceTy
 	return &instanceTypeInfo, nil
 }
 
-// sortInstanceTypeInfo will sort based on instance type info alpha-numerically
+// sortInstanceTypeInfo will sort based on instance type info alpha-numerically.
 func sortInstanceTypeInfo(instanceTypeInfoSlice []*instancetypes.Details) []*instancetypes.Details {
 	if len(instanceTypeInfoSlice) < 2 {
 		return instanceTypeInfoSlice
@@ -426,7 +429,7 @@ func (s Selector) executeFilters(ctx context.Context, filterToInstanceSpecMappin
 }
 
 // exec executes a specific filterPair (user value & instance spec) with a specific instance type
-// If the filterPair matches, true is returned
+// If the filterPair matches, true is returned.
 func exec(instanceType ec2types.InstanceType, filterName string, filter filterPair) (bool, error) {
 	filterVal := filter.filterValue
 	instanceSpec := filter.instanceSpec
@@ -612,7 +615,7 @@ func exec(instanceType ec2types.InstanceType, filterName string, filter filterPa
 
 // RetrieveInstanceTypesSupportedInLocations returns a map of instance type -> AZ or Region for all instance types supported in the intersected locations passed in
 // The location can be a zone-id (ie. use1-az1), a zone-name (us-east-1a), or a region name (us-east-1).
-// Note that zone names are not necessarily the same across accounts
+// Note that zone names are not necessarily the same across accounts.
 func (s Selector) RetrieveInstanceTypesSupportedInLocations(ctx context.Context, locations []string) (map[ec2types.InstanceType]string, error) {
 	if len(locations) == 0 {
 		return nil, nil

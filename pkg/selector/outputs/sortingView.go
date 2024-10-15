@@ -1,15 +1,14 @@
-// Copyright Amazon.com Inc. or its affiliates. All Rights Reserved.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// Licensed under the Apache License, Version 2.0 (the "License"). You may
-// not use this file except in compliance with the License. A copy of the
-// License is located at
+//     http://www.apache.org/licenses/LICENSE-2.0
 //
-//     http://aws.amazon.com/apache2.0/
-//
-// or in the "license" file accompanying this file. This file is distributed
-// on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
-// express or implied. See the License for the specific language governing
-// permissions and limitations under the License.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package outputs
 
@@ -18,31 +17,32 @@ import (
 	"io"
 	"strings"
 
-	"github.com/aws/amazon-ec2-instance-selector/v3/pkg/instancetypes"
-	"github.com/aws/amazon-ec2-instance-selector/v3/pkg/sorter"
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+
+	"github.com/aws/amazon-ec2-instance-selector/v3/pkg/instancetypes"
+	"github.com/aws/amazon-ec2-instance-selector/v3/pkg/sorter"
 )
 
 const (
-	// formatting
+	// formatting.
 	sortDirectionPadding = 2
 	sortingTitlePadding  = 3
 	sortingFooterPadding = 2
 
-	// controls
+	// controls.
 	sortingListControls = "Controls: ↑/↓ - up/down • enter - select filter • tab - toggle direction • esc - return to table • q - quit"
 	sortingTextControls = "Controls: ↑/↓ - up/down • tab - toggle direction • enter - enter json path"
 
-	// sort direction text
+	// sort direction text.
 	ascendingText  = "ASCENDING"
 	descendingText = "DESCENDING"
 )
 
-// sortingModel holds the state for the sorting view
+// sortingModel holds the state for the sorting view.
 type sortingModel struct {
 	// list which holds the available shorting shorthands
 	shorthandList list.Model
@@ -55,32 +55,32 @@ type sortingModel struct {
 	isDescending bool
 }
 
-// format styles
+// format styles.
 var (
-	// list
+	// list.
 	listTitleStyle    = lipgloss.NewStyle().Bold(true).Underline(true)
 	listItemStyle     = lipgloss.NewStyle().PaddingLeft(4)
 	selectedItemStyle = lipgloss.NewStyle().PaddingLeft(2).Foreground(lipgloss.Color("170"))
 
-	// text
+	// text.
 	descendingStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("#0096FF"))
 	ascendingStyle     = lipgloss.NewStyle().Foreground(lipgloss.Color("#DAF7A6"))
 	sortDirectionStyle = lipgloss.NewStyle().Bold(true).Underline(true).PaddingLeft(2)
 )
 
-// implement Item interface for list
+// implement Item interface for list.
 type item string
 
 func (i item) FilterValue() string { return "" }
 func (i item) Title() string       { return string(i) }
 func (i item) Description() string { return "" }
 
-// implement ItemDelegate for list
+// implement ItemDelegate for list.
 type itemDelegate struct{}
 
-func (d itemDelegate) Height() int                               { return 1 }
-func (d itemDelegate) Spacing() int                              { return 0 }
-func (d itemDelegate) Update(msg tea.Msg, m *list.Model) tea.Cmd { return nil }
+func (d itemDelegate) Height() int                             { return 1 }
+func (d itemDelegate) Spacing() int                            { return 0 }
+func (d itemDelegate) Update(_ tea.Msg, _ *list.Model) tea.Cmd { return nil }
 func (d itemDelegate) Render(w io.Writer, m list.Model, index int, listItem list.Item) {
 	i, ok := listItem.(item)
 	if !ok {
@@ -99,11 +99,11 @@ func (d itemDelegate) Render(w io.Writer, m list.Model, index int, listItem list
 		}
 	}
 
-	fmt.Fprintf(w, fn(str))
+	fmt.Fprint(w, fn(str))
 }
 
 // initSortingModel initializes and returns a new tableModel based on the given
-// instance type details
+// instance type details.
 func initSortingModel(instanceTypes []*instancetypes.Details) *sortingModel {
 	shorthandList := list.New(*createListItems(), itemDelegate{}, initialDimensionVal, initialDimensionVal)
 	shorthandList.Title = "Select sorting filter:"
@@ -126,7 +126,7 @@ func initSortingModel(instanceTypes []*instancetypes.Details) *sortingModel {
 	}
 }
 
-// createListKeyMap creates a KeyMap with the controls for the shorthand list
+// createListKeyMap creates a KeyMap with the controls for the shorthand list.
 func createListKeyMap() list.KeyMap {
 	return list.KeyMap{
 		CursorDown: key.NewBinding(
@@ -138,7 +138,7 @@ func createListKeyMap() list.KeyMap {
 	}
 }
 
-// createListItems creates a list item for shorthand sorting flag
+// createListItems creates a list item for shorthand sorting flag.
 func createListItems() *[]list.Item {
 	shorthandFlags := []string{
 		sorter.GPUCountField,
@@ -166,7 +166,7 @@ func createListItems() *[]list.Item {
 
 // resizeSortingView will change the dimensions of the sorting view
 // in order to accommodate the new window dimensions represented by
-// the given tea.WindowSizeMsg
+// the given tea.WindowSizeMsg.
 func (m sortingModel) resizeView(msg tea.WindowSizeMsg) sortingModel {
 	shorthandList := &m.shorthandList
 	shorthandList.SetWidth(msg.Width)
@@ -189,7 +189,7 @@ func (m sortingModel) resizeView(msg tea.WindowSizeMsg) sortingModel {
 	return m
 }
 
-// update updates the state of the sortingModel
+// update updates the state of the sortingModel.
 func (m sortingModel) update(msg tea.Msg) (sortingModel, tea.Cmd) {
 	var cmd tea.Cmd
 	var cmds []tea.Cmd
@@ -227,7 +227,7 @@ func (m sortingModel) update(msg tea.Msg) (sortingModel, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
-// view returns a string representing the sorting view
+// view returns a string representing the sorting view.
 func (m sortingModel) view() string {
 	outputStr := strings.Builder{}
 

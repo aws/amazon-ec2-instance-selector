@@ -1,15 +1,14 @@
-// Copyright Amazon.com Inc. or its affiliates. All Rights Reserved.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// Licensed under the Apache License, Version 2.0 (the "License"). You may
-// not use this file except in compliance with the License. A copy of the
-// License is located at
+//     http://www.apache.org/licenses/LICENSE-2.0
 //
-//     http://aws.amazon.com/apache2.0/
-//
-// or in the "license" file accompanying this file. This file is distributed
-// on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
-// express or implied. See the License for the specific language governing
-// permissions and limitations under the License.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package selector_test
 
@@ -24,15 +23,16 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
+
 	"github.com/aws/amazon-ec2-instance-selector/v3/pkg/awsapi"
 	"github.com/aws/amazon-ec2-instance-selector/v3/pkg/bytequantity"
 	"github.com/aws/amazon-ec2-instance-selector/v3/pkg/instancetypes"
 	"github.com/aws/amazon-ec2-instance-selector/v3/pkg/selector"
 	h "github.com/aws/amazon-ec2-instance-selector/v3/pkg/test"
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/service/ec2"
-	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 )
 
 const (
@@ -42,7 +42,7 @@ const (
 	mockFilesPath                 = "../../test/static"
 )
 
-// Mocking helpers
+// Mocking helpers.
 type mockedEC2 struct {
 	awsapi.SelectorInterface
 	DescribeInstanceTypesResp           ec2.DescribeInstanceTypesOutput
@@ -137,7 +137,7 @@ func getSelector(ec2Mock mockedEC2) selector.Selector {
 	return selector.Selector{
 		EC2:                   ec2Mock,
 		EC2Pricing:            &ec2PricingMock{},
-		InstanceTypesProvider: instancetypes.NewProvider("", "us-east-1", 0, ec2Mock),
+		InstanceTypesProvider: instancetypes.NewProvider("us-east-1", ec2Mock),
 	}
 }
 
