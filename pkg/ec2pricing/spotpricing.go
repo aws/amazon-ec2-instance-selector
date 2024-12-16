@@ -1,15 +1,14 @@
-// Copyright Amazon.com Inc. or its affiliates. All Rights Reserved.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// Licensed under the Apache License, Version 2.0 (the "License"). You may
-// not use this file except in compliance with the License. A copy of the
-// License is located at
+//     http://www.apache.org/licenses/LICENSE-2.0
 //
-//     http://aws.amazon.com/apache2.0/
-//
-// or in the "license" file accompanying this file. This file is distributed
-// on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
-// express or implied. See the License for the specific language governing
-// permissions and limitations under the License.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package ec2pricing
 
@@ -18,6 +17,7 @@ import (
 	"encoding/gob"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"math"
 	"os"
@@ -44,6 +44,7 @@ type SpotPricing struct {
 	DirectoryPath  string
 	cache          *cache.Cache
 	ec2Client      ec2.DescribeSpotPriceHistoryAPIClient
+	logger         *log.Logger
 	sync.RWMutex
 }
 
@@ -53,17 +54,10 @@ type spotPricingEntry struct {
 	Zone      string
 }
 
-func LoadSpotCacheOrNew(ctx context.Context, ec2Client ec2.DescribeSpotPriceHistoryAPIClient, region string, fullRefreshTTL time.Duration, directoryPath string, days int) *SpotPricing {
+func LoadSpotCacheOrNew(ctx context.Context, ec2Client ec2.DescribeSpotPriceHistoryAPIClient, region string, fullRefreshTTL time.Duration, directoryPath string, days int) (*SpotPricing, error) {
 	expandedDirPath, err := homedir.Expand(directoryPath)
 	if err != nil {
-		log.Printf("Unable to load spot pricing cache directory %s: %v", expandedDirPath, err)
-		return &SpotPricing{
-			Region:         region,
-			FullRefreshTTL: 0,
-			DirectoryPath:  directoryPath,
-			cache:          cache.New(fullRefreshTTL, fullRefreshTTL),
-			ec2Client:      ec2Client,
-		}
+		return nil, fmt.Errorf("unable to load spot pricing cache directory %s: %w", expandedDirPath, err)
 	}
 	spotPricing := &SpotPricing{
 		Region:         region,
@@ -71,23 +65,26 @@ func LoadSpotCacheOrNew(ctx context.Context, ec2Client ec2.DescribeSpotPriceHist
 		DirectoryPath:  expandedDirPath,
 		ec2Client:      ec2Client,
 		cache:          cache.New(fullRefreshTTL, fullRefreshTTL),
+		logger:         log.New(io.Discard, "", 0),
 	}
 	if fullRefreshTTL <= 0 {
-		spotPricing.Clear()
-		return spotPricing
+		if err := spotPricing.Clear(); err != nil {
+			return nil, err
+		}
+		return spotPricing, nil
 	}
 	gob.Register([]*spotPricingEntry{})
 	// Start the cache refresh job
-	go spotCacheRefreshJob(ctx, spotPricing, days)
+	go spotPricing.spotCacheRefreshJob(ctx, days)
 	spotCache, err := loadSpotCacheFrom(fullRefreshTTL, region, expandedDirPath)
+	if err != nil && !os.IsNotExist(err) {
+		return nil, fmt.Errorf("a spot pricing cache file could not be loaded: %w", err)
+	}
 	if err != nil {
-		if !errors.Is(err, os.ErrNotExist) {
-			log.Printf("A spot pricing cache file could not be loaded: %v", err)
-		}
-		return spotPricing
+		spotCache = cache.New(0, 0)
 	}
 	spotPricing.cache = spotCache
-	return spotPricing
+	return spotPricing, nil
 }
 
 func loadSpotCacheFrom(itemTTL time.Duration, region string, expandedDirPath string) (*cache.Cache, error) {
@@ -109,16 +106,20 @@ func getSpotCacheFilePath(region string, directoryPath string) string {
 	return filepath.Join(directoryPath, fmt.Sprintf("%s-%s", region, SpotCacheFileName))
 }
 
-func spotCacheRefreshJob(ctx context.Context, spotPricing *SpotPricing, days int) {
-	if spotPricing.FullRefreshTTL <= 0 {
+func (c *SpotPricing) spotCacheRefreshJob(ctx context.Context, days int) {
+	if c.FullRefreshTTL <= 0 {
 		return
 	}
-	refreshTicker := time.NewTicker(spotPricing.FullRefreshTTL)
+	refreshTicker := time.NewTicker(c.FullRefreshTTL)
 	for range refreshTicker.C {
-		if err := spotPricing.Refresh(ctx, days); err != nil {
-			log.Println(err)
+		if err := c.Refresh(ctx, days); err != nil {
+			c.logger.Printf("Periodic Spot Cache Refresh Error: %v", err)
 		}
 	}
+}
+
+func (c *SpotPricing) SetLogger(logger *log.Logger) {
+	c.logger = logger
 }
 
 func (c *SpotPricing) Refresh(ctx context.Context, days int) error {
@@ -210,7 +211,7 @@ func (c *SpotPricing) filterOn(zone string, pricingEntries []*spotPricingEntry) 
 	return filtered
 }
 
-// Count of items in the cache
+// Count of items in the cache.
 func (c *SpotPricing) Count() int {
 	return c.cache.ItemCount()
 }
@@ -219,7 +220,7 @@ func (c *SpotPricing) Save() error {
 	if c.FullRefreshTTL <= 0 || c.Count() == 0 {
 		return nil
 	}
-	if err := os.Mkdir(c.DirectoryPath, 0755); err != nil && !errors.Is(err, os.ErrExist) {
+	if err := os.Mkdir(c.DirectoryPath, 0o755); err != nil && !errors.Is(err, os.ErrExist) {
 		return err
 	}
 	file, err := os.Create(getSpotCacheFilePath(c.Region, c.DirectoryPath))
@@ -235,12 +236,20 @@ func (c *SpotPricing) Clear() error {
 	c.Lock()
 	defer c.Unlock()
 	c.cache.Flush()
-	return os.Remove(getSpotCacheFilePath(c.Region, c.DirectoryPath))
+	if err := os.Remove(getSpotCacheFilePath(c.Region, c.DirectoryPath)); err != nil && !os.IsNotExist(err) {
+		return err
+	}
+	return nil
 }
 
 // fetchSpotPricingTimeSeries makes a bulk request to the ec2 api to retrieve all spot instance type pricing for the past n days
-// If instanceType is empty, it will fetch for all instance types
+// If instanceType is empty, it will fetch for all instance types.
 func (c *SpotPricing) fetchSpotPricingTimeSeries(ctx context.Context, instanceType ec2types.InstanceType, days int) (map[string][]*spotPricingEntry, error) {
+	start := time.Now()
+	calls := 0
+	defer func() {
+		c.logger.Printf("Took %s and %d calls to collect Spot pricing", time.Since(start), calls)
+	}()
 	spotTimeSeries := map[string][]*spotPricingEntry{}
 	endTime := time.Now().UTC()
 	startTime := endTime.Add(time.Hour * time.Duration(24*-1*days))
@@ -258,9 +267,10 @@ func (c *SpotPricing) fetchSpotPricingTimeSeries(ctx context.Context, instanceTy
 
 	// Iterate through the Amazon S3 object pages.
 	for p.HasMorePages() {
+		calls++
 		spotHistoryOutput, err := p.NextPage(ctx)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get a page, %w", err)
+			return nil, fmt.Errorf("failed to get a spot pricing page, %w", err)
 		}
 
 		for _, history := range spotHistoryOutput.SpotPriceHistory {

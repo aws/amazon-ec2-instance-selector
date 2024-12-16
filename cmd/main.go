@@ -1,15 +1,14 @@
-// Copyright Amazon.com Inc. or its affiliates. All Rights Reserved.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// Licensed under the Apache License, Version 2.0 (the "License"). You may
-// not use this file except in compliance with the License. A copy of the
-// License is located at
+//     http://www.apache.org/licenses/LICENSE-2.0
 //
-//     http://aws.amazon.com/apache2.0/
-//
-// or in the "license" file accompanying this file. This file is distributed
-// on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
-// express or implied. See the License for the specific language governing
-// permissions and limitations under the License.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package main
 
@@ -24,18 +23,19 @@ import (
 	"syscall"
 	"time"
 
-	commandline "github.com/aws/amazon-ec2-instance-selector/v2/pkg/cli"
-	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/env"
-	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/instancetypes"
-	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/selector"
-	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/selector/outputs"
-	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/sorter"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/cobra"
 	"go.uber.org/multierr"
+
+	commandline "github.com/aws/amazon-ec2-instance-selector/v3/pkg/cli"
+	"github.com/aws/amazon-ec2-instance-selector/v3/pkg/env"
+	"github.com/aws/amazon-ec2-instance-selector/v3/pkg/instancetypes"
+	"github.com/aws/amazon-ec2-instance-selector/v3/pkg/selector"
+	"github.com/aws/amazon-ec2-instance-selector/v3/pkg/selector/outputs"
+	"github.com/aws/amazon-ec2-instance-selector/v3/pkg/sorter"
 )
 
 const (
@@ -44,18 +44,20 @@ const (
 	defaultRegionEnvVar = "AWS_DEFAULT_REGION"
 	defaultProfile      = "default"
 	awsConfigFile       = "~/.aws/config"
-	spotPricingDaysBack = 30
+	// 0 means the last price
+	// increasing this results in a lot more API calls to EC2 which can slow things down.
+	spotPricingDaysBack = 0
 
 	tableOutput     = "table"
 	tableWideOutput = "table-wide"
 	oneLine         = "one-line"
 	bubbleTeaOutput = "interactive"
 
-	// Sort filter default
+	// Sort filter default.
 	instanceNamePath = ".InstanceType"
 )
 
-// Filter Flag Constants
+// Filter Flag Constants.
 const (
 	vcpus                            = "vcpus"
 	memory                           = "memory"
@@ -100,16 +102,18 @@ const (
 	freeTier                         = "free-tier"
 	autoRecovery                     = "auto-recovery"
 	dedicatedHosts                   = "dedicated-hosts"
+	debug                            = "debug"
+	generation                       = "generation"
 )
 
-// Aggregate Filter Flags
+// Aggregate Filter Flags.
 const (
 	instanceTypeBase = "base-instance-type"
 	flexible         = "flexible"
 	service          = "service"
 )
 
-// Configuration Flag Constants
+// Configuration Flag Constants.
 const (
 	maxResults    = "max-results"
 	profile       = "profile"
@@ -124,13 +128,10 @@ const (
 	sortBy        = "sort-by"
 )
 
-var (
-	// versionID is overridden at compilation with the version based on the git tag
-	versionID = "dev"
-)
+// versionID is overridden at compilation with the version based on the git tag
+var versionID = "dev"
 
 func main() {
-
 	log.SetOutput(os.Stderr)
 	log.SetPrefix("NOTE: ")
 	log.SetFlags(log.Flags() &^ (log.Ldate | log.Ltime))
@@ -166,7 +167,7 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	cli.Int32MinMaxRangeFlags(vcpus, cli.StringMe("c"), nil, "Number of vcpus available to the instance type.")
 	cli.ByteQuantityMinMaxRangeFlags(memory, cli.StringMe("m"), nil, "Amount of Memory available (Example: 4 GiB)")
 	cli.RatioFlag(vcpusToMemoryRatio, nil, nil, "The ratio of vcpus to GiBs of memory. (Example: 1:2)")
-	cli.StringOptionsFlag(cpuArchitecture, cli.StringMe("a"), nil, "CPU architecture [x86_64/amd64, x86_64_mac, i386, or arm64]", []string{"x86_64", "x86_64_mac", "amd64", "i386", "arm64"})
+	cli.StringOptionsFlag(cpuArchitecture, cli.StringMe("a"), nil, "CPU architecture [x86_64, amd64, x86_64_mac, i386, or arm64]", []string{"x86_64", "x86_64_mac", "amd64", "i386", "arm64"})
 	cli.StringOptionsFlag(cpuManufacturer, nil, nil, "CPU manufacturer [amd, intel, aws]", []string{"amd", "intel", "aws"})
 	cli.Int32MinMaxRangeFlags(gpus, cli.StringMe("g"), nil, "Total Number of GPUs (Example: 4)")
 	cli.ByteQuantityMinMaxRangeFlags(gpuMemoryTotal, nil, nil, "Number of GPUs' total memory (Example: 4 GiB)")
@@ -206,6 +207,7 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	cli.BoolFlag(freeTier, nil, nil, "Free Tier supported")
 	cli.BoolFlag(autoRecovery, nil, nil, "EC2 Auto-Recovery supported")
 	cli.BoolFlag(dedicatedHosts, nil, nil, "Dedicated Hosts supported")
+	cli.IntMinMaxRangeFlags(generation, nil, nil, "Generation of the instance type (i.e. c7i.xlarge is 7)")
 
 	// Suite Flags - higher level aggregate filters that return opinionated result
 
@@ -219,9 +221,10 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	cli.ConfigStringFlag(profile, nil, nil, "AWS CLI profile to use for credentials and config", nil)
 	cli.ConfigStringFlag(region, cli.StringMe("r"), nil, "AWS Region to use for API requests (NOTE: if not passed in, uses AWS SDK default precedence)", nil)
 	cli.ConfigStringFlag(output, cli.StringMe("o"), nil, fmt.Sprintf("Specify the output format (%s)", strings.Join(cliOutputTypes, ", ")), nil)
-	cli.ConfigIntFlag(cacheTTL, nil, env.WithDefaultInt("EC2_INSTANCE_SELECTOR_CACHE_TTL", 168), "Cache TTLs in hours for pricing and instance type caches. Setting the cache to 0 will turn off caching and cleanup any on-disk caches.")
+	cli.ConfigIntFlag(cacheTTL, nil, env.WithDefaultInt("EC2_INSTANCE_SELECTOR_CACHE_TTL", 0), "Cache TTLs in hours for pricing and instance type caches. Setting the cache to 0 will turn off caching and cleanup any on-disk caches.")
 	cli.ConfigPathFlag(cacheDir, nil, env.WithDefaultString("EC2_INSTANCE_SELECTOR_CACHE_DIR", "~/.ec2-instance-selector/"), "Directory to save the pricing and instance type caches")
 	cli.ConfigBoolFlag(verbose, cli.StringMe("v"), nil, "Verbose - will print out full instance specs")
+	cli.ConfigBoolFlag("debug", nil, nil, "Debug - prints debug log messages")
 	cli.ConfigBoolFlag(help, cli.StringMe("h"), nil, "Help")
 	cli.ConfigBoolFlag(version, nil, nil, "Prints CLI version")
 	cli.ConfigStringOptionsFlag(sortDirection, nil, cli.StringMe(sorter.SortAscending), fmt.Sprintf("Specify the direction to sort in (%s)", strings.Join(cliSortDirections, ", ")), cliSortDirections)
@@ -270,8 +273,12 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	cacheTTLDuration := time.Hour * time.Duration(*cli.IntMe(flags[cacheTTL]))
 	instanceSelector, err := selector.NewWithCache(ctx, cfg, cacheTTLDuration, *cli.StringMe(flags[cacheDir]))
 	if err != nil {
-		fmt.Printf("An error occurred when initialising the ec2 selector: %v", err)
+		fmt.Printf("An error occurred when initializing the ec2 selector: %v", err)
 		os.Exit(1)
+	}
+	if flags[debug] != nil {
+		debugLogger := log.New(os.Stdout, time.Now().UTC().Format(time.RFC3339)+" DEBUG ", 0)
+		instanceSelector.SetLogger(debugLogger)
 	}
 	shutdown := func() {
 		if err := instanceSelector.Save(); err != nil {
@@ -417,6 +424,7 @@ Full docs can be found at github.com/aws/amazon-` + binName
 		FreeTier:                         cli.BoolMe(flags[freeTier]),
 		AutoRecovery:                     cli.BoolMe(flags[autoRecovery]),
 		DedicatedHosts:                   cli.BoolMe(flags[dedicatedHosts]),
+		Generation:                       cli.IntRangeMe(flags[generation]),
 	}
 
 	if flags[verbose] != nil {
@@ -466,7 +474,7 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	var instanceTypes []string
 	if outputFlag != nil && *outputFlag == bubbleTeaOutput {
 		p := tea.NewProgram(outputs.NewBubbleTeaModel(instanceTypesDetails), tea.WithMouseCellMotion())
-		if err := p.Start(); err != nil {
+		if _, err := p.Run(); err != nil {
 			fmt.Printf("An error occurred when starting bubble tea: %v", err)
 			os.Exit(1)
 		}
@@ -505,7 +513,7 @@ func hydrateCaches(ctx context.Context, instanceSelector selector.Selector) (err
 			defer waitGroup.Done()
 			if instanceSelector.EC2Pricing.OnDemandCacheCount() == 0 {
 				if err := instanceSelector.EC2Pricing.RefreshOnDemandCache(ctx); err != nil {
-					return multierr.Append(errs, fmt.Errorf("There was a problem refreshing the on-demand pricing cache: %w", err))
+					return multierr.Append(errs, fmt.Errorf("there was a problem refreshing the on-demand pricing cache: %w", err))
 				}
 			}
 			return nil
@@ -514,7 +522,7 @@ func hydrateCaches(ctx context.Context, instanceSelector selector.Selector) (err
 			defer waitGroup.Done()
 			if instanceSelector.EC2Pricing.SpotCacheCount() == 0 {
 				if err := instanceSelector.EC2Pricing.RefreshSpotCache(ctx, spotPricingDaysBack); err != nil {
-					return multierr.Append(errs, fmt.Errorf("There was a problem refreshing the spot pricing cache: %w", err))
+					return multierr.Append(errs, fmt.Errorf("there was a problem refreshing the spot pricing cache: %w", err))
 				}
 			}
 			return nil
@@ -523,7 +531,7 @@ func hydrateCaches(ctx context.Context, instanceSelector selector.Selector) (err
 			defer waitGroup.Done()
 			if instanceSelector.InstanceTypesProvider.CacheCount() == 0 {
 				if _, err := instanceSelector.InstanceTypesProvider.Get(ctx, nil); err != nil {
-					return multierr.Append(errs, fmt.Errorf("There was a problem refreshing the instance types cache: %w", err))
+					return multierr.Append(errs, fmt.Errorf("there was a problem refreshing the instance types cache: %w", err))
 				}
 			}
 			return nil
@@ -531,7 +539,11 @@ func hydrateCaches(ctx context.Context, instanceSelector selector.Selector) (err
 	}
 	wg.Add(len(hydrateTasks))
 	for _, task := range hydrateTasks {
-		go task(wg)
+		go func() {
+			if err := task(wg); err != nil {
+				log.Printf("Hydrate task error: %v", err)
+			}
+		}()
 	}
 	wg.Wait()
 	return errs

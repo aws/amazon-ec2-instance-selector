@@ -1,15 +1,14 @@
-// Copyright Amazon.com Inc. or its affiliates. All Rights Reserved.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// Licensed under the Apache License, Version 2.0 (the "License"). You may
-// not use this file except in compliance with the License. A copy of the
-// License is located at
+//     http://www.apache.org/licenses/LICENSE-2.0
 //
-//     http://aws.amazon.com/apache2.0/
-//
-// or in the "license" file accompanying this file. This file is distributed
-// on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
-// express or implied. See the License for the specific language governing
-// permissions and limitations under the License.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package ec2pricing
 
@@ -18,19 +17,17 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 
 	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/aws-sdk-go-v2/service/pricing"
 	pricingtypes "github.com/aws/aws-sdk-go-v2/service/pricing/types"
-	"github.com/aws/aws-sdk-go/aws/endpoints"
 	"github.com/mitchellh/go-homedir"
 	"github.com/patrickmn/go-cache"
 	"go.uber.org/multierr"
@@ -46,6 +43,7 @@ type OnDemandPricing struct {
 	DirectoryPath  string
 	cache          *cache.Cache
 	pricingClient  pricing.GetProductsAPIClient
+	logger         *log.Logger
 	sync.RWMutex
 }
 
@@ -86,17 +84,10 @@ type PriceDimensionInfo struct {
 	PricePerUnit map[string]string `json:"pricePerUnit"`
 }
 
-func LoadODCacheOrNew(ctx context.Context, pricingClient pricing.GetProductsAPIClient, region string, fullRefreshTTL time.Duration, directoryPath string) *OnDemandPricing {
+func LoadODCacheOrNew(ctx context.Context, pricingClient pricing.GetProductsAPIClient, region string, fullRefreshTTL time.Duration, directoryPath string) (*OnDemandPricing, error) {
 	expandedDirPath, err := homedir.Expand(directoryPath)
 	if err != nil {
-		log.Printf("Unable to load on-demand pricing cache directory %s: %v", expandedDirPath, err)
-		return &OnDemandPricing{
-			Region:         region,
-			FullRefreshTTL: 0,
-			DirectoryPath:  directoryPath,
-			cache:          cache.New(fullRefreshTTL, fullRefreshTTL),
-			pricingClient:  pricingClient,
-		}
+		return nil, fmt.Errorf("unable to load on-demand pricing cache directory %s: %w", expandedDirPath, err)
 	}
 	odPricing := &OnDemandPricing{
 		Region:         region,
@@ -104,22 +95,25 @@ func LoadODCacheOrNew(ctx context.Context, pricingClient pricing.GetProductsAPIC
 		DirectoryPath:  expandedDirPath,
 		pricingClient:  pricingClient,
 		cache:          cache.New(fullRefreshTTL, fullRefreshTTL),
+		logger:         log.New(io.Discard, "", 0),
 	}
 	if fullRefreshTTL <= 0 {
-		odPricing.Clear()
-		return odPricing
+		if err := odPricing.Clear(); err != nil {
+			return nil, fmt.Errorf("unable to clear od pricing cache due to ttl <= 0 %w", err)
+		}
+		return odPricing, nil
 	}
 	// Start the cache refresh job
-	go odCacheRefreshJob(ctx, odPricing)
+	go odPricing.odCacheRefreshJob(ctx)
 	odCache, err := loadODCacheFrom(fullRefreshTTL, region, expandedDirPath)
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		return nil, fmt.Errorf("an on-demand pricing cache file could not be loaded: %v", err)
+	}
 	if err != nil {
-		if !errors.Is(err, os.ErrNotExist) {
-			log.Printf("An on-demand pricing cache file could not be loaded: %v", err)
-		}
-		return odPricing
+		odCache = cache.New(0, 0)
 	}
 	odPricing.cache = odCache
-	return odPricing
+	return odPricing, nil
 }
 
 func loadODCacheFrom(itemTTL time.Duration, region string, expandedDirPath string) (*cache.Cache, error) {
@@ -140,16 +134,20 @@ func getODCacheFilePath(region string, directoryPath string) string {
 	return filepath.Join(directoryPath, fmt.Sprintf("%s-%s", region, ODCacheFileName))
 }
 
-func odCacheRefreshJob(ctx context.Context, odPricing *OnDemandPricing) {
-	if odPricing.FullRefreshTTL <= 0 {
+func (c *OnDemandPricing) odCacheRefreshJob(ctx context.Context) {
+	if c.FullRefreshTTL <= 0 {
 		return
 	}
-	refreshTicker := time.NewTicker(odPricing.FullRefreshTTL)
+	refreshTicker := time.NewTicker(c.FullRefreshTTL)
 	for range refreshTicker.C {
-		if err := odPricing.Refresh(ctx); err != nil {
-			log.Println(err)
+		if err := c.Refresh(ctx); err != nil {
+			c.logger.Printf("Periodic OD Cache Refresh Error: %v", err)
 		}
 	}
+}
+
+func (c *OnDemandPricing) SetLogger(logger *log.Logger) {
+	c.logger = logger
 }
 
 func (c *OnDemandPricing) Refresh(ctx context.Context) error {
@@ -182,7 +180,7 @@ func (c *OnDemandPricing) Get(ctx context.Context, instanceType ec2types.Instanc
 	return costs[string(instanceType)], nil
 }
 
-// Count of items in the cache
+// Count of items in the cache.
 func (c *OnDemandPricing) Count() int {
 	return c.cache.ItemCount()
 }
@@ -195,23 +193,31 @@ func (c *OnDemandPricing) Save() error {
 	if err != nil {
 		return err
 	}
-	if err := os.Mkdir(c.DirectoryPath, 0755); err != nil && !errors.Is(err, os.ErrExist) {
+	if err := os.Mkdir(c.DirectoryPath, 0o755); err != nil && !errors.Is(err, os.ErrExist) {
 		return err
 	}
-	return ioutil.WriteFile(getODCacheFilePath(c.Region, c.DirectoryPath), cacheBytes, 0644)
+	return os.WriteFile(getODCacheFilePath(c.Region, c.DirectoryPath), cacheBytes, 0600)
 }
 
 func (c *OnDemandPricing) Clear() error {
 	c.Lock()
 	defer c.Unlock()
 	c.cache.Flush()
-	return os.Remove(getODCacheFilePath(c.Region, c.DirectoryPath))
+	if err := os.Remove(getODCacheFilePath(c.Region, c.DirectoryPath)); err != nil && !os.IsNotExist(err) {
+		return err
+	}
+	return nil
 }
 
 // fetchOnDemandPricing makes a bulk request to the pricing api to retrieve all instance type pricing if the instanceType is the empty string
 //
 //	or, if instanceType is specified, it can request a specific instance type pricing
 func (c *OnDemandPricing) fetchOnDemandPricing(ctx context.Context, instanceType ec2types.InstanceType) (map[string]float64, error) {
+	start := time.Now()
+	calls := 0
+	defer func() {
+		c.logger.Printf("Took %s and %d calls to collect OD pricing", time.Since(start), calls)
+	}()
 	odPricing := map[string]float64{}
 	productInput := pricing.GetProductsInput{
 		ServiceCode: c.StringMe(serviceCode),
@@ -222,9 +228,10 @@ func (c *OnDemandPricing) fetchOnDemandPricing(ctx context.Context, instanceType
 	p := pricing.NewGetProductsPaginator(c.pricingClient, &productInput)
 
 	for p.HasMorePages() {
+		calls++
 		pricingOutput, err := p.NextPage(ctx)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get a page, %w", err)
+			return nil, fmt.Errorf("failed to get next OD pricing page, %w", err)
 		}
 
 		for _, priceDoc := range pricingOutput.PriceList {
@@ -240,8 +247,8 @@ func (c *OnDemandPricing) fetchOnDemandPricing(ctx context.Context, instanceType
 }
 
 // StringMe takes an interface and returns a pointer to a string value
-// If the underlying interface kind is not string or *string then nil is returned
-func (*OnDemandPricing) StringMe(i interface{}) *string {
+// If the underlying interface kind is not string or *string then nil is returned.
+func (c *OnDemandPricing) StringMe(i interface{}) *string {
 	if i == nil {
 		return nil
 	}
@@ -251,17 +258,16 @@ func (*OnDemandPricing) StringMe(i interface{}) *string {
 	case string:
 		return &v
 	default:
-		log.Printf("%s cannot be converted to a string", i)
+		c.logger.Printf("%s cannot be converted to a string", i)
 		return nil
 	}
 }
 
 func (c *OnDemandPricing) getProductsInputFilters(instanceType ec2types.InstanceType) []pricingtypes.Filter {
-	regionDescription := c.getRegionForPricingAPI()
 	filters := []pricingtypes.Filter{
 		{Type: pricingtypes.FilterTypeTermMatch, Field: c.StringMe("ServiceCode"), Value: c.StringMe(serviceCode)},
 		{Type: pricingtypes.FilterTypeTermMatch, Field: c.StringMe("operatingSystem"), Value: c.StringMe("linux")},
-		{Type: pricingtypes.FilterTypeTermMatch, Field: c.StringMe("location"), Value: c.StringMe(regionDescription)},
+		{Type: pricingtypes.FilterTypeTermMatch, Field: c.StringMe("regionCode"), Value: c.StringMe(c.Region)},
 		{Type: pricingtypes.FilterTypeTermMatch, Field: c.StringMe("capacitystatus"), Value: c.StringMe("used")},
 		{Type: pricingtypes.FilterTypeTermMatch, Field: c.StringMe("preInstalledSw"), Value: c.StringMe("NA")},
 		{Type: pricingtypes.FilterTypeTermMatch, Field: c.StringMe("tenancy"), Value: c.StringMe("shared")},
@@ -272,31 +278,7 @@ func (c *OnDemandPricing) getProductsInputFilters(instanceType ec2types.Instance
 	return filters
 }
 
-// getRegionForPricingAPI attempts to retrieve the region description based on the AWS session used to create
-// the ec2pricing struct. It then uses the endpoints package in the aws sdk to retrieve the region description
-// This is necessary because the pricing API uses the region description rather than a region ID
-func (c *OnDemandPricing) getRegionForPricingAPI() string {
-	endpointResolver := endpoints.DefaultResolver()
-	partitions := endpointResolver.(endpoints.EnumPartitions).Partitions()
-
-	// use us-east-1 as the default
-	regionDescription := "US East (N. Virginia)"
-	for _, partition := range partitions {
-		regions := partition.Regions()
-		if region, ok := regions[c.Region]; ok {
-			regionDescription = region.Description()
-		}
-	}
-
-	// endpoints package returns European regions with the word "Europe," but the pricing API expects the word "EU."
-	// This formatting mismatch is only present with European regions.
-	// So replace "Europe" with "EU" if it exists in the regionDescription string.
-	regionDescription = strings.ReplaceAll(regionDescription, "Europe", "EU")
-
-	return regionDescription
-}
-
-// parseOndemandUnitPrice takes a priceList from the pricing API and parses its weirdness
+// parseOndemandUnitPrice takes a priceList from the pricing API and parses its weirdness.
 func (c *OnDemandPricing) parseOndemandUnitPrice(priceList string) (string, float64, error) {
 	var productPriceList PricingList
 	err := json.Unmarshal([]byte(priceList), &productPriceList)

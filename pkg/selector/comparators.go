@@ -1,20 +1,18 @@
-// Copyright Amazon.com Inc. or its affiliates. All Rights Reserved.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// Licensed under the Apache License, Version 2.0 (the "License"). You may
-// not use this file except in compliance with the License. A copy of the
-// License is located at
+//     http://www.apache.org/licenses/LICENSE-2.0
 //
-//     http://aws.amazon.com/apache2.0/
-//
-// or in the "license" file accompanying this file. This file is distributed
-// on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
-// express or implied. See the License for the specific language governing
-// permissions and limitations under the License.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package selector
 
 import (
-	"log"
 	"math"
 	"reflect"
 	"regexp"
@@ -30,7 +28,11 @@ const (
 	required  = "required"
 )
 
-var amdRegex = regexp.MustCompile("[a-zA-Z0-9]+a\\.[a-zA-Z0-9]")
+var (
+	amdRegex      = regexp.MustCompile(`[a-zA-Z0-9]+a\\.[a-zA-Z0-9]`)
+	networkPerfRE = regexp.MustCompile(`[0-9]+ Gigabit`)
+	generationRE  = regexp.MustCompile(`[a-zA-Z]+([0-9]+)`)
+)
 
 func isSupportedFromString(instanceTypeValue *string, target *string) bool {
 	if target == nil {
@@ -302,12 +304,7 @@ func getNetworkPerformance(networkPerformance *string) *int {
 	if networkPerformance == nil {
 		return aws.Int(-1)
 	}
-	re, err := regexp.Compile(`[0-9]+ Gigabit`)
-	if err != nil {
-		log.Printf("Unable to compile regexp to parse network performance: %s\n", *networkPerformance)
-		return nil
-	}
-	networkBandwidth := re.FindString(*networkPerformance)
+	networkBandwidth := networkPerfRE.FindString(*networkPerformance)
 	if networkBandwidth == "" {
 		return aws.Int(-1)
 	}
@@ -392,8 +389,24 @@ func getCPUManufacturer(instanceTypeInfo *ec2types.InstanceTypeInfo) CPUManufact
 	return CPUManufacturerIntel
 }
 
+// getInstanceTypeGeneration returns the generation from an instance type name
+// i.e. c7i.xlarge -> 7
+// if any error occurs, 0 will be returned.
+func getInstanceTypeGeneration(instanceTypeName string) *int {
+	zero := 0
+	matches := generationRE.FindStringSubmatch(instanceTypeName)
+	if len(matches) < 2 {
+		return &zero
+	}
+	gen, err := strconv.Atoi(matches[1])
+	if err != nil {
+		return &zero
+	}
+	return &gen
+}
+
 // supportSyntaxToBool takes an instance spec field that uses ["unsupported", "supported", "required", or "default"]
-// and transforms it to a *bool to use in filter execution
+// and transforms it to a *bool to use in filter execution.
 func supportSyntaxToBool(instanceTypeSupport *string) *bool {
 	if instanceTypeSupport == nil {
 		return nil

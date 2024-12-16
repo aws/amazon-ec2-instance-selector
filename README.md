@@ -3,7 +3,7 @@
 <h4>A CLI tool and go library which recommends instance types based on resource criteria like vcpus and memory.</h4>
 
 <p>
-  <a href="https://golang.org/doc/go1.17">
+  <a href="https://golang.org/doc/go1.23">
     <img src="https://img.shields.io/github/go-mod/go-version/aws/amazon-ec2-instance-selector?color=blueviolet" alt="go-version">
   </a>
   <a href="https://opensource.org/licenses/Apache-2.0">
@@ -25,7 +25,7 @@
 
 ## Summary
 
-There are over 270 different instance types available on EC2 which can make the process of selecting appropriate instance types difficult. Instance Selector helps you select compatible instance types for your application to run on. The command line interface can be passed resource criteria like vcpus, memory, network performance, and much more and then return the available, matching instance types. 
+There are over 800 different instance types available on EC2 which can make the process of selecting appropriate instance types difficult. Instance Selector helps you select compatible instance types for your application to run on. The command line interface can be passed resource criteria like vcpus, memory, network performance, and much more and then return the available, matching instance types. 
 
 If you are using spot instances to save on costs, it is a best practice to use multiple instances types within your auto-scaling group (ASG) to ensure your application doesn't experience downtime due to one instance type being interrupted. Instance Selector will help to find a set of instance types that your application can run on.
 
@@ -35,7 +35,8 @@ Instance Selector can also be consumed as a go library for direct integration in
 
 - Filter AWS Instance Types using declarative resource criteria like vcpus, memory, network performance, and much more!
 - Aggregate filters allow for more opinionated instance selections like `--base-instance-type` and `--flexible`
-- Consumable as a go library
+- Consumable as a go library or CLI
+- Interactive TUI w/ `--output interactive`
 
 ## Installation and Configuration
 
@@ -49,9 +50,9 @@ brew install ec2-instance-selector
 #### Install w/ Curl for Linux/Mac
 
 ```
-$ curl -Lo ec2-instance-selector https://github.com/aws/amazon-ec2-instance-selector/releases/download/v2.4.1/ec2-instance-selector-`uname | tr '[:upper:]' '[:lower:]'`-amd64 && chmod +x ec2-instance-selector
-$ sudo mv ec2-instance-selector /usr/local/bin/
-$ ec2-instance-selector --version
+curl -Lo ec2-instance-selector https://github.com/aws/amazon-ec2-instance-selector/releases/download/v2.4.1/ec2-instance-selector-`uname | tr '[:upper:]' '[:lower:]'`-amd64 && chmod +x ec2-instance-selector
+sudo mv ec2-instance-selector /usr/local/bin/
+ec2-instance-selector --version
 ```
 
 To execute the CLI, you will need AWS credentials configured. Take a look at the [AWS CLI configuration documentation](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html#config-settings-and-precedence) for details on the various ways to configure credentials. An easy way to try out the ec2-instance-selector CLI is to populate the following environment variables with your AWS API credentials.
@@ -86,6 +87,11 @@ c5ad.large
 c5d.large
 c6a.large
 c6i.large
+c6id.large
+c6in.large
+c7a.large
+c7i-flex.large
+c7i.large
 t2.medium
 t3.medium
 t3a.medium
@@ -97,56 +103,66 @@ $ ec2-instance-selector --network-performance 100 --usage-class spot -r us-east-
 c5n.18xlarge
 c5n.metal
 c6gn.16xlarge
+c6in.16xlarge
+c7gn.8xlarge
 dl1.24xlarge
 g4dn.metal
 g5.48xlarge
+g6.48xlarge
+g6e.12xlarge
 i3en.24xlarge
 i3en.metal
 im4gn.16xlarge
 inf1.24xlarge
+inf2.48xlarge
 m5dn.24xlarge
 m5dn.metal
 m5n.24xlarge
 m5n.metal
 m5zn.12xlarge
-m5zn.metal
-p3dn.24xlarge
-p4d.24xlarge
-r5dn.24xlarge
-r5dn.metal
+NOTE: 19 entries were truncated, increase --max-results to see more
 ```
 
 **Short Table Output**
 ```
 $ ec2-instance-selector --memory 4 --vcpus 2 --cpu-architecture x86_64 -r us-east-1 -o table
-Instance Type        VCPUs        Mem (GiB)
--------------        -----        ---------
-c5.large             2            4
-c5a.large            2            4
-c5ad.large           2            4
-c5d.large            2            4
-c6a.large            2            4
-c6i.large            2            4
-t2.medium            2            4
-t3.medium            2            4
-t3a.medium           2            4
+Instance Type         VCPUs        Mem (GiB)
+-------------         -----        ---------
+c5.large              2            4
+c5a.large             2            4
+c5ad.large            2            4
+c5d.large             2            4
+c6a.large             2            4
+c6i.large             2            4
+c6id.large            2            4
+c6in.large            2            4
+c7a.large             2            4
+c7i-flex.large        2            4
+c7i.large             2            4
+t2.medium             2            4
+t3.medium             2            4
+t3a.medium            2            4
 ```
 
 **Wide Table Output**
 ```
 $ ec2-instance-selector --memory 4 --vcpus 2 --cpu-architecture x86_64 -r us-east-1 -o table-wide
-Instance Type  VCPUs   Mem (GiB)  Hypervisor  Current Gen  Hibernation Support  CPU Arch      Network Performance  ENIs    GPUs    GPU Mem (GiB)  GPU Info  On-Demand Price/Hr  Spot Price/Hr (30d avg)  
--------------  -----   ---------  ----------  -----------  -------------------  --------      -------------------  ----    ----    -------------  --------  ------------------  -----------------------  
-c5.large       2       4          nitro       true         true                 x86_64        Up to 10 Gigabit     3       0       0              none      -Not Fetched-       $0.03932                 
-c5a.large      2       4          nitro       true         false                x86_64        Up to 10 Gigabit     3       0       0              none      -Not Fetched-       $0.03822                 
-c5ad.large     2       4          nitro       true         false                x86_64        Up to 10 Gigabit     3       0       0              none      -Not Fetched-       $0.03449                 
-c5d.large      2       4          nitro       true         true                 x86_64        Up to 10 Gigabit     3       0       0              none      $0.096              $0.03983                 
-c6a.large      2       4          nitro       true         false                x86_64        Up to 12.5 Gigabit   3       0       0              none      $0.0765             $0.034                   
-c6i.large      2       4          nitro       true         false                x86_64        Up to 12.5 Gigabit   3       0       0              none      $0.085              $0.03605                 
-c6id.large     2       4          nitro       true         false                x86_64        Up to 12.5 Gigabit   3       0       0              none      -Not Fetched-       $0.034                   
-t2.medium      2       4          xen         true         true                 i386, x86_64  Low to Moderate      3       0       0              none      $0.0464             $0.0139                  
-t3.medium      2       4          nitro       true         true                 x86_64        Up to 5 Gigabit      3       0       0              none      $0.0416             $0.0125                  
-t3a.medium     2       4          nitro       true         true                 x86_64        Up to 5 Gigabit      3       0       0              none      -Not Fetched-       $0.01246
+Instance Type   VCPUs   Mem (GiB)  Hypervisor  Current Gen  Hibernation Support  CPU Arch      Network Performance  ENIs    GPUs    GPU Mem (GiB)  GPU Info  On-Demand Price/Hr  Spot Price/Hr
+-------------   -----   ---------  ----------  -----------  -------------------  --------      -------------------  ----    ----    -------------  --------  ------------------  -------------
+c5.large        2       4          nitro       true         true                 x86_64        Up to 10 Gigabit     3       0       0              none      $0.085              $0.0405
+c5a.large       2       4          nitro       true         false                x86_64        Up to 10 Gigabit     3       0       0              none      $0.077              $0.0308
+c5ad.large      2       4          nitro       true         false                x86_64        Up to 10 Gigabit     3       0       0              none      $0.086              $0.0415
+c5d.large       2       4          nitro       true         true                 x86_64        Up to 10 Gigabit     3       0       0              none      $0.096              $0.0281
+c6a.large       2       4          nitro       true         false                x86_64        Up to 12.5 Gigabit   3       0       0              none      $0.0765             $0.0285
+c6i.large       2       4          nitro       true         true                 x86_64        Up to 12.5 Gigabit   3       0       0              none      $0.085              $0.0292
+c6id.large      2       4          nitro       true         true                 x86_64        Up to 12.5 Gigabit   3       0       0              none      $0.1008             $0.0391
+c6in.large      2       4          nitro       true         false                x86_64        Up to 25 Gigabit     3       0       0              none      $0.1134             $0.0403
+c7a.large       2       4          nitro       true         true                 x86_64        Up to 12.5 Gigabit   3       0       0              none      $0.10264            $0.0457
+c7i-flex.large  2       4          nitro       true         true                 x86_64        Up to 12.5 Gigabit   3       0       0              none      $0.08479            $0.022
+c7i.large       2       4          nitro       true         true                 x86_64        Up to 12.5 Gigabit   3       0       0              none      $0.08925            $0.0359
+t2.medium       2       4          xen         true         true                 i386, x86_64  Low to Moderate      3       0       0              none      $0.0464             $0.0156
+t3.medium       2       4          nitro       true         true                 x86_64        Up to 5 Gigabit      3       0       0              none      $0.0416             $0.015
+t3a.medium      2       4          nitro       true         true                 x86_64        Up to 5 Gigabit      3       0       0              none      $0.0376             $0.0106
 ```
 
 **Interactive Output**
@@ -158,44 +174,99 @@ https://user-images.githubusercontent.com/68402662/184218343-6b236d4a-3fe6-42ae-
 **Sort by memory in ascending order using shorthand**
 ```
 $ ec2-instance-selector -r us-east-1 -o table-wide --max-results 10 --sort-by memory --sort-direction asc
-Instance Type  VCPUs   Mem (GiB)  Hypervisor  Current Gen  Hibernation Support  CPU Arch      Network Performance  ENIs    GPUs    GPU Mem (GiB)  GPU Info  On-Demand Price/Hr  Spot Price/Hr (30d avg)  
--------------  -----   ---------  ----------  -----------  -------------------  --------      -------------------  ----    ----    -------------  --------  ------------------  -----------------------  
-t2.nano        1       0.5        xen         true         true                 i386, x86_64  Low to Moderate      2       0       0              none      $0.0058             -Not Fetched-            
-t4g.nano       2       0.5        nitro       true         false                arm64         Up to 5 Gigabit      2       0       0              none      $0.0042             $0.0013                  
-t3a.nano       2       0.5        nitro       true         true                 x86_64        Up to 5 Gigabit      2       0       0              none      -Not Fetched-       $0.00328                 
-t3.nano        2       0.5        nitro       true         true                 x86_64        Up to 5 Gigabit      2       0       0              none      $0.0052             $0.0016                  
-t1.micro       1       0.6123     xen         false        false                i386, x86_64  Very Low             2       0       0              none      -Not Fetched-       $0.00205                 
-t3a.micro      2       1          nitro       true         true                 x86_64        Up to 5 Gigabit      2       0       0              none      -Not Fetched-       $0.00284                 
-t3.micro       2       1          nitro       true         true                 x86_64        Up to 5 Gigabit      2       0       0              none      $0.0104             $0.0031                  
-t2.micro       1       1          xen         true         true                 i386, x86_64  Low to Moderate      2       0       0              none      -Not Fetched-       $0.0035                  
-t4g.micro      2       1          nitro       true         false                arm64         Up to 5 Gigabit      2       0       0              none      -Not Fetched-       $0.0025                  
-m1.small       1       1.69922    xen         false        false                i386, x86_64  Low                  2       0       0              none      -Not Fetched-       $0.01876
-NOTE: 547 entries were truncated, increase --max-results to see more
+Instance Type  VCPUs   Mem (GiB)  Hypervisor  Current Gen  Hibernation Support  CPU Arch      Network Performance  ENIs    GPUs    GPU Mem (GiB)  GPU Info  On-Demand Price/Hr  Spot Price/Hr
+-------------  -----   ---------  ----------  -----------  -------------------  --------      -------------------  ----    ----    -------------  --------  ------------------  -------------
+t3a.nano       2       0.5        nitro       true         true                 x86_64        Up to 5 Gigabit      2       0       0              none      $0.0047             $0.0018
+t2.nano        1       0.5        xen         true         true                 i386, x86_64  Low to Moderate      2       0       0              none      $0.0058             -Not Fetched-
+t4g.nano       2       0.5        nitro       true         true                 arm64         Up to 5 Gigabit      2       0       0              none      $0.0042             $0.0018
+t3.nano        2       0.5        nitro       true         true                 x86_64        Up to 5 Gigabit      2       0       0              none      $0.0052             $0.0006
+t1.micro       1       0.6123     xen         false        false                i386, x86_64  Very Low             2       0       0              none      $0.02               $0.0021
+t3.micro       2       1          nitro       true         true                 x86_64        Up to 5 Gigabit      2       0       0              none      $0.0104             $0.0029
+t2.micro       1       1          xen         true         true                 i386, x86_64  Low to Moderate      2       0       0              none      $0.0116             $0.0016
+t4g.micro      2       1          nitro       true         true                 arm64         Up to 5 Gigabit      2       0       0              none      $0.0084             $0.0024
+t3a.micro      2       1          nitro       true         true                 x86_64        Up to 5 Gigabit      2       0       0              none      $0.0094             $0.0031
+m1.small       1       1.69922    xen         false        false                i386, x86_64  Low                  2       0       0              none      $0.044              $0.0048
+NOTE: 832 entries were truncated, increase --max-results to see more
 ```
 Available shorthand flags: vcpus, memory, gpu-memory-total, network-interfaces, spot-price, on-demand-price, instance-storage, ebs-optimized-baseline-bandwidth, ebs-optimized-baseline-throughput, ebs-optimized-baseline-iops, gpus, inference-accelerators
 
 **Sort by memory in descending order using JSON path**
 ```
 $ ec2-instance-selector -r us-east-1 -o table-wide --max-results 10 --sort-by .MemoryInfo.SizeInMiB --sort-direction desc
-Instance Type      VCPUs   Mem (GiB)  Hypervisor  Current Gen  Hibernation Support  CPU Arch  Network Performance  ENIs    GPUs    GPU Mem (GiB)  GPU Info  On-Demand Price/Hr  Spot Price/Hr (30d avg)  
--------------      -----   ---------  ----------  -----------  -------------------  --------  -------------------  ----    ----    -------------  --------  ------------------  -----------------------  
-u-12tb1.112xlarge  448     12,288     nitro       true         false                x86_64    100 Gigabit          15      0       0              none      $109.2              -Not Fetched-            
-u-9tb1.112xlarge   448     9,216      nitro       true         false                x86_64    100 Gigabit          15      0       0              none      -Not Fetched-       -Not Fetched-            
-u-6tb1.112xlarge   448     6,144      nitro       true         false                x86_64    100 Gigabit          15      0       0              none      $54.6               -Not Fetched-            
-u-6tb1.56xlarge    224     6,144      nitro       true         false                x86_64    100 Gigabit          15      0       0              none      $46.40391           -Not Fetched-            
-x2iedn.metal       128     4,096      none        true         false                x86_64    100 Gigabit          15      0       0              none      $26.676             $20.92296                
-x2iedn.32xlarge    128     4,096      nitro       true         false                x86_64    100 Gigabit          15      0       0              none      $26.676             $8.70294                 
-x1e.32xlarge       128     3,904      xen         true         false                x86_64    25 Gigabit           8       0       0              none      $26.688             $8.0064                  
-x2iedn.24xlarge    96      3,072      nitro       true         false                x86_64    75 Gigabit           15      0       0              none      $20.007             $6.0021                  
-u-3tb1.56xlarge    224     3,072      nitro       true         false                x86_64    50 Gigabit           8       0       0              none      $27.3               -Not Fetched-            
-x2idn.metal        128     2,048      none        true         false                x86_64    100 Gigabit          15      0       0              none      $13.338             $7.46603
-NOTE: 547 entries were truncated, increase --max-results to see more
+Instance Type        VCPUs   Mem (GiB)  Hypervisor  Current Gen  Hibernation Support  CPU Arch  Network Performance  ENIs    GPUs    GPU Mem (GiB)  GPU Info  On-Demand Price/Hr  Spot Price/Hr
+-------------        -----   ---------  ----------  -----------  -------------------  --------  -------------------  ----    ----    -------------  --------  ------------------  -------------
+u7in-32tb.224xlarge  896     32,768     nitro       true         false                x86_64    200 Gigabit          16      0       0              none      $407.68             -Not Fetched-
+u7in-24tb.224xlarge  896     24,576     nitro       true         false                x86_64    200 Gigabit          16      0       0              none      $305.76             -Not Fetched-
+u-24tb1.112xlarge    448     24,576     nitro       true         false                x86_64    100 Gigabit          15      0       0              none      $218.4              -Not Fetched-
+u-18tb1.112xlarge    448     18,432     nitro       true         false                x86_64    100 Gigabit          15      0       0              none      $163.8              -Not Fetched-
+u7in-16tb.224xlarge  896     16,384     nitro       true         false                x86_64    200 Gigabit          16      0       0              none      $203.84             -Not Fetched-
+u7i-12tb.224xlarge   896     12,288     nitro       true         false                x86_64    100 Gigabit          15      0       0              none      $152.88             -Not Fetched-
+u-12tb1.112xlarge    448     12,288     nitro       true         false                x86_64    100 Gigabit          15      0       0              none      $109.2              -Not Fetched-
+u-9tb1.112xlarge     448     9,216      nitro       true         false                x86_64    100 Gigabit          15      0       0              none      $81.9               -Not Fetched-
+u-6tb1.56xlarge      224     6,144      nitro       true         false                x86_64    100 Gigabit          15      0       0              none      $46.40391           -Not Fetched-
+u-6tb1.112xlarge     448     6,144      nitro       true         false                x86_64    100 Gigabit          15      0       0              none      $54.6               -Not Fetched-
+NOTE: 832 entries were truncated, increase --max-results to see more
 ```
 JSON path must point to a field in the [instancetype.Details struct](https://github.com/aws/amazon-ec2-instance-selector/blob/5bffbf2750ee09f5f1308bdc8d4b635a2c6e2721/pkg/instancetypes/instancetypes.go#L37).
 
 **Example output of instance type object using Verbose output**
 ```
 $ ec2-instance-selector --max-results 1 -v
+NOTE:
+
+"Filters": {
+    "AllowList": null,
+    "DenyList": null,
+    "AvailabilityZones": [],
+    "BareMetal": null,
+    "Burstable": null,
+    "AutoRecovery": null,
+    "FreeTier": null,
+    "CPUArchitecture": null,
+    "CPUManufacturer": null,
+    "CurrentGeneration": null,
+    "EnaSupport": null,
+    "EfaSupport": null,
+    "Fpga": null,
+    "GpusRange": null,
+    "GpuMemoryRange": null,
+    "GPUManufacturer": null,
+    "GPUModel": null,
+    "InferenceAcceleratorsRange": null,
+    "InferenceAcceleratorManufacturer": null,
+    "InferenceAcceleratorModel": null,
+    "HibernationSupported": null,
+    "Hypervisor": null,
+    "MaxResults": 1,
+    "MemoryRange": null,
+    "NetworkInterfaces": null,
+    "NetworkPerformance": null,
+    "NetworkEncryption": null,
+    "IPv6": null,
+    "PlacementGroupStrategy": null,
+    "Region": "us-east-1",
+    "RootDeviceType": null,
+    "UsageClass": null,
+    "VCpusRange": null,
+    "VCpusToMemoryRatio": null,
+    "InstanceTypeBase": null,
+    "Flexible": null,
+    "Service": null,
+    "InstanceTypes": null,
+    "VirtualizationType": null,
+    "PricePerHour": null,
+    "InstanceStorageRange": null,
+    "DiskType": null,
+    "NVME": null,
+    "EBSOptimized": null,
+    "DiskEncryption": null,
+    "EBSOptimizedBaselineBandwidth": null,
+    "EBSOptimizedBaselineThroughput": null,
+    "EBSOptimizedBaselineIOPS": null,
+    "DedicatedHosts": null,
+    "Generation": null
+}
+NOTE: There were no transformations on the filters to display
 [
     {
         "AutoRecoverySupported": true,
@@ -225,6 +296,7 @@ $ ec2-instance-selector --max-results 1 -v
         "InstanceStorageInfo": null,
         "InstanceStorageSupported": false,
         "InstanceType": "a1.2xlarge",
+        "MediaAcceleratorInfo": null,
         "MemoryInfo": {
             "SizeInMiB": 16384
         },
@@ -232,6 +304,7 @@ $ ec2-instance-selector --max-results 1 -v
             "DefaultNetworkCardIndex": 0,
             "EfaInfo": null,
             "EfaSupported": false,
+            "EnaSrdSupported": false,
             "EnaSupport": "required",
             "EncryptionInTransitSupported": false,
             "Ipv4AddressesPerInterface": 15,
@@ -241,13 +314,20 @@ $ ec2-instance-selector --max-results 1 -v
             "MaximumNetworkInterfaces": 4,
             "NetworkCards": [
                 {
+                    "BaselineBandwidthInGbps": 2.5,
                     "MaximumNetworkInterfaces": 4,
                     "NetworkCardIndex": 0,
-                    "NetworkPerformance": "Up to 10 Gigabit"
+                    "NetworkPerformance": "Up to 10 Gigabit",
+                    "PeakBandwidthInGbps": 10
                 }
             ],
             "NetworkPerformance": "Up to 10 Gigabit"
         },
+        "NeuronInfo": null,
+        "NitroEnclavesSupport": "unsupported",
+        "NitroTpmInfo": null,
+        "NitroTpmSupport": "unsupported",
+        "PhcSupport": "unsupported",
         "PlacementGroupInfo": {
             "SupportedStrategies": [
                 "cluster",
@@ -256,9 +336,11 @@ $ ec2-instance-selector --max-results 1 -v
             ]
         },
         "ProcessorInfo": {
+            "Manufacturer": "AWS",
             "SupportedArchitectures": [
                 "arm64"
             ],
+            "SupportedFeatures": null,
             "SustainedClockSpeedInGhz": 2.3
         },
         "SupportedBootModes": [
@@ -281,11 +363,11 @@ $ ec2-instance-selector --max-results 1 -v
             "ValidCores": null,
             "ValidThreadsPerCore": null
         },
-        "OndemandPricePerHour": 0.204,
-        "SpotPrice": 0.03939999999999999
+        "OndemandPricePerHour": null,
+        "SpotPrice": null
     }
 ]
-NOTE: 497 entries were truncated, increase --max-results to see more
+NOTE: 841 entries were truncated, increase --max-results to see more
 ```
 NOTE: Use this JSON format as reference when finding JSON paths for sorting
 
@@ -313,7 +395,7 @@ Filter Flags:
   -z, --availability-zones strings                     Availability zones or zone ids to check EC2 capacity offered in specific AZs
       --baremetal                                      Bare Metal instance types (.metal instances)
   -b, --burst-support                                  Burstable instance types
-  -a, --cpu-architecture string                        CPU architecture [x86_64/amd64, x86_64_mac, i386, or arm64]
+  -a, --cpu-architecture string                        CPU architecture [x86_64, amd64, x86_64_mac, i386, or arm64]
       --cpu-manufacturer string                        CPU manufacturer [amd, intel, aws]
       --current-generation                             Current generation instance types (explicitly set this to false to not return current generation instance types)
       --dedicated-hosts                                Dedicated Hosts supported
@@ -334,6 +416,9 @@ Filter Flags:
   -e, --ena-support                                    Instance types where ENA is supported or required
   -f, --fpga-support                                   FPGA instance types
       --free-tier                                      Free Tier supported
+      --generation int                                 Generation of the instance type (i.e. c7i.xlarge is 7) (sets --generation-min and -max to the same value)
+      --generation-max int                             Maximum Generation of the instance type (i.e. c7i.xlarge is 7) If --generation-min is not specified, the lower bound will be 0
+      --generation-min int                             Minimum Generation of the instance type (i.e. c7i.xlarge is 7) If --generation-max is not specified, the upper bound will be infinity
       --gpu-manufacturer string                        GPU Manufacturer name (Example: NVIDIA)
       --gpu-memory-total string                        Number of GPUs' total memory (Example: 4 GiB) (sets --gpu-memory-total-min and -max to the same value)
       --gpu-memory-total-max string                    Maximum Number of GPUs' total memory (Example: 4 GiB) If --gpu-memory-total-min is not specified, the lower bound will be 0
@@ -385,7 +470,8 @@ Suite Flags:
 
 Global Flags:
       --cache-dir string        Directory to save the pricing and instance type caches (default "~/.ec2-instance-selector/")
-      --cache-ttl int           Cache TTLs in hours for pricing and instance type caches. Setting the cache to 0 will turn off caching and cleanup any on-disk caches. (default 168)
+      --cache-ttl int           Cache TTLs in hours for pricing and instance type caches. Setting the cache to 0 will turn off caching and cleanup any on-disk caches.
+      --debug                   Debug - prints debug log messages
   -h, --help                    Help
       --max-results int         The maximum number of instance types that match your criteria to return (default 20)
   -o, --output string           Specify the output format (table, table-wide, one-line, interactive)
@@ -410,8 +496,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/bytequantity"
-	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/selector"
+	"github.com/aws/amazon-ec2-instance-selector/v3/pkg/bytequantity"
+	"github.com/aws/amazon-ec2-instance-selector/v3/pkg/selector"
 	"github.com/aws/aws-sdk-go-v2/config"
 	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 )
@@ -476,7 +562,7 @@ func main() {
 $ git clone https://github.com/aws/amazon-ec2-instance-selector.git
 $ cd amazon-ec2-instance-selector/
 $ go run cmd/examples/example1.go
-[c4.large c5.large c5a.large c5ad.large c5d.large c6i.large t2.medium t3.medium t3.small t3a.medium t3a.small]
+[c4.large c5.large c5a.large c5ad.large c5d.large c6a.large c6i.large c6id.large c6in.large c7a.large c7i-flex.large c7i.large t2.medium t3.medium t3.small t3a.medium t3a.small]
 ```
 ## Compare 2 instances to find exact differences
 

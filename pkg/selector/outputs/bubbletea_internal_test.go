@@ -1,28 +1,28 @@
-// Copyright Amazon.com Inc. or its affiliates. All Rights Reserved.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// Licensed under the Apache License, Version 2.0 (the "License"). You may
-// not use this file except in compliance with the License. A copy of the
-// License is located at
+//     http://www.apache.org/licenses/LICENSE-2.0
 //
-//     http://aws.amazon.com/apache2.0/
-//
-// or in the "license" file accompanying this file. This file is distributed
-// on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
-// express or implied. See the License for the specific language governing
-// permissions and limitations under the License.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package outputs
 
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"strings"
 	"testing"
 
-	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/instancetypes"
-	h "github.com/aws/amazon-ec2-instance-selector/v2/pkg/test"
 	"github.com/evertras/bubble-table/table"
+
+	"github.com/aws/amazon-ec2-instance-selector/v3/pkg/instancetypes"
+	h "github.com/aws/amazon-ec2-instance-selector/v3/pkg/test"
 )
 
 const (
@@ -32,12 +32,12 @@ const (
 // helpers
 
 // getInstanceTypeDetails unmarshalls the json file in the given testing folder
-// and returns a list of instance type details
+// and returns a list of instance type details.
 func getInstanceTypeDetails(t *testing.T, file string) []*instancetypes.Details {
 	folder := "FilterVerbose"
 	mockFilename := fmt.Sprintf("%s/%s/%s", mockFilesPath, folder, file)
-	mockFile, err := ioutil.ReadFile(mockFilename)
-	h.Assert(t, err == nil, "Error reading mock file "+string(mockFilename))
+	mockFile, err := os.ReadFile(mockFilename)
+	h.Assert(t, err == nil, "Error reading mock file "+mockFilename)
 
 	instanceTypes := []*instancetypes.Details{}
 	err = json.Unmarshal(mockFile, &instanceTypes)
@@ -45,7 +45,7 @@ func getInstanceTypeDetails(t *testing.T, file string) []*instancetypes.Details 
 	return instanceTypes
 }
 
-// getRowsInstances reformats the given table rows into a list of instance type names
+// getRowsInstances reformats the given table rows into a list of instance type names.
 func getRowsInstances(rows []table.Row) string {
 	instances := []string{}
 
@@ -133,7 +133,7 @@ func TestNewBubbleTeaModel_SpotPricing(t *testing.T) {
 	model := NewBubbleTeaModel(instanceTypes)
 	rows := model.tableModel.table.GetVisibleRows()
 	expectedODPrice := "$1.368"
-	actualODPrice := fmt.Sprintf("%v", rows[0].Data["Spot Price/Hr (30d avg)"])
+	actualODPrice := fmt.Sprintf("%v", rows[0].Data["Spot Price/Hr"])
 
 	h.Assert(t, actualODPrice == expectedODPrice, "Actual spot price should be %s, but is actually %s", expectedODPrice, actualODPrice)
 
@@ -142,7 +142,7 @@ func TestNewBubbleTeaModel_SpotPricing(t *testing.T) {
 	model = NewBubbleTeaModel(instanceTypes)
 	rows = model.tableModel.table.GetVisibleRows()
 	expectedODPrice = "-Not Fetched-"
-	actualODPrice = fmt.Sprintf("%v", rows[0].Data["Spot Price/Hr (30d avg)"])
+	actualODPrice = fmt.Sprintf("%v", rows[0].Data["Spot Price/Hr"])
 
 	h.Assert(t, actualODPrice == expectedODPrice, "Actual spot price should be %s, but is actually %s", expectedODPrice, actualODPrice)
 }

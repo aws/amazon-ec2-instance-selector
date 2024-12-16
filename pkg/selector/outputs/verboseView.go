@@ -1,15 +1,14 @@
-// Copyright Amazon.com Inc. or its affiliates. All Rights Reserved.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// Licensed under the Apache License, Version 2.0 (the "License"). You may
-// not use this file except in compliance with the License. A copy of the
-// License is located at
+//     http://www.apache.org/licenses/LICENSE-2.0
 //
-//     http://aws.amazon.com/apache2.0/
-//
-// or in the "license" file accompanying this file. This file is distributed
-// on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
-// express or implied. See the License for the specific language governing
-// permissions and limitations under the License.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package outputs
 
@@ -18,7 +17,6 @@ import (
 	"math"
 	"strings"
 
-	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/instancetypes"
 	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
@@ -26,14 +24,14 @@ import (
 )
 
 const (
-	// verbose view formatting
+	// verbose view formatting.
 	outlinePadding = 8
 
-	// controls
+	// controls.
 	verboseControls = "Controls: ↑/↓ - up/down • esc - return to table • q - quit"
 )
 
-// verboseModel represents the current state of the verbose view
+// verboseModel represents the current state of the verbose view.
 type verboseModel struct {
 	// model for verbose output viewport
 	viewport viewport.Model
@@ -42,7 +40,7 @@ type verboseModel struct {
 	focusedInstanceName ec2types.InstanceType
 }
 
-// styling for viewport
+// styling for viewport.
 var (
 	titleStyle = func() lipgloss.Style {
 		b := lipgloss.RoundedBorder()
@@ -53,13 +51,13 @@ var (
 	infoStyle = func() lipgloss.Style {
 		b := lipgloss.RoundedBorder()
 		b.Left = "┤"
-		return titleStyle.Copy().BorderStyle(b)
+		return titleStyle.BorderStyle(b)
 	}()
 )
 
 // initVerboseModel initializes and returns a new verboseModel based on the given
-// instance type details
-func initVerboseModel(instanceTypes []*instancetypes.Details) *verboseModel {
+// instance type details.
+func initVerboseModel() *verboseModel {
 	viewportModel := viewport.New(initialDimensionVal, initialDimensionVal)
 	viewportModel.MouseWheelEnabled = true
 
@@ -69,7 +67,7 @@ func initVerboseModel(instanceTypes []*instancetypes.Details) *verboseModel {
 }
 
 // resizeView will change the dimensions of the verbose viewport in order to accommodate
-// the new window dimensions represented by the given tea.WindowSizeMsg
+// the new window dimensions represented by the given tea.WindowSizeMsg.
 func (m verboseModel) resizeView(msg tea.WindowSizeMsg) verboseModel {
 	// handle width changes
 	m.viewport.Width = msg.Width
@@ -86,7 +84,7 @@ func (m verboseModel) resizeView(msg tea.WindowSizeMsg) verboseModel {
 	return m
 }
 
-// update updates the state of the verboseModel
+// update updates the state of the verboseModel.
 func (m verboseModel) update(msg tea.Msg) (verboseModel, tea.Cmd) {
 	var cmd tea.Cmd
 	m.viewport, cmd = m.viewport.Update(msg)

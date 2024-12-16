@@ -20,3 +20,4 @@
 /Godeps/
 /build/
 /.terraform/
+.vscode/

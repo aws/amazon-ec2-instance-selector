@@ -1,87 +1,89 @@
-// Copyright Amazon.com Inc. or its affiliates. All Rights Reserved.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// Licensed under the Apache License, Version 2.0 (the "License"). You may
-// not use this file except in compliance with the License. A copy of the
-// License is located at
+//     http://www.apache.org/licenses/LICENSE-2.0
 //
-//     http://aws.amazon.com/apache2.0/
-//
-// or in the "license" file accompanying this file. This file is distributed
-// on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
-// express or implied. See the License for the specific language governing
-// permissions and limitations under the License.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package selector
 
 import (
 	"encoding/json"
-	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/awsapi"
-	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	"log"
 	"regexp"
 
-	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/bytequantity"
-	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/ec2pricing"
-	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/instancetypes"
+	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
+
+	"github.com/aws/amazon-ec2-instance-selector/v3/pkg/awsapi"
+	"github.com/aws/amazon-ec2-instance-selector/v3/pkg/bytequantity"
+	"github.com/aws/amazon-ec2-instance-selector/v3/pkg/ec2pricing"
+	"github.com/aws/amazon-ec2-instance-selector/v3/pkg/instancetypes"
 )
 
-// InstanceTypesOutput can be implemented to provide custom output to instance type results
+// InstanceTypesOutput can be implemented to provide custom output to instance type results.
 type InstanceTypesOutput interface {
 	Output([]*instancetypes.Details) []string
 }
 
-// InstanceTypesOutputFn is the func type definition for InstanceTypesOuput
+// InstanceTypesOutputFn is the func type definition for InstanceTypesOuput.
 type InstanceTypesOutputFn func([]*instancetypes.Details) []string
 
 // Output implements InstanceTypesOutput interface on InstanceTypesOutputFn
-// This allows any InstanceTypesOutputFn to be passed into funcs accepting InstanceTypesOutput interface
+// This allows any InstanceTypesOutputFn to be passed into funcs accepting InstanceTypesOutput interface.
 func (fn InstanceTypesOutputFn) Output(instanceTypes []*instancetypes.Details) []string {
 	return fn(instanceTypes)
 }
 
-// Selector is used to filter instance type resource specs
+// Selector is used to filter instance type resource specs.
 type Selector struct {
 	EC2                   awsapi.SelectorInterface
 	EC2Pricing            ec2pricing.EC2PricingIface
 	InstanceTypesProvider *instancetypes.Provider
 	ServiceRegistry       ServiceRegistry
+	Logger                *log.Logger
 }
 
 // IntRangeFilter holds an upper and lower bound int
-// The lower and upper bound are used to range filter resource specs
+// The lower and upper bound are used to range filter resource specs.
 type IntRangeFilter struct {
 	UpperBound int
 	LowerBound int
 }
 
 // Int32RangeFilter holds an upper and lower bound int
-// The lower and upper bound are used to range filter resource specs
+// The lower and upper bound are used to range filter resource specs.
 type Int32RangeFilter struct {
 	UpperBound int32
 	LowerBound int32
 }
 
 // Uint64RangeFilter holds an upper and lower bound uint64
-// The lower and upper bound are used to range filter resource specs
+// The lower and upper bound are used to range filter resource specs.
 type Uint64RangeFilter struct {
 	UpperBound uint64
 	LowerBound uint64
 }
 
 // ByteQuantityRangeFilter holds an upper and lower bound byte quantity
-// The lower and upper bound are used to range filter resource specs
+// The lower and upper bound are used to range filter resource specs.
 type ByteQuantityRangeFilter struct {
 	UpperBound bytequantity.ByteQuantity
 	LowerBound bytequantity.ByteQuantity
 }
 
 // Float64RangeFilter holds an upper and lower bound float64
-// The lower and upper bound are used to range filter resource specs
+// The lower and upper bound are used to range filter resource specs.
 type Float64RangeFilter struct {
 	UpperBound float64
 	LowerBound float64
 }
 
-// filterPair holds a tuple of the passed in filter value and the instance resource spec value
+// filterPair holds a tuple of the passed in filter value and the instance resource spec value.
 type filterPair struct {
 	filterValue  interface{}
 	instanceSpec interface{}
@@ -95,7 +97,7 @@ func getRegexpString(r *regexp.Regexp) *string {
 	return &rStr
 }
 
-// MarshalIndent is used to return a pretty-print json representation of a Filters struct
+// MarshalIndent is used to return a pretty-print json representation of a Filters struct.
 func (f *Filters) MarshalIndent(prefix, indent string) ([]byte, error) {
 	type Alias Filters
 	return json.MarshalIndent(&struct {
@@ -109,7 +111,7 @@ func (f *Filters) MarshalIndent(prefix, indent string) ([]byte, error) {
 	}, prefix, indent)
 }
 
-// Filters is used to group instance type resource attributes for filtering
+// Filters is used to group instance type resource attributes for filtering.
 type Filters struct {
 	// AvailabilityZones is the AWS Availability Zones where instances will be provisioned.
 	// Instance type capacity can vary between availability zones.
@@ -271,11 +273,18 @@ type Filters struct {
 
 	// DedicatedHosts filters on instance types that support dedicated hosts tenancy
 	DedicatedHosts *bool
+
+	// Generation filters on the instance type generation
+	// i.e. c7i.xlarge is 7
+	// NOTE that generation is only comparable per instance family
+	// For example, i3 and c5 are both 5th generation, but the Generation filter will
+	// only filter on the number in the instance type name.
+	Generation *IntRangeFilter
 }
 
 type CPUManufacturer string
 
-// Enum values for CPUManufacturer
+// Enum values for CPUManufacturer.
 const (
 	CPUManufacturerAWS   CPUManufacturer = "aws"
 	CPUManufacturerAMD   CPUManufacturer = "amd"
@@ -287,18 +296,18 @@ const (
 // ordering of this slice is not guaranteed to be stable across updates.
 func (CPUManufacturer) Values() []CPUManufacturer {
 	return []CPUManufacturer{
-		"aws",
-		"amd",
-		"intel",
+		CPUManufacturerAWS,
+		CPUManufacturerAMD,
+		CPUManufacturerIntel,
 	}
 }
 
-// ArchitectureTypeAMD64 is a legacy type we support for b/c that isn't in the API
+// ArchitectureTypeAMD64 is a legacy type we support for b/c that isn't in the API.
 const (
 	ArchitectureTypeAMD64 ec2types.ArchitectureType = "amd64"
 )
 
-// ArchitectureTypeAMD64 is a legacy type we support for b/c that isn't in the API
+// ArchitectureTypeAMD64 is a legacy type we support for b/c that isn't in the API.
 const (
 	VirtualizationTypePv ec2types.VirtualizationType = "pv"
 )

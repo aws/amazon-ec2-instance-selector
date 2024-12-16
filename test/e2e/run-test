@@ -93,7 +93,7 @@ params=(
 )
 echo "${expected[*]}" | execute_test "24 VCPUs" "${params[@]}"
 
-expected=(g2.8xlarge g3.16xlarge g4dn.12xlarge p3.8xlarge)
+expected=(g3.16xlarge g4ad.16xlarge g4dn.12xlarge g5.12xlarge g5.24xlarge g6.12xlarge g6.24xlarge g6e.12xlarge g6e.24xlarge p3.8xlarge)
 params=(
     "--gpus=4"
     "--gpus-min=4 --gpus-max=4"

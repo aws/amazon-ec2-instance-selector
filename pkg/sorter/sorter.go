@@ -1,15 +1,14 @@
-// Copyright Amazon.com Inc. or its affiliates. All Rights Reserved.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// Licensed under the Apache License, Version 2.0 (the "License"). You may
-// not use this file except in compliance with the License. A copy of the
-// License is located at
+//     http://www.apache.org/licenses/LICENSE-2.0
 //
-//     http://aws.amazon.com/apache2.0/
-//
-// or in the "license" file accompanying this file. This file is distributed
-// on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
-// express or implied. See the License for the specific language governing
-// permissions and limitations under the License.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package sorter
 
@@ -20,12 +19,13 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/aws/amazon-ec2-instance-selector/v2/pkg/instancetypes"
 	"github.com/oliveagle/jsonpath"
+
+	"github.com/aws/amazon-ec2-instance-selector/v3/pkg/instancetypes"
 )
 
 const (
-	// Sort direction
+	// Sort direction.
 
 	SortAscending  = "ascending"
 	SortAsc        = "asc"
@@ -38,7 +38,7 @@ const (
 	GPUCountField              = "gpus"
 	InferenceAcceleratorsField = "inference-accelerators"
 
-	// shorthand flags
+	// shorthand flags.
 
 	VCPUs                          = "vcpus"
 	Memory                         = "memory"
@@ -51,7 +51,7 @@ const (
 	EBSOptimizedBaselineThroughput = "ebs-optimized-baseline-throughput"
 	EBSOptimizedBaselineIOPS       = "ebs-optimized-baseline-iops"
 
-	// JSON field paths for shorthand flags
+	// JSON field paths for shorthand flags.
 
 	instanceNamePath                   = ".InstanceType"
 	vcpuPath                           = ".VCpuInfo.DefaultVCpus"
@@ -67,14 +67,14 @@ const (
 )
 
 // sorterNode represents a sortable instance type which holds the value
-// to sort by instance sort
+// to sort by instance sort.
 type sorterNode struct {
 	instanceType *instancetypes.Details
 	fieldValue   reflect.Value
 }
 
 // sorter is used to sort instance types based on a sorting field
-// and direction
+// and direction.
 type sorter struct {
 	sorters      []*sorterNode
 	sortField    string
@@ -170,7 +170,7 @@ func formatSortField(sortField string) string {
 }
 
 // newSorterNode creates a new sorterNode object which represents the given instance type
-// and can be used in sorting of instance types based on the given sortField
+// and can be used in sorting of instance types based on the given sortField.
 func newSorterNode(instanceType *instancetypes.Details, sortField string) (*sorterNode, error) {
 	// some important fields (such as gpu count) can not be accessed directly in the instancetypes.Details
 	// struct, so we have special hard-coded flags to handle such cases
@@ -223,7 +223,7 @@ func newSorterNode(instanceType *instancetypes.Details, sortField string) (*sort
 }
 
 // sort the instance types in the Sorter based on the Sorter's sort field and
-// direction
+// direction.
 func (s *sorter) sort() error {
 	if len(s.sorters) <= 1 {
 		return nil
@@ -247,7 +247,7 @@ func (s *sorter) sort() error {
 }
 
 // isLess determines whether the first value (valI) is less than the
-// second value (valJ) or not
+// second value (valJ) or not.
 func isLess(valI, valJ reflect.Value, isDescending bool) (bool, error) {
 	switch valI.Kind() {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
@@ -334,7 +334,7 @@ func isLess(valI, valJ reflect.Value, isDescending bool) (bool, error) {
 	}
 }
 
-// instanceTypes returns the list of instance types held in the Sorter
+// instanceTypes returns the list of instance types held in the Sorter.
 func (s *sorter) instanceTypes() []*instancetypes.Details {
 	instanceTypes := []*instancetypes.Details{}
 
@@ -347,7 +347,7 @@ func (s *sorter) instanceTypes() []*instancetypes.Details {
 
 // helper functions for special sorting fields
 
-// getTotalGpusCount calculates the number of gpus in the given instance type
+// getTotalGpusCount calculates the number of gpus in the given instance type.
 func getTotalGpusCount(instanceType *instancetypes.Details) *int32 {
 	gpusInfo := instanceType.GpuInfo
 
@@ -364,7 +364,7 @@ func getTotalGpusCount(instanceType *instancetypes.Details) *int32 {
 }
 
 // getTotalAcceleratorsCount calculates the total number of inference accelerators
-// in the given instance type
+// in the given instance type.
 func getTotalAcceleratorsCount(instanceType *instancetypes.Details) *int32 {
 	acceleratorInfo := instanceType.InferenceAcceleratorInfo
 
