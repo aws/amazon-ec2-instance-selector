@@ -106,21 +106,21 @@ c6gn.16xlarge
 c6in.16xlarge
 c7gn.8xlarge
 dl1.24xlarge
+f2.48xlarge
 g4dn.metal
 g5.48xlarge
 g6.48xlarge
 g6e.12xlarge
 i3en.24xlarge
 i3en.metal
+i7ie.24xlarge
+i7ie.48xlarge
 im4gn.16xlarge
 inf1.24xlarge
 inf2.48xlarge
 m5dn.24xlarge
 m5dn.metal
-m5n.24xlarge
-m5n.metal
-m5zn.12xlarge
-NOTE: 19 entries were truncated, increase --max-results to see more
+NOTE: 22 entries were truncated, increase --max-results to see more
 ```
 
 **Short Table Output**
@@ -149,20 +149,20 @@ t3a.medium            2            4
 $ ec2-instance-selector --memory 4 --vcpus 2 --cpu-architecture x86_64 -r us-east-1 -o table-wide
 Instance Type   VCPUs   Mem (GiB)  Hypervisor  Current Gen  Hibernation Support  CPU Arch      Network Performance  ENIs    GPUs    GPU Mem (GiB)  GPU Info  On-Demand Price/Hr  Spot Price/Hr
 -------------   -----   ---------  ----------  -----------  -------------------  --------      -------------------  ----    ----    -------------  --------  ------------------  -------------
-c5.large        2       4          nitro       true         true                 x86_64        Up to 10 Gigabit     3       0       0              none      $0.085              $0.0405
-c5a.large       2       4          nitro       true         false                x86_64        Up to 10 Gigabit     3       0       0              none      $0.077              $0.0308
-c5ad.large      2       4          nitro       true         false                x86_64        Up to 10 Gigabit     3       0       0              none      $0.086              $0.0415
-c5d.large       2       4          nitro       true         true                 x86_64        Up to 10 Gigabit     3       0       0              none      $0.096              $0.0281
-c6a.large       2       4          nitro       true         false                x86_64        Up to 12.5 Gigabit   3       0       0              none      $0.0765             $0.0285
-c6i.large       2       4          nitro       true         true                 x86_64        Up to 12.5 Gigabit   3       0       0              none      $0.085              $0.0292
-c6id.large      2       4          nitro       true         true                 x86_64        Up to 12.5 Gigabit   3       0       0              none      $0.1008             $0.0391
-c6in.large      2       4          nitro       true         false                x86_64        Up to 25 Gigabit     3       0       0              none      $0.1134             $0.0403
-c7a.large       2       4          nitro       true         true                 x86_64        Up to 12.5 Gigabit   3       0       0              none      $0.10264            $0.0457
-c7i-flex.large  2       4          nitro       true         true                 x86_64        Up to 12.5 Gigabit   3       0       0              none      $0.08479            $0.022
-c7i.large       2       4          nitro       true         true                 x86_64        Up to 12.5 Gigabit   3       0       0              none      $0.08925            $0.0359
-t2.medium       2       4          xen         true         true                 i386, x86_64  Low to Moderate      3       0       0              none      $0.0464             $0.0156
-t3.medium       2       4          nitro       true         true                 x86_64        Up to 5 Gigabit      3       0       0              none      $0.0416             $0.015
-t3a.medium      2       4          nitro       true         true                 x86_64        Up to 5 Gigabit      3       0       0              none      $0.0376             $0.0106
+c5.large        2       4          nitro       true         true                 x86_64        Up to 10 Gigabit     3       0       0              none      $0.085              $0.0264
+c5a.large       2       4          nitro       true         false                x86_64        Up to 10 Gigabit     3       0       0              none      $0.077              $0.025
+c5ad.large      2       4          nitro       true         false                x86_64        Up to 10 Gigabit     3       0       0              none      $0.086              $0.0358
+c5d.large       2       4          nitro       true         true                 x86_64        Up to 10 Gigabit     3       0       0              none      $0.096              $0.036
+c6a.large       2       4          nitro       true         true                 x86_64        Up to 12.5 Gigabit   3       0       0              none      $0.0765             $0.0252
+c6i.large       2       4          nitro       true         true                 x86_64        Up to 12.5 Gigabit   3       0       0              none      $0.085              $0.0252
+c6id.large      2       4          nitro       true         true                 x86_64        Up to 12.5 Gigabit   3       0       0              none      $0.1008             $0.0359
+c6in.large      2       4          nitro       true         true                 x86_64        Up to 25 Gigabit     3       0       0              none      $0.1134             $0.043
+c7a.large       2       4          nitro       true         true                 x86_64        Up to 12.5 Gigabit   3       0       0              none      $0.10264            $0.0429
+c7i-flex.large  2       4          nitro       true         true                 x86_64        Up to 12.5 Gigabit   3       0       0              none      $0.08479            $0.0245
+c7i.large       2       4          nitro       true         true                 x86_64        Up to 12.5 Gigabit   3       0       0              none      $0.08925            $0.0367
+t2.medium       2       4          xen         true         true                 i386, x86_64  Low to Moderate      3       0       0              none      $0.0464             $0.0135
+t3.medium       2       4          nitro       true         true                 x86_64        Up to 5 Gigabit      3       0       0              none      $0.0416             $0.016
+t3a.medium      2       4          nitro       true         true                 x86_64        Up to 5 Gigabit      3       0       0              none      $0.0376             $0.0108
 ```
 
 **Interactive Output**
@@ -176,17 +176,17 @@ https://user-images.githubusercontent.com/68402662/184218343-6b236d4a-3fe6-42ae-
 $ ec2-instance-selector -r us-east-1 -o table-wide --max-results 10 --sort-by memory --sort-direction asc
 Instance Type  VCPUs   Mem (GiB)  Hypervisor  Current Gen  Hibernation Support  CPU Arch      Network Performance  ENIs    GPUs    GPU Mem (GiB)  GPU Info  On-Demand Price/Hr  Spot Price/Hr
 -------------  -----   ---------  ----------  -----------  -------------------  --------      -------------------  ----    ----    -------------  --------  ------------------  -------------
-t3a.nano       2       0.5        nitro       true         true                 x86_64        Up to 5 Gigabit      2       0       0              none      $0.0047             $0.0018
 t2.nano        1       0.5        xen         true         true                 i386, x86_64  Low to Moderate      2       0       0              none      $0.0058             -Not Fetched-
-t4g.nano       2       0.5        nitro       true         true                 arm64         Up to 5 Gigabit      2       0       0              none      $0.0042             $0.0018
-t3.nano        2       0.5        nitro       true         true                 x86_64        Up to 5 Gigabit      2       0       0              none      $0.0052             $0.0006
-t1.micro       1       0.6123     xen         false        false                i386, x86_64  Very Low             2       0       0              none      $0.02               $0.0021
-t3.micro       2       1          nitro       true         true                 x86_64        Up to 5 Gigabit      2       0       0              none      $0.0104             $0.0029
-t2.micro       1       1          xen         true         true                 i386, x86_64  Low to Moderate      2       0       0              none      $0.0116             $0.0016
-t4g.micro      2       1          nitro       true         true                 arm64         Up to 5 Gigabit      2       0       0              none      $0.0084             $0.0024
-t3a.micro      2       1          nitro       true         true                 x86_64        Up to 5 Gigabit      2       0       0              none      $0.0094             $0.0031
-m1.small       1       1.69922    xen         false        false                i386, x86_64  Low                  2       0       0              none      $0.044              $0.0048
-NOTE: 832 entries were truncated, increase --max-results to see more
+t4g.nano       2       0.5        nitro       true         true                 arm64         Up to 5 Gigabit      2       0       0              none      $0.0042             $0.0011
+t3.nano        2       0.5        nitro       true         true                 x86_64        Up to 5 Gigabit      2       0       0              none      $0.0052             $0.0011
+t3a.nano       2       0.5        nitro       true         true                 x86_64        Up to 5 Gigabit      2       0       0              none      $0.0047             $0.0022
+t1.micro       1       0.6123     xen         false        false                i386, x86_64  Very Low             2       0       0              none      $0.02               $0.0024
+t2.micro       1       1          xen         true         true                 i386, x86_64  Low to Moderate      2       0       0              none      $0.0116             $0.0029
+t3a.micro      2       1          nitro       true         true                 x86_64        Up to 5 Gigabit      2       0       0              none      $0.0094             $0.0033
+t4g.micro      2       1          nitro       true         true                 arm64         Up to 5 Gigabit      2       0       0              none      $0.0084             $0.0046
+t3.micro       2       1          nitro       true         true                 x86_64        Up to 5 Gigabit      2       0       0              none      $0.0104             $0.0028
+m1.small       1       1.69922    xen         false        false                i386, x86_64  Low                  2       0       0              none      $0.044              $0.0115
+NOTE: 855 entries were truncated, increase --max-results to see more
 ```
 Available shorthand flags: vcpus, memory, gpu-memory-total, network-interfaces, spot-price, on-demand-price, instance-storage, ebs-optimized-baseline-bandwidth, ebs-optimized-baseline-throughput, ebs-optimized-baseline-iops, gpus, inference-accelerators
 
@@ -203,9 +203,9 @@ u7in-16tb.224xlarge  896     16,384     nitro       true         false          
 u7i-12tb.224xlarge   896     12,288     nitro       true         false                x86_64    100 Gigabit          15      0       0              none      $152.88             -Not Fetched-
 u-12tb1.112xlarge    448     12,288     nitro       true         false                x86_64    100 Gigabit          15      0       0              none      $109.2              -Not Fetched-
 u-9tb1.112xlarge     448     9,216      nitro       true         false                x86_64    100 Gigabit          15      0       0              none      $81.9               -Not Fetched-
+u7i-8tb.112xlarge    448     8,192      nitro       true         false                x86_64    100 Gigabit          15      0       0              none      $83.72              -Not Fetched-
 u-6tb1.56xlarge      224     6,144      nitro       true         false                x86_64    100 Gigabit          15      0       0              none      $46.40391           -Not Fetched-
-u-6tb1.112xlarge     448     6,144      nitro       true         false                x86_64    100 Gigabit          15      0       0              none      $54.6               -Not Fetched-
-NOTE: 832 entries were truncated, increase --max-results to see more
+NOTE: 855 entries were truncated, increase --max-results to see more
 ```
 JSON path must point to a field in the [instancetype.Details struct](https://github.com/aws/amazon-ec2-instance-selector/blob/5bffbf2750ee09f5f1308bdc8d4b635a2c6e2721/pkg/instancetypes/instancetypes.go#L37).
 
@@ -367,7 +367,7 @@ NOTE: There were no transformations on the filters to display
         "SpotPrice": null
     }
 ]
-NOTE: 841 entries were truncated, increase --max-results to see more
+NOTE: 864 entries were truncated, increase --max-results to see more
 ```
 NOTE: Use this JSON format as reference when finding JSON paths for sorting
 
@@ -437,6 +437,7 @@ Filter Flags:
       --instance-storage string                        Amount of local instance storage (Example: 4 GiB) (sets --instance-storage-min and -max to the same value)
       --instance-storage-max string                    Maximum Amount of local instance storage (Example: 4 GiB) If --instance-storage-min is not specified, the lower bound will be 0
       --instance-storage-min string                    Minimum Amount of local instance storage (Example: 4 GiB) If --instance-storage-max is not specified, the upper bound will be infinity
+      --instance-types strings                         Instance Type names (must be exact, use allow-list for regex)
       --ipv6                                           Instance Types that support IPv6
   -m, --memory string                                  Amount of Memory available (Example: 4 GiB) (sets --memory-min and -max to the same value)
       --memory-max string                              Maximum Amount of Memory available (Example: 4 GiB) If --memory-min is not specified, the lower bound will be 0

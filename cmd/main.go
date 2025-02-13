@@ -104,6 +104,7 @@ const (
 	dedicatedHosts                   = "dedicated-hosts"
 	debug                            = "debug"
 	generation                       = "generation"
+	instanceTypes                    = "instance-types"
 )
 
 // Aggregate Filter Flags.
@@ -208,6 +209,7 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	cli.BoolFlag(autoRecovery, nil, nil, "EC2 Auto-Recovery supported")
 	cli.BoolFlag(dedicatedHosts, nil, nil, "Dedicated Hosts supported")
 	cli.IntMinMaxRangeFlags(generation, nil, nil, "Generation of the instance type (i.e. c7i.xlarge is 7)")
+	cli.StringSliceFlag(instanceTypes, nil, nil, "Instance Type names (must be exact, use allow-list for regex)")
 
 	// Suite Flags - higher level aggregate filters that return opinionated result
 
@@ -425,6 +427,7 @@ Full docs can be found at github.com/aws/amazon-` + binName
 		AutoRecovery:                     cli.BoolMe(flags[autoRecovery]),
 		DedicatedHosts:                   cli.BoolMe(flags[dedicatedHosts]),
 		Generation:                       cli.IntRangeMe(flags[generation]),
+		InstanceTypes:                    cli.StringSliceMe(flags[instanceTypes]),
 	}
 
 	if flags[verbose] != nil {

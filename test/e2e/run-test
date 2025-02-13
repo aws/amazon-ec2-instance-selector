@@ -93,7 +93,7 @@ params=(
 )
 echo "${expected[*]}" | execute_test "24 VCPUs" "${params[@]}"
 
-expected=(g3.16xlarge g4ad.16xlarge g4dn.12xlarge g5.12xlarge g5.24xlarge g6.12xlarge g6.24xlarge g6e.12xlarge g6e.24xlarge p3.8xlarge)
+expected=(g4ad.16xlarge g4dn.12xlarge g5.12xlarge g5.24xlarge g6.12xlarge g6.24xlarge g6e.12xlarge g6e.24xlarge p3.8xlarge)
 params=(
     "--gpus=4"
     "--gpus-min=4 --gpus-max=4"
@@ -119,8 +119,10 @@ params=(
 echo "${expected[*]}" | execute_test "96 GiB gpu-memory-total" "${params[@]}"
 
 
-expected=(a1.large c3.large c4.large c5.large c5a.large c5d.large c5n.large c6g.large c6gd.large \
-    g4dn.2xlarge g4dn.4xlarge g4dn.xlarge i3.large i3en.large m1.large m3.large m5.large m5a.large m5ad.large m5d.large)
+expected=(a1.large c3.large c4.large c5.large c5a.large c5ad.large c5d.large c5n.large c6a.large c6g.large c6gd.large \
+            c6gn.large c6i.large c6id.large c6in.large c7a.large c7g.large c7gd.large c7gn.large c7i-flex.large c7i.large \
+            c8g.large d3.8xlarge d3en.12xlarge g4ad.4xlarge g4dn.2xlarge g4dn.4xlarge g4dn.xlarge i3.large i3en.large i4g.large \
+            i4i.large i7ie.large i8g.large im4gn.large is4gen.large m1.large m3.large m5.large m5a.large)
 params=(
     "--network-interfaces=3"
     "--network-interfaces-min=3 --network-interfaces-max=3"

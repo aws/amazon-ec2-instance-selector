@@ -303,6 +303,12 @@ func (s Selector) prepareFilter(ctx context.Context, filters Filters, instanceTy
 	eneaSupport := string(instanceTypeInfo.NetworkInfo.EnaSupport)
 	ebsOptimizedSupport := string(instanceTypeInfo.EbsInfo.EbsOptimizedSupport)
 
+	// If an empty slice is passed, treat the filter as nil
+	filterInstanceTypes := filters.InstanceTypes
+	if filterInstanceTypes != nil && len(*filterInstanceTypes) == 0 {
+		filterInstanceTypes = nil
+	}
+
 	// filterToInstanceSpecMappingPairs is a map of filter name [key] to filter pair [value].
 	// A filter pair includes user input filter value and instance spec value retrieved from DescribeInstanceTypes
 	filterToInstanceSpecMappingPairs := map[string]filterPair{
@@ -329,7 +335,7 @@ func (s Selector) prepareFilter(ctx context.Context, filters Filters, instanceTy
 		networkPerformance:               {filters.NetworkPerformance, getNetworkPerformance(instanceTypeInfo.NetworkInfo.NetworkPerformance)},
 		networkEncryption:                {filters.NetworkEncryption, instanceTypeInfo.NetworkInfo.EncryptionInTransitSupported},
 		ipv6:                             {filters.IPv6, instanceTypeInfo.NetworkInfo.Ipv6Supported},
-		instanceTypes:                    {filters.InstanceTypes, instanceTypeInfo.InstanceType},
+		instanceTypes:                    {filterInstanceTypes, aws.String(string(instanceTypeInfo.InstanceType))},
 		virtualizationType:               {filters.VirtualizationType, instanceTypeInfo.SupportedVirtualizationTypes},
 		pricePerHour:                     {filters.PricePerHour, &instanceTypeHourlyPriceForFilter},
 		instanceStorageRange:             {filters.InstanceStorageRange, getInstanceStorage(instanceTypeInfo.InstanceStorageInfo)},
