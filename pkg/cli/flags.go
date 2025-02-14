@@ -386,7 +386,7 @@ func (cl *CommandLineInterface) StringOptionsFlagOnFlagSet(flagSet *pflag.FlagSe
 			return nil
 		}
 		for _, v := range validOpts {
-			if v == *val.(*string) {
+			if strings.EqualFold(v, *val.(*string)) {
 				return nil
 			}
 		}

@@ -104,6 +104,7 @@ const (
 	dedicatedHosts                   = "dedicated-hosts"
 	debug                            = "debug"
 	generation                       = "generation"
+	instanceTypes                    = "instance-types"
 )
 
 // Aggregate Filter Flags.
@@ -167,8 +168,8 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	cli.Int32MinMaxRangeFlags(vcpus, cli.StringMe("c"), nil, "Number of vcpus available to the instance type.")
 	cli.ByteQuantityMinMaxRangeFlags(memory, cli.StringMe("m"), nil, "Amount of Memory available (Example: 4 GiB)")
 	cli.RatioFlag(vcpusToMemoryRatio, nil, nil, "The ratio of vcpus to GiBs of memory. (Example: 1:2)")
-	cli.StringOptionsFlag(cpuArchitecture, cli.StringMe("a"), nil, "CPU architecture [x86_64, amd64, x86_64_mac, i386, or arm64]", []string{"x86_64", "x86_64_mac", "amd64", "i386", "arm64"})
-	cli.StringOptionsFlag(cpuManufacturer, nil, nil, "CPU manufacturer [amd, intel, aws]", []string{"amd", "intel", "aws"})
+	cli.StringOptionsFlag(cpuArchitecture, cli.StringMe("a"), nil, "CPU architecture [x86_64, amd64, x86_64_mac, i386, arm64, or arm64_mac]", []string{"x86_64", "x86_64_mac", "amd64", "i386", "arm64", "arm64_mac"})
+	cli.StringOptionsFlag(cpuManufacturer, nil, nil, "CPU manufacturer [amd, intel, aws, apple]", []string{"amd", "intel", "aws", "apple"})
 	cli.Int32MinMaxRangeFlags(gpus, cli.StringMe("g"), nil, "Total Number of GPUs (Example: 4)")
 	cli.ByteQuantityMinMaxRangeFlags(gpuMemoryTotal, nil, nil, "Number of GPUs' total memory (Example: 4 GiB)")
 	cli.StringFlag(gpuManufacturer, nil, nil, "GPU Manufacturer name (Example: NVIDIA)", nil)
@@ -208,6 +209,7 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	cli.BoolFlag(autoRecovery, nil, nil, "EC2 Auto-Recovery supported")
 	cli.BoolFlag(dedicatedHosts, nil, nil, "Dedicated Hosts supported")
 	cli.IntMinMaxRangeFlags(generation, nil, nil, "Generation of the instance type (i.e. c7i.xlarge is 7)")
+	cli.StringSliceFlag(instanceTypes, nil, nil, "Instance Type names (must be exact, use allow-list for regex)")
 
 	// Suite Flags - higher level aggregate filters that return opinionated result
 
@@ -425,6 +427,7 @@ Full docs can be found at github.com/aws/amazon-` + binName
 		AutoRecovery:                     cli.BoolMe(flags[autoRecovery]),
 		DedicatedHosts:                   cli.BoolMe(flags[dedicatedHosts]),
 		Generation:                       cli.IntRangeMe(flags[generation]),
+		InstanceTypes:                    cli.StringSliceMe(flags[instanceTypes]),
 	}
 
 	if flags[verbose] != nil {

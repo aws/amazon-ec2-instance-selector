@@ -29,7 +29,6 @@ const (
 )
 
 var (
-	amdRegex      = regexp.MustCompile(`[a-zA-Z0-9]+a\\.[a-zA-Z0-9]`)
 	networkPerfRE = regexp.MustCompile(`[0-9]+ Gigabit`)
 	generationRE  = regexp.MustCompile(`[a-zA-Z]+([0-9]+)`)
 )
@@ -41,7 +40,7 @@ func isSupportedFromString(instanceTypeValue *string, target *string) bool {
 	if instanceTypeValue == nil {
 		return false
 	}
-	return *instanceTypeValue == *target
+	return strings.EqualFold(*instanceTypeValue, *target)
 }
 
 func isSupportedFromStrings(instanceTypeValues []*string, target *string) bool {
@@ -83,7 +82,7 @@ func isSupportedUsageClassType(instanceTypeValue []ec2types.UsageClassType, targ
 	}
 
 	for _, potentialType := range instanceTypeValue {
-		if potentialType == *target {
+		if strings.EqualFold(string(potentialType), string(*target)) {
 			return true
 		}
 	}
@@ -102,7 +101,7 @@ func isSupportedArchitectureType(instanceTypeValue []ec2types.ArchitectureType, 
 	}
 
 	for _, potentialType := range instanceTypeValue {
-		if potentialType == *target {
+		if strings.EqualFold(string(potentialType), string(*target)) {
 			return true
 		}
 	}
@@ -120,7 +119,7 @@ func isSupportedVirtualizationType(instanceTypeValue []ec2types.VirtualizationTy
 		return true
 	}
 	for _, potentialType := range instanceTypeValue {
-		if potentialType == *target {
+		if strings.EqualFold(string(potentialType), string(*target)) {
 			return true
 		}
 	}
@@ -134,7 +133,7 @@ func isSupportedInstanceTypeHypervisorType(instanceTypeValue ec2types.InstanceTy
 	if reflect.ValueOf(*target).IsZero() {
 		return true
 	}
-	if instanceTypeValue == *target {
+	if strings.EqualFold(string(instanceTypeValue), string(*target)) {
 		return true
 	}
 	return false
@@ -151,7 +150,7 @@ func isSupportedRootDeviceType(instanceTypeValue []ec2types.RootDeviceType, targ
 		return true
 	}
 	for _, potentialType := range instanceTypeValue {
-		if potentialType == *target {
+		if strings.EqualFold(string(potentialType), string(*target)) {
 			return true
 		}
 	}
@@ -165,7 +164,7 @@ func isMatchingCpuArchitecture(instanceTypeValue CPUManufacturer, target *CPUMan
 	if reflect.ValueOf(*target).IsZero() {
 		return true
 	}
-	if instanceTypeValue == *target {
+	if strings.EqualFold(string(instanceTypeValue), string(*target)) {
 		return true
 	}
 	return false
@@ -374,19 +373,6 @@ func getEBSOptimizedBaselineIOPS(ebsInfo *ec2types.EbsInfo) *int32 {
 		return nil
 	}
 	return ebsInfo.EbsOptimizedInfo.BaselineIops
-}
-
-func getCPUManufacturer(instanceTypeInfo *ec2types.InstanceTypeInfo) CPUManufacturer {
-	for _, it := range instanceTypeInfo.ProcessorInfo.SupportedArchitectures {
-		if it == ec2types.ArchitectureTypeArm64 {
-			return CPUManufacturerAWS
-		}
-	}
-
-	if amdRegex.Match([]byte(instanceTypeInfo.InstanceType)) {
-		return CPUManufacturerAMD
-	}
-	return CPUManufacturerIntel
 }
 
 // getInstanceTypeGeneration returns the generation from an instance type name
