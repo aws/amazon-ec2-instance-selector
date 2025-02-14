@@ -309,11 +309,16 @@ func (s Selector) prepareFilter(ctx context.Context, filters Filters, instanceTy
 		filterInstanceTypes = nil
 	}
 
+	var cpuManufacturerFilter *string
+	if filters.CPUManufacturer != nil {
+		cpuManufacturerFilter = aws.String(string(*filters.CPUManufacturer))
+	}
+
 	// filterToInstanceSpecMappingPairs is a map of filter name [key] to filter pair [value].
 	// A filter pair includes user input filter value and instance spec value retrieved from DescribeInstanceTypes
 	filterToInstanceSpecMappingPairs := map[string]filterPair{
 		cpuArchitecture:                  {filters.CPUArchitecture, instanceTypeInfo.ProcessorInfo.SupportedArchitectures},
-		cpuManufacturer:                  {filters.CPUManufacturer, getCPUManufacturer(&instanceTypeInfo.InstanceTypeInfo)},
+		cpuManufacturer:                  {cpuManufacturerFilter, instanceTypeInfo.ProcessorInfo.Manufacturer},
 		usageClass:                       {filters.UsageClass, instanceTypeInfo.SupportedUsageClasses},
 		rootDeviceType:                   {filters.RootDeviceType, instanceTypeInfo.SupportedRootDeviceTypes},
 		hibernationSupported:             {filters.HibernationSupported, instanceTypeInfo.HibernationSupported},
