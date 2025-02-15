@@ -50,7 +50,9 @@ brew install ec2-instance-selector
 #### Install w/ Curl for Linux/Mac
 
 ```
-curl -Lo ec2-instance-selector https://github.com/aws/amazon-ec2-instance-selector/releases/download/v2.4.1/ec2-instance-selector-`uname | tr '[:upper:]' '[:lower:]'`-amd64 && chmod +x ec2-instance-selector
+os=$(uname | tr 'A-Z' 'a-z')
+arch=$(printf "%s" "$(uname -m | tr 'A-Z' 'a-z' | sed -E 's/x86_64|i[3-6]86/amd64/;s/aarch64|arm64/arm64/')")
+curl -Lo ec2-instance-selector https://github.com/aws/amazon-ec2-instance-selector/releases/download/v3.1.0/ec2-instance-selector-$os-$arch && chmod +x ec2-instance-selector
 sudo mv ec2-instance-selector /usr/local/bin/
 ec2-instance-selector --version
 ```
