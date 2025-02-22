@@ -174,7 +174,7 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	cli.ByteQuantityMinMaxRangeFlags(gpuMemoryTotal, nil, nil, "Number of GPUs' total memory (Example: 4 GiB)")
 	cli.StringFlag(gpuManufacturer, nil, nil, "GPU Manufacturer name (Example: NVIDIA)", nil)
 	cli.StringFlag(gpuModel, nil, nil, "GPU Model name (Example: K520)", nil)
-	cli.IntMinMaxRangeFlags(inferenceAccelerators, nil, nil, "Total Number of inference accelerators (Example: 4)")
+	cli.Int32MinMaxRangeFlags(inferenceAccelerators, nil, nil, "Total Number of inference accelerators (Example: 4)")
 	cli.StringFlag(inferenceAcceleratorManufacturer, nil, nil, "Inference Accelerator Manufacturer name (Example: AWS)", nil)
 	cli.StringFlag(inferenceAcceleratorModel, nil, nil, "Inference Accelerator Model name (Example: Inferentia)", nil)
 	cli.StringOptionsFlag(placementGroupStrategy, nil, nil, "Placement group strategy: [cluster, partition, spread]", []string{"cluster", "partition", "spread"})
@@ -387,7 +387,7 @@ Full docs can be found at github.com/aws/amazon-` + binName
 		GpuMemoryRange:                   cli.ByteQuantityRangeMe(flags[gpuMemoryTotal]),
 		GPUManufacturer:                  cli.StringMe(flags[gpuManufacturer]),
 		GPUModel:                         cli.StringMe(flags[gpuModel]),
-		InferenceAcceleratorsRange:       cli.IntRangeMe(flags[inferenceAccelerators]),
+		InferenceAcceleratorsRange:       cli.Int32RangeMe(flags[inferenceAccelerators]),
 		InferenceAcceleratorManufacturer: cli.StringMe(flags[inferenceAcceleratorManufacturer]),
 		InferenceAcceleratorModel:        cli.StringMe(flags[inferenceAcceleratorModel]),
 		PlacementGroupStrategy:           cli.StringMe(flags[placementGroupStrategy]),
