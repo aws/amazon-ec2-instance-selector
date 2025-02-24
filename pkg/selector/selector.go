@@ -484,6 +484,14 @@ func exec(instanceType ec2types.InstanceType, filterName string, filter filterPa
 			if !isSupportedWithRangeInt64(iSpec, filter) {
 				return false, nil
 			}
+		case *int32:
+			var iSpec64 *int64
+			if iSpec != nil {
+				iSpec64 = aws.Int64(int64(*iSpec))
+			}
+			if !isSupportedWithRangeInt64(iSpec64, filter) {
+				return false, nil
+			}
 		case *int:
 			if !isSupportedWithRangeInt(iSpec, filter) {
 				return false, nil

@@ -162,7 +162,7 @@ type Filters struct {
 	GPUModel *string
 
 	// InferenceAcceleratorsRange filters inference accelerators available to the instance type
-	InferenceAcceleratorsRange *IntRangeFilter
+	InferenceAcceleratorsRange *Int32RangeFilter
 
 	// InferenceAcceleratorManufacturer filters by inference acceleartor manufacturer
 	InferenceAcceleratorManufacturer *string
