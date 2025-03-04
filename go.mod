@@ -10,7 +10,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/pricing v1.32.17
 	github.com/blang/semver/v4 v4.0.0
 	github.com/charmbracelet/bubbles v0.20.0
-	github.com/charmbracelet/bubbletea v1.3.3
+	github.com/charmbracelet/bubbletea v1.3.4
 	github.com/charmbracelet/lipgloss v1.0.0
 	github.com/evertras/bubble-table v0.17.1
 	github.com/mitchellh/go-homedir v1.1.0
