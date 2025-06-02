@@ -566,7 +566,7 @@ $ go run cmd/examples/example1.go
 ```
 ## Compare 2 instances to find exact differences
 
-Run this once:
+Install and run this once:
 ```
 chmod a+x scripts/compare.sh
 
@@ -582,6 +582,10 @@ scripts/compare.sh c6i.large c5.large
 scripts/compare.sh x2iedn.32xlarge x2iedn.24xlarge
 ```
 See public docs here: https://docs.aws.amazon.com/ec2/latest/instancetypes/ac.html
+
+Demo Image:
+![image](./image%20(14).png)
+
 
 ## Building
 For build instructions please consult [BUILD.md](./BUILD.md).
