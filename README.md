@@ -584,7 +584,7 @@ scripts/compare.sh x2iedn.32xlarge x2iedn.24xlarge
 See public docs here: https://docs.aws.amazon.com/ec2/latest/instancetypes/ac.html
 
 Demo Image:
-![image](./image%20(14).png)
+![image](./assets/image%20(14).png)
 
 
 ## Building
