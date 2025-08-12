@@ -244,7 +244,7 @@ Full docs can be found at github.com/aws/amazon-` + binName
 	}
 
 	if flags[version] != nil {
-		fmt.Printf("%s", versionID)
+		fmt.Printf("%s\n", versionID)
 		os.Exit(0)
 	}
 
