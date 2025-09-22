@@ -3,7 +3,7 @@ module github.com/aws/amazon-ec2-instance-selector/v3
 go 1.24.0
 
 require (
-	dario.cat/mergo v1.0.1
+	dario.cat/mergo v1.0.2
 	github.com/aws/aws-sdk-go-v2 v1.39.0
 	github.com/aws/aws-sdk-go-v2/config v1.31.8
 	github.com/aws/aws-sdk-go-v2/service/ec2 v1.253.0
