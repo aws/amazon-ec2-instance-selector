@@ -13,7 +13,7 @@ jobs:
 
   buildAndTest:
     name: Build and Test
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
     - name: Check out code into the Go module directory
       uses: actions/checkout@v4
@@ -54,7 +54,7 @@ jobs:
 
   release:
     name: Release
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     needs: [buildAndTest]
     if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
     steps:
