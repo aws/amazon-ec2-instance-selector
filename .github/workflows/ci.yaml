@@ -9,6 +9,9 @@ env:
   DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
   DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
+permissions:
+  contents: write
+
 jobs:
 
   buildAndTest:
