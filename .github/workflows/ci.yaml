@@ -2,6 +2,9 @@ name: EC2 Instance Selector CI and Release
 
 on: [push, pull_request, workflow_dispatch]
 
+permissions:
+  id-token: write
+
 env:
   GITHUB_USERNAME: ${{ secrets.EC2_BOT_GITHUB_USERNAME }}
   GITHUB_TOKEN: ${{ secrets.EC2_BOT_GITHUB_TOKEN }}
@@ -42,15 +45,18 @@ jobs:
 
     - name: Build Docker Images
       run: make build-docker-images
+  
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      if: ${{ github.event_name == 'push' && !contains(github.ref, 'dependabot') }}
+      with:
+        role-to-assume: ${{ secrets.WF_ROLE_ARN }}
+        role-session-name: "selector-build-test-${{ github.run_id }}"
+        aws-region: us-east-1
 
     - name: Integration Tests
       if: ${{ github.event_name == 'push' && !contains(github.ref, 'dependabot') }}
       run: make integ-test
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
-        AWS_REGION: ${{ secrets.AWS_REGION }}
 
   release:
     name: Release
