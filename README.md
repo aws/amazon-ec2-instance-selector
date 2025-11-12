@@ -567,6 +567,28 @@ $ cd amazon-ec2-instance-selector/
 $ go run cmd/examples/example1.go
 [c4.large c5.large c5a.large c5ad.large c5d.large c6a.large c6i.large c6id.large c6in.large c7a.large c7i-flex.large c7i.large t2.medium t3.medium t3.small t3a.medium t3a.small]
 ```
+## Compare 2 instances to find exact differences
+
+Install and run this once:
+```
+chmod a+x scripts/compare.sh
+
+```
+Next, you can use this script to select any 2 instance types and get a nice comparable UI with the differences highlighted. Comes in very handy to see the difference between new generations of the same instance families or successive instance sizes of the same family in terms of dimentions like EBS volume etc.
+
+#### Examples: 
+
+```
+scripts/compare.sh c6i.large c5.large
+```
+```
+scripts/compare.sh x2iedn.32xlarge x2iedn.24xlarge
+```
+See public docs here: https://docs.aws.amazon.com/ec2/latest/instancetypes/ac.html
+
+Demo Image:
+![image](./assets/image%20(14).png)
+
 
 ## Building
 For build instructions please consult [BUILD.md](./BUILD.md).
