@@ -1,4 +1,4 @@
-FROM golang:1.25 as builder
+FROM public.ecr.aws/docker/library/golang:1.25 as builder
 
 ## GOLANG env
 ARG GOPROXY="https://proxy.golang.org|direct"
@@ -22,7 +22,8 @@ RUN make build
 CMD ["/amazon-ec2-instance-selector/build/ec2-instance-selector"]
 
 # Copy the binary into a thin image
-FROM amazonlinux:2 as amazonlinux
+FROM public.ecr.aws/amazonlinux/amazonlinux:2023-minimal as amazonlinux
+
 FROM scratch
 WORKDIR /
 COPY --from=builder /amazon-ec2-instance-selector/build/ec2-instance-selector .
