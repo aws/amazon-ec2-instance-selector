@@ -4,10 +4,10 @@ set -euo pipefail
 ROOT_PATH="$( cd "$(dirname "$0")" ; pwd -P )/../../"
 EXIT_CODE=0
 
-while read pkg_license_tuple; do
-    pkg=$(echo $pkg_license_tuple | tr -s " " | cut -d" " -f1)
-    license=$(echo $pkg_license_tuple | tr -s " " | cut -d" " -f2-)
-    if [[ "$(grep -c ${pkg} ${ROOT_PATH}/THIRD_PARTY_LICENSES)" -ge 1 ]]; then
+while read -r pkg_license_tuple; do
+    pkg=$(echo "$pkg_license_tuple" | tr -s " " | cut -d" " -f1)
+    license=$(echo "$pkg_license_tuple" | tr -s " " | cut -d" " -f2-)
+    if [[ "$(grep -c "${pkg}" "${ROOT_PATH}/THIRD_PARTY_LICENSES")" -ge 1 ]]; then
         echo "✅ FOUND ${pkg} (${license})"
     else
         echo "🔴 MISSING for ${pkg} (${license})"

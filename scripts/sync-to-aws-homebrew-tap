@@ -85,9 +85,9 @@ if [[ -z "${REPO}" ]]; then
 fi
 
 if [[ -z $(command -v gh) ]] || [[ ! $(gh --version) =~ $GH_CLI_VERSION ]]; then
-  mkdir -p ${BUILD_DIR}/gh
-  curl -Lo ${BUILD_DIR}/gh/gh.tar.gz "https://github.com/cli/cli/releases/download/v${GH_CLI_VERSION}/gh_${GH_CLI_VERSION}_${OS}_amd64.tar.gz"
-  tar -C ${BUILD_DIR}/gh -xvf "${BUILD_DIR}/gh/gh.tar.gz"
+  mkdir -p "${BUILD_DIR}/gh"
+  curl -Lo "${BUILD_DIR}/gh/gh.tar.gz" "https://github.com/cli/cli/releases/download/v${GH_CLI_VERSION}/gh_${GH_CLI_VERSION}_${OS}_amd64.tar.gz"
+  tar -C "${BUILD_DIR}/gh" -xvf "${BUILD_DIR}/gh/gh.tar.gz"
   export PATH="${BUILD_DIR}/gh/gh_${GH_CLI_VERSION}_${OS}_amd64/bin:$PATH"
   if [[ ! $(gh --version) =~ $GH_CLI_VERSION ]]; then
     echo "❌ Failed install of github cli"
@@ -99,7 +99,7 @@ function restore_gh_config() {
   mv -f "${GH_CLI_CONFIG_PATH}.bkup" "${GH_CLI_CONFIG_PATH}" || :
 }
 
-if [[ -n $(env | grep GITHUB_TOKEN) ]] && [[ -n "${GITHUB_TOKEN}" ]]; then
+if env | grep -q GITHUB_TOKEN && [[ -n "${GITHUB_TOKEN}" ]]; then
   trap restore_gh_config EXIT INT TERM ERR
   mkdir -p "${HOME}/.config/gh"
   cp -f "${GH_CLI_CONFIG_PATH}" "${GH_CLI_CONFIG_PATH}.bkup" || :
@@ -131,7 +131,7 @@ LINUX_ARM64_HASH=""
 
 function hash_file() {
   local file="${1}"
-  echo "$(openssl dgst -sha256 "${file}" | cut -d' ' -f2 | tr -d '\n')"
+  openssl dgst -sha256 "${file}" | cut -d' ' -f2 | tr -d '\n'
 }
 
 for os_arch in "${PLATFORMS[@]}"; do
@@ -153,8 +153,8 @@ for os_arch in "${PLATFORMS[@]}"; do
     if [[ "${asset_file_size}" -lt 100 ]]; then
       ## If we cannot download and dry-run is set, build it locally
       if [[ "${DRY_RUN}" -eq 1 ]]; then 
-        ${SCRIPTPATH}/build-binaries -d -v "${VERSION}" -p "${os_arch}"
-        cp "${BUILD_DIR}/bin/${asset_file}" ${asset_file_path}
+        "${SCRIPTPATH}/build-binaries" -v "${VERSION}" -p "${os_arch}"
+        cp "${BUILD_DIR}/bin/${asset_file}" "${asset_file_path}"
       else 
         echo "❗️${asset_file_path} is empty, skipping"
         continue
@@ -198,7 +198,7 @@ if [[ "${DRY_RUN}" -eq 0 ]]; then
   cd "${SYNC_DIR}"
   gh repo fork $TAP_REPO --clone --remote
   cd "${FORK_DIR}"
-  git remote set-url origin https://${GITHUB_USERNAME}:${GITHUB_TOKEN}@github.com/${GITHUB_USERNAME}/${TAP_NAME}.git
+  git remote set-url origin https://"${GITHUB_USERNAME}":"${GITHUB_TOKEN}"@github.com/"${GITHUB_USERNAME}"/"${TAP_NAME}".git
   DEFAULT_BRANCH=$(git rev-parse --abbrev-ref HEAD | tr -d '\n')
 
   git config user.name "ec2-bot 🤖"
@@ -209,7 +209,7 @@ if [[ "${DRY_RUN}" -eq 0 ]]; then
   git push -u origin "${DEFAULT_BRANCH}"
 
   FORK_RELEASE_BRANCH="${BINARY_BASE}-${VERSION}-${BUILD_ID}"
-  git checkout -b "${FORK_RELEASE_BRANCH}" upstream/${DEFAULT_BRANCH}
+  git checkout -b "${FORK_RELEASE_BRANCH}" upstream/"${DEFAULT_BRANCH}"
 
   cp "${BREW_CONFIG_DIR}/${BINARY_BASE}.json" "${FORK_DIR}/bottle-configs/${BINARY_BASE}.json"
   
@@ -217,11 +217,11 @@ if [[ "${DRY_RUN}" -eq 0 ]]; then
   git commit -m "${BINARY_BASE} update to version ${VERSION_NUM}"
 
   RELEASE_ID=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
-    https://api.github.com/repos/${REPO}/releases | \
+    https://api.github.com/repos/"${REPO}"/releases | \
     jq --arg VERSION "$VERSION" '.[] | select(.tag_name==$VERSION) | .id')
   
   RELEASE_NOTES=$(curl -s -H "Authorization: token ${GITHUB_TOKEN}" \
-    https://api.github.com/repos/${REPO}/releases/${RELEASE_ID} | \
+    https://api.github.com/repos/"${REPO}"/releases/"${RELEASE_ID}" | \
     jq -r '.body')
 
   PR_BODY=$(cat << EOM
