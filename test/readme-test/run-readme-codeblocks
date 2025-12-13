@@ -10,33 +10,35 @@ function exit_and_fail() {
    exit 1
 }
 trap exit_and_fail INT ERR
-docker build --target=builder -t codeblocks -f $SCRIPTPATH/../../Dockerfile $SCRIPTPATH/../../
-docker build -t rundoc -f $SCRIPTPATH/rundoc-Dockerfile $SCRIPTPATH/
+docker build --target=builder -t codeblocks -f "$SCRIPTPATH/../../Dockerfile" "$SCRIPTPATH/../../"
+docker build -t rundoc -f "$SCRIPTPATH/rundoc-Dockerfile" "$SCRIPTPATH/"
 function rd() {
-   docker run -i --rm -v $SCRIPTPATH/../../:/aeis rundoc rundoc "$@"
+   docker run -i --rm -v "$SCRIPTPATH/../../":/aeis rundoc rundoc "$@"
 }
 
 rundoc_output=$(rd list-blocks /aeis/README.md)
-example_files=($(echo $rundoc_output | jq -r '.code_blocks[] | .tags[1]'))
-interpreters=($(echo $rundoc_output | jq -r '.code_blocks[] | .interpreter'))
+# shellcheck disable=SC2207 # Array assignment from command substitution is intentional here
+example_files=($(echo "$rundoc_output" | jq -r '.code_blocks[] | .tags[1]'))
+# shellcheck disable=SC2207 # Array assignment from command substitution is intentional here
+interpreters=($(echo "$rundoc_output" | jq -r '.code_blocks[] | .interpreter'))
 
 ## Execute --help check which compares the help codeblock in the README to the actual output of the binary
-rd list-blocks -T "bash#help" /aeis/README.md | jq -r '.code_blocks[0] .code' > $BUILD_DIR/readme_help.out
-docker run -t --rm codeblocks build/ec2-instance-selector --help | perl -pe 's/\e\[?.*?[a-zA-Z]//g' > $BUILD_DIR/actual_help.out
+rd list-blocks -T "bash#help" /aeis/README.md | jq -r '.code_blocks[0] .code' > "$BUILD_DIR/readme_help.out"
+docker run -t --rm codeblocks build/ec2-instance-selector --help | perl -pe 's/\e\[?.*?[a-zA-Z]//g' > "$BUILD_DIR/actual_help.out"
 diff --ignore-all-space --ignore-blank-lines --ignore-trailing-space "$BUILD_DIR/actual_help.out" "$BUILD_DIR/readme_help.out"
 echo "✅ README help section matches actual binary output!"
 
 ## Execute go codeblocks example tests which checks the go codeblocks in the readme with a source file path
-echo $rundoc_output | docker run -i --rm codeblocks go run test/readme-test/readme-codeblocks.go --current-dir /amazon-ec2-instance-selector/test/readme-test/
+echo "$rundoc_output" | docker run -i --rm codeblocks go run test/readme-test/readme-codeblocks.go --current-dir /amazon-ec2-instance-selector/test/readme-test/
 echo "✅ Codeblocks match source files"
 
 for i in "${!example_files[@]}"; do
    if [[ "${interpreters[$i]}" == "go" ]]; then
       example_file="${example_files[$i]}"
-      example_bin=$(echo $example_file | cut -d'.' -f1)
-      mkdir -p $BUILD_DIR/examples
-      docker run -i -e GOOS=$OS -e GOARCH=amd64 -e CGO_ENABLED=0 -v $BUILD_DIR:/amazon-ec2-instance-selector/build --rm codeblocks go build -o build/examples/$example_bin $example_file
-      $BUILD_DIR/examples/$example_bin
+      example_bin=$(echo "$example_file" | cut -d'.' -f1)
+      mkdir -p "$BUILD_DIR/examples"
+      docker run -i -e GOOS="$OS" -e GOARCH=amd64 -e CGO_ENABLED=0 -v "$BUILD_DIR":/amazon-ec2-instance-selector/build --rm codeblocks go build -o build/examples/"$example_bin" "$example_file"
+      "$BUILD_DIR/examples/$example_bin"
       echo "✅ $example_file Executed Successfully!"
    fi
 done

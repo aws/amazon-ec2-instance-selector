@@ -107,13 +107,13 @@ sync_local_tags_from_remote() {
 }
 
 create_tag() {
-    git tag $NEW_TAG
+    git tag "$NEW_TAG"
     echo -e "\n✅ Created new tag $NEW_TAG (Current latest release tag in remote: v$CURR_REMOTE_RELEASE_TAG)\n"
     exit 0
 }
 
 get_latest_tag() {
-    make -s -f $MAKEFILE_PATH latest-release-tag | cut -b 2-
+    make -s -f "$MAKEFILE_PATH" latest-release-tag | cut -b 2-
 }
 
 main() {
@@ -129,19 +129,19 @@ main() {
 
     # increment version
     if $MAJOR_INC || $MINOR_INC || $PATCH_INC; then
-        curr_major_v=$(echo $CURR_REMOTE_RELEASE_TAG | tr '.' '\n' | head -1)
-        curr_minor_v=$(echo $CURR_REMOTE_RELEASE_TAG | tr '.' '\n' | head -2 | tail -1)
-        curr_patch_v=$(echo $CURR_REMOTE_RELEASE_TAG | tr '.' '\n' | tail -1)
+        curr_major_v=$(echo "$CURR_REMOTE_RELEASE_TAG" | tr '.' '\n' | head -1)
+        curr_minor_v=$(echo "$CURR_REMOTE_RELEASE_TAG" | tr '.' '\n' | head -2 | tail -1)
+        curr_patch_v=$(echo "$CURR_REMOTE_RELEASE_TAG" | tr '.' '\n' | tail -1)
 
         if [[ $MAJOR_INC == true ]]; then
-            new_major_v=$(echo $(($curr_major_v + 1)))
-            NEW_TAG=$(echo v$new_major_v.0.0)
+            new_major_v=$((curr_major_v + 1))
+            NEW_TAG="v$new_major_v.0.0"
         elif [[ $MINOR_INC == true ]]; then
-            new_minor_v=$(echo $(($curr_minor_v + 1)))
-            NEW_TAG=$(echo v$curr_major_v.$new_minor_v.0)
+            new_minor_v=$((curr_minor_v + 1))
+            NEW_TAG="v$curr_major_v.$new_minor_v.0"
         elif [[ $PATCH_INC == true ]]; then
-            new_patch_v=$(echo $(($curr_patch_v + 1)))
-            NEW_TAG=$(echo v$curr_major_v.$curr_minor_v.$new_patch_v)
+            new_patch_v=$((curr_patch_v + 1))
+            NEW_TAG="v$curr_major_v.$curr_minor_v.$new_patch_v"
         fi
         create_tag
     fi

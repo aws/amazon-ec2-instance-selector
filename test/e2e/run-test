@@ -17,6 +17,7 @@ function echoerr() {
 function sort_array() {
     local input=( "$@" )
     IFS=$'\n' 
+    # shellcheck disable=SC2207 # Array assignment from command substitution is intentional here
     local sorted=($(sort <<<"${input[*]}"))
     unset IFS
     echo "${sorted[*]}"
@@ -27,11 +28,14 @@ function sort_array() {
 function assert_contains_instance_types() {
     local expected=( "$@" )
     local actual=()
-    while read actual_input; do
+    while read -r actual_input; do
+        # shellcheck disable=SC2206 # Word splitting is intentional here
         actual+=($actual_input)
     done
     [[ 0 -eq "${#actual[@]}" ]] && return 1
+    # shellcheck disable=SC2207 # Array assignment from command substitution is intentional here
     local actual_sorted=($(sort_array "${actual[@]}"))
+    # shellcheck disable=SC2207 # Array assignment from command substitution is intentional here
     local expected_sorted=($(sort_array "${expected[@]}"))
     
     for expectation in "${expected_sorted[@]}"; do
@@ -52,7 +56,8 @@ function execute_test() {
     shift
     local params=( "$@" )
     local expected=()
-    while read expected_input; do
+    while read -r expected_input; do
+        # shellcheck disable=SC2206 # Word splitting is intentional here
         expected+=($expected_input)
     done
     [[ 0 -eq "${#expected[@]}" ]] && return 1
@@ -60,7 +65,7 @@ function execute_test() {
     echo "=========================== Test: ${test_name} ==========================="
 
     for p in "${params[@]}"; do
-        if $AEIS ${p} ${GLOBAL_PARAMS} | assert_contains_instance_types "${expected[*]}"; then  
+        if $AEIS "${p}" ${GLOBAL_PARAMS} | assert_contains_instance_types "${expected[*]}"; then  
             echo "✅ ${test_name} \"$p\" passed!"
         else
             echo "❌ Failed ${test_name} \"$p\"" | tee "${TEST_FAILURES_LOG}"

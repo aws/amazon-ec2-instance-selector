@@ -8,7 +8,7 @@ MAKE_FILE_PATH="${REPO_ROOT_PATH}/Makefile"
 BIN_DIR="${SCRIPTPATH}/../build/bin"
 mkdir -p "${BIN_DIR}"
 
-VERSION=$(make -s -f ${MAKE_FILE_PATH} version)
+VERSION=$(make -s -f "${MAKE_FILE_PATH}" version)
 PLATFORMS=("linux/amd64")
 
 USAGE=$(cat << 'EOM'
@@ -23,7 +23,7 @@ EOM
 )
 
 # Process our input arguments
-while getopts "dp:v:" opt; do
+while getopts "p:v:" opt; do
   case ${opt} in
     p ) # Platform Pairs
         IFS=',' read -ra PLATFORMS <<< "$OPTARG"
@@ -39,19 +39,19 @@ while getopts "dp:v:" opt; do
 done
 
 for os_arch in "${PLATFORMS[@]}"; do
-    os=$(echo $os_arch | cut -d'/' -f1)
-    arch=$(echo $os_arch | cut -d'/' -f2)
+    os=$(echo "$os_arch" | cut -d'/' -f1)
+    arch=$(echo "$os_arch" | cut -d'/' -f2)
     container_name="extract-aeis-$os-$arch"
     repo_name="aeis-bin"
     base_bin_name="ec2-instance-selector"
     bin_name="${base_bin_name}-${os}-${arch}"
 
-    docker container rm $container_name || :
-    $SCRIPTPATH/build-docker-images -p $os_arch -v $VERSION -r $repo_name
-    docker container create --rm --name $container_name "$repo_name:$VERSION-$os-$arch"
-    docker container cp $container_name:/ec2-instance-selector $BIN_DIR/$bin_name
+    docker container rm "$container_name" || :
+    "$SCRIPTPATH/build-docker-images" -p "$os_arch" -v "$VERSION" -r "$repo_name"
+    docker container create --rm --name "$container_name" "$repo_name:$VERSION-$os-$arch"
+    docker container cp "$container_name":/ec2-instance-selector "$BIN_DIR/$bin_name"
 
-    cp ${BIN_DIR}/${bin_name} ${BIN_DIR}/${base_bin_name}
-    tar -zcvf ${BIN_DIR}/${bin_name}.tar.gz -C ${BIN_DIR} ${base_bin_name}
-    rm -f ${BIN_DIR}/${base_bin_name}
+    cp "${BIN_DIR}/${bin_name}" "${BIN_DIR}/${base_bin_name}"
+    tar -zcvf "${BIN_DIR}/${bin_name}.tar.gz" -C "${BIN_DIR}" "${base_bin_name}"
+    rm -f "${BIN_DIR}/${base_bin_name}"
 done
