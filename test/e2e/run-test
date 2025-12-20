@@ -131,7 +131,11 @@ params=(
 echo "${expected[*]}" | execute_test "3 network interfaces" "${params[@]}"
 
 
-expected=(c5n.18xlarge c5n.metal g4dn.metal i3en.24xlarge i3en.metal inf1.24xlarge m5dn.24xlarge m5n.24xlarge p3dn.24xlarge r5dn.24xlarge r5n.24xlarge)
+expected=(c5n.18xlarge c5n.metal c6gn.16xlarge c6in.16xlarge c7gn.8xlarge c8gb.12xlarge c8gn.8xlarge c8i.96xlarge c8i.metal-96xl \
+            dl1.24xlarge f2.48xlarge g4dn.metal g5.48xlarge g6.48xlarge g6e.12xlarge i3en.24xlarge i3en.metal i7i.48xlarge i7i.metal-48xl \
+            i7ie.24xlarge i7ie.48xlarge i7ie.metal-24xl i7ie.metal-48xl i8g.48xlarge im4gn.16xlarge inf1.24xlarge inf2.48xlarge m5dn.24xlarge \
+            m5dn.metal m5n.24xlarge m5n.metal m5zn.12xlarge m5zn.metal m6idn.16xlarge m6in.16xlarge m8gb.12xlarge m8gn.8xlarge m8i.96xlarge \
+            m8i.metal-96xl p3dn.24xlarge)
 params=(
     "--network-performance=100"
     "--network-performance-min=100 --network-performance-max=100"
