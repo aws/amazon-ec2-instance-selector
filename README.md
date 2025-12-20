@@ -2,26 +2,19 @@
 
 <h4>A CLI tool and go library which recommends instance types based on resource criteria like vcpus and memory.</h4>
 
+![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/aws/amazon-ec2-instance-selector)
+[![GitHub License](https://img.shields.io/github/license/aws/amazon-ec2-instance-selector)](https://opensource.org/licenses/Apache-2.0)
+[![Docker Pulls](https://img.shields.io/docker/pulls/amazon/amazon-ec2-instance-selector)](https://hub.docker.com/r/amazon/amazon-ec2-instance-selector)
+
 <p>
-  <a href="https://golang.org/doc/go1.23">
-    <img src="https://img.shields.io/github/go-mod/go-version/aws/amazon-ec2-instance-selector?color=blueviolet" alt="go-version">
-  </a>
-  <a href="https://opensource.org/licenses/Apache-2.0">
-    <img src="https://img.shields.io/badge/License-Apache%202.0-ff69b4.svg" alt="license">
-  </a>
   <a href="https://goreportcard.com/report/github.com/aws/amazon-ec2-instance-selector">
     <img src="https://goreportcard.com/badge/github.com/aws/amazon-ec2-instance-selector" alt="go-report-card">
-  </a>
-  <a href="https://hub.docker.com/r/amazon/amazon-ec2-instance-selector">
-    <img src="https://img.shields.io/docker/pulls/amazon/amazon-ec2-instance-selector" alt="docker-pulls">
   </a>
 </p>
 
 ![EC2 Instance Selector CI and Release](https://github.com/aws/amazon-ec2-instance-selector/workflows/EC2%20Instance%20Selector%20CI%20and%20Release/badge.svg)
 
-<div>
-<hr>
-</div>
+---
 
 ## Summary
 
