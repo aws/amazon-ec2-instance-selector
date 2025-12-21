@@ -6,7 +6,7 @@ BUILD_DIR="${SCRIPTPATH}/../../build"
 TEST_FAILURES_LOG="${BUILD_DIR}/test-failures.log"
 
 AEIS="${BUILD_DIR}/ec2-instance-selector"
-GLOBAL_PARAMS="--max-results=40"
+GLOBAL_PARAMS="--max-results=100"
 
 ## Print to stderr
 function echoerr() {
@@ -101,22 +101,22 @@ params=(
 echo "${expected[*]}" | execute_test "4 GPUs" "${params[@]}"
 
 
-expected=(p2.16xlarge)
+expected=(p4d.24xlarge p4de.24xlarge)
 params=(
     "--vcpus-to-memory-ratio=1:12"
 )
 echo "${expected[*]}" | execute_test "1:12 vcpus-to-memory-ratio" "${params[@]}"
 
 
-expected=(p2.8xlarge)
+expected=(p4de.24xlarge)
 params=(
-    "--gpu-memory-total=96"
-    "--gpu-memory-total=96gb"
-    "--gpu-memory-total=96GiB"
-    "--gpu-memory-total=98304m"
-    "--gpu-memory-total-min=96 --gpu-memory-total-max=96"
+    "--gpu-memory-total=640"
+    "--gpu-memory-total=640gb"
+    "--gpu-memory-total=640GiB"
+    "--gpu-memory-total=655360m"
+    "--gpu-memory-total-min=640 --gpu-memory-total-max=640"
 )
-echo "${expected[*]}" | execute_test "96 GiB gpu-memory-total" "${params[@]}"
+echo "${expected[*]}" | execute_test "640 GiB gpu-memory-total" "${params[@]}"
 
 
 expected=(a1.large c3.large c4.large c5.large c5a.large c5ad.large c5d.large c5n.large c6a.large c6g.large c6gd.large \
